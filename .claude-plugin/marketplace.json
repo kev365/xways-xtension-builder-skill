@@ -1,0 +1,19 @@
+{
+  "name": "xways-xtension-builder",
+  "owner": {
+    "name": "Kevin Stokes",
+    "url": "https://github.com/kev365"
+  },
+  "metadata": {
+    "description": "X-Ways Forensics X-Tension authoring skill + knowledge base for Claude Code.",
+    "version": "0.3.0"
+  },
+  "plugins": [
+    {
+      "name": "xways-xtension-authoring",
+      "source": "./",
+      "description": "Author and maintain X-Ways Forensics X-Tensions — scaffold from templates, wrap CLI tools, port conventions, and audit for API correctness, backed by a distilled X-Tension API knowledge base.",
+      "version": "0.3.0"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+# Normalize line endings. Text is stored as LF in the repo and checked out per
+# these rules — stops the "LF will be replaced by CRLF" churn across platforms.
+* text=auto eol=lf
+
+# Windows-native scripts keep CRLF on checkout
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Explicit text types (LF in the working tree)
+*.md    text eol=lf
+*.ps1   text eol=lf
+*.psm1  text eol=lf
+*.cpp   text eol=lf
+*.h     text eol=lf
+*.def   text eol=lf
+*.rc    text eol=lf
+*.py    text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.cfg   text eol=lf
+*.example text eol=lf
+*.tmpl  text eol=lf
+
+# Binary — never normalize
+*.dll   binary
+*.exe   binary
+*.obj   binary
+*.lib   binary
+*.exp   binary
+*.res   binary
+*.pdb   binary
+*.ico   binary
+*.png   binary
+*.jpg   binary
+*.pdf   binary

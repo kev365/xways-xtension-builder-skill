@@ -1,0 +1,26 @@
+#include <windows.h>
+#include "resource.h"
+
+// Minimal settings dialog. The same template works in both modes:
+//   * Standalone — shown modal (WS_POPUP | WS_CAPTION normal-dialog styles).
+//   * Managed   — the manager strips WS_POPUP/WS_CAPTION/etc. and adds
+//                 WS_CHILD | DS_CONTROL at runtime, then embeds it as a
+//                 child window inside its tab page (Option A retrofit).
+//
+// If you want a separate dialog template native-styled for embedding
+// (Option B), add a second IDD_SETTINGS_EMBEDDED here with
+// WS_CHILD | DS_CONTROL styles and point
+// tab_dialog_embedded_resource_id at it from the descriptor.
+
+IDD_SETTINGS DIALOGEX 0, 0, 280, 120
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "My X-Tension - Settings"
+FONT 10, "MS Shell Dlg"
+BEGIN
+    LTEXT           "Template X-Tension settings dialog.\nReplace this body with your own controls.",
+                    -1, 7, 7, 266, 24
+    LTEXT           "When loaded by xways-xt-manager, this dialog is hosted as a child window inside the manager's tab. When loaded standalone, it shows modal.",
+                    -1, 7, 40, 266, 40
+    DEFPUSHBUTTON   "OK",     IDOK,     169, 99,  50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 223, 99,  50, 14
+END

@@ -1,0 +1,48 @@
+# {{NAME}}
+
+{{DESCRIPTION}}
+
+> **Status: {{VERSION}}** — pre-release. Interfaces and output format may change
+> until the first public (non-`-beta`) release.
+
+## What it does
+
+- _Describe the X-Tension's behavior here (one bullet per capability)._
+
+## Requirements
+
+- **Windows x64**, X-Ways Forensics **21.x or newer**.
+- _List any helper binaries, runtime dependencies, or license needs._
+
+## Install
+
+X-Ways auto-loads X-Tensions from an `xtensions\` subfolder of the install. Drop
+the per-tool folder in place:
+
+```text
+<X-Ways install>\
+    ├── xwforensics64.exe        (or xwb64.exe for BYOD)
+    └── xtensions\
+        └── {{NAME}}\
+            └── {{NAME}}.dll
+```
+
+## Run
+
+X-Ways → **Tools → Run X-Tensions…** → select
+`xtensions\{{NAME}}\{{NAME}}.dll`, choose your settings, and run.
+
+## Roadmap
+
+- [ ] _Planned feature._
+- [ ] _Known limitation to address._
+
+## Disclaimer
+
+Community-developed X-Tension. **Not** affiliated with, endorsed by, or
+supported by X-Ways AG. Use at your own risk; please open an issue if you find a
+bug.
+
+## License
+
+Released under the MIT License. See [LICENSE](LICENSE).

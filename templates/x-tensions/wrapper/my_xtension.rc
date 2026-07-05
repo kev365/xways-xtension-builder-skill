@@ -1,0 +1,83 @@
+#include <windows.h>
+#include "resource.h"
+
+// =============================================================================
+//  my_xtension settings dialog (DIALOGEX template)
+//
+//  Layout top->bottom:
+//    Tool binary -> Input source -> Output handling -> Status row ->
+//    Action buttons.
+//
+//  GROUPBOX titles are bolded at runtime via WM_SETFONT (ApplyGroupTitleFont).
+//  The bottom-row buttons are owner-drawn so they share one skin and so Run /
+//  Close can repaint blue in their Ctrl "Save" / "Save as..." alternate mode.
+// =============================================================================
+
+IDD_SETTINGS DIALOGEX 0, 0, 420, 226
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "my_xtension - Settings"
+FONT 10, "MS Shell Dlg"
+BEGIN
+    // -------- Tool binary group ---------------------------------------
+    GROUPBOX        "Tool binary",                            IDC_GROUP_TOOL,            7,   4, 406,  44
+    LTEXT           "Tool .exe:",                             IDC_LABEL_TOOL_BIN,       14,  18,  60,   9
+    EDITTEXT                                                  IDC_EDIT_TOOL_BIN,        76,  16, 278,  12, ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse...",                              IDC_BTN_BROWSE_TOOL,     358,  15,  49,  14
+    LTEXT           "",                                       IDC_LABEL_TOOL_VERSION,   14,  33, 393,   9
+
+    // -------- Input source group --------------------------------------
+    GROUPBOX        "Input source",                           IDC_GROUP_INPUT,           7,  52, 406,  62
+    // Items-to-scan line is split into prefix + bold count.
+    LTEXT           "Items to scan:",                         IDC_LABEL_SELECTED_COUNT, 14,  64,  60,   9
+    LTEXT           "",                                       IDC_LABEL_SELECTED_COUNT_NUM, 76,  64, 200,  9
+    LTEXT           "Min size (bytes):",                      IDC_LABEL_MIN_SIZE,       14,  80,  72,   9
+    EDITTEXT                                                  IDC_EDIT_MIN_SIZE,        88,  78,  45,  12, ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Max size (MiB):",                        IDC_LABEL_MAX_SIZE,      160,  80,  72,   9
+    EDITTEXT                                                  IDC_EDIT_MAX_SIZE,       234,  78,  45,  12, ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Extra arguments:",                       IDC_LABEL_EXTRA_ARGS,     14,  98,  72,   9
+    EDITTEXT                                                  IDC_EDIT_EXTRA_ARGS,      88,  96, 318,  12, ES_AUTOHSCROLL
+
+    // -------- Output handling group -----------------------------------
+    GROUPBOX        "Output handling",                        IDC_GROUP_OUTPUT,          7, 118, 406,  44
+    LTEXT           "Output directory:",                      IDC_LABEL_OUTPUT_DIR,     14, 132,  74,   9
+    EDITTEXT                                                  IDC_EDIT_OUTPUT_DIR,      88, 130, 266,  12, ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse...",                              IDC_BTN_BROWSE_OUTPUT,   358, 129,  49,  14
+    AUTO3STATE      "Add findings",                           IDC_CHK_ADD_REPORT_TABLE, 14, 148, 130,  10
+    LTEXT           "Tag threshold:",                         IDC_LABEL_TAG_THRESHOLD, 150, 149,  56,   9
+    EDITTEXT                                                  IDC_EDIT_TAG_THRESHOLD,  208, 147,  40,  12, ES_AUTOHSCROLL | ES_NUMBER
+    AUTOCHECKBOX    "Verbose X-Tension log",                  IDC_CHK_VERBOSE,         262, 148, 144,  10
+
+    // -------- Status group (status label + progress bar) --------------
+    GROUPBOX        "Status",                                 IDC_GROUP_STATUS,          7, 166, 406,  38
+    LTEXT           "Ready.",                                 IDC_LABEL_PROGRESS_STATUS, 14, 180, 392, 10
+    CONTROL         "",                                       IDC_PROGRESS_RUN,
+                    "msctls_progress32",                      PBS_SMOOTH | WS_CHILD | WS_VISIBLE,
+                                                                                        14, 192, 392,  10
+
+    // -------- Action buttons (bottom-right per convention) ------------
+    PUSHBUTTON      "&About",                                 IDC_BTN_ABOUT,             7, 208,  50,  14
+    PUSHBUTTON      "&Open output folder",                    IDC_BTN_OPEN_OUTPUT,      63, 208,  90,  14
+    PUSHBUTTON      "Open &cfg",                              IDC_BTN_OPEN_CFG,        159, 208,  60,  14
+    DEFPUSHBUTTON   "&Run",                                   IDC_BTN_RUN,             303, 208,  50,  14
+    PUSHBUTTON      "Cancel",                                 IDCANCEL,                359, 208,  50,  14
+END
+
+// =============================================================================
+//  About dialog
+// =============================================================================
+IDD_ABOUT DIALOGEX 0, 0, 280, 120
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About my_xtension"
+FONT 9, "MS Shell Dlg"
+BEGIN
+    LTEXT           "my_xtension",                            IDC_ABOUT_TITLE,          12,  10, 256, 12
+    LTEXT           "CLI-tool wrapper X-Tension for X-Ways Forensics.",
+                                                              IDC_ABOUT_DESC,           12,  26, 256,  9
+    LTEXT           "Extracts in-scope items, runs an external CLI tool over each, and tags findings in a Report Table.",
+                                                              -1,                       12,  40, 256, 20
+    LTEXT           "Author:",                                IDC_ABOUT_LABEL_AUTHOR_PREFIX, 12, 64, 30,  9
+    LTEXT           "",                                       IDC_ABOUT_AUTHOR,         44,  64, 224,  9
+    PUSHBUTTON      "https://github.com/youruser/my_xtension",
+                                                              IDC_ABOUT_LINK_GITHUB,    12,  80, 256, 14
+    DEFPUSHBUTTON   "OK",                                     IDOK,                    218,  98,  50, 14
+END

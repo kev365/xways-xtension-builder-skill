@@ -1,0 +1,30 @@
+xways-xtension-builder-skill
+Copyright (c) 2026 Kevin Stokes
+Licensed under the MIT License (see LICENSE).
+
+This project is an independent, unofficial community resource for authoring
+X-Ways Forensics X-Tensions. It is NOT affiliated with, endorsed by, or
+supported by X-Ways Software Technology AG.
+
+==============================================================================
+Third-party references and attributions
+==============================================================================
+
+X-Ways Forensics, WinHex, and the X-Tension API
+    Copyright X-Ways Software Technology AG — https://www.x-ways.net/
+    This repository documents the X-Tension API in distilled, paraphrased, and
+    empirically-derived notes. It does NOT redistribute the X-Ways SDK header,
+    manuals, or user-forum content. Acquire those directly from X-Ways (see
+    docs/getting-the-sdk.md). "X-Ways", "X-Ways Forensics", and "WinHex" are
+    trademarks of X-Ways Software Technology AG.
+
+xwf-api-rs — Rust bindings for the X-Tension API, by Thomas Vogl
+    https://github.com/ThomasVogl/xwf-api-rs
+    Referenced for property-number reverse-engineering in
+    docs/xways-getprop-reference.md. See that project for its own license.
+
+Community X-Tension authors
+    The exemplar registry (docs/exemplars.md) and the convention notes credit
+    and link to third-party X-Tension authors (including CrowdStrike, HMRC,
+    Polito, kezzier, and others). Their patterns are referenced with
+    attribution; no third-party source code is redistributed in this repository.

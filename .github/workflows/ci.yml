@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    name: Repo hygiene + manifest JSON
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pre-publish hygiene scan (HIGH-severity gate)
+        shell: pwsh
+        run: .\.claude\skills\xways-xtension-authoring\scripts\prepublish-scan.ps1
+      - name: Validate plugin + marketplace JSON
+        shell: pwsh
+        run: |
+          Get-Content .claude-plugin/plugin.json -Raw | ConvertFrom-Json | Out-Null
+          Get-Content .claude-plugin/marketplace.json -Raw | ConvertFrom-Json | Out-Null
+          Write-Host "plugin.json + marketplace.json parse OK"
+
+  markdownlint:
+    name: Markdown lint (advisory)
+    runs-on: ubuntu-latest
+    # Advisory: surfaces style issues without blocking. Flip to a hard gate once
+    # the docs are lint-clean.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs: "**/*.md"
+
+  plugin-validate:
+    name: claude plugin validate (best-effort)
+    runs-on: ubuntu-latest
+    # Best-effort: the Claude Code CLI install/auth may not be available in CI.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Claude Code CLI and validate the plugin
+        run: |
+          npm install -g @anthropic-ai/claude-code || { echo "CLI install unavailable in CI"; exit 0; }
+          claude plugin validate . || echo "plugin validate reported issues (or needs auth) — review locally"

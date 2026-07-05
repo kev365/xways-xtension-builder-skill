@@ -1,0 +1,6 @@
+{
+  "_comment": "Optional sidecar config. Rename to <NAME>.config.json (matching NAME in xtension.py). Delete if not needed — the X-Tension falls back to DEFAULT_CONFIG.",
+  "min_item_size_bytes": 1048576,
+  "add_to_report_table": true,
+  "add_comment": true
+}

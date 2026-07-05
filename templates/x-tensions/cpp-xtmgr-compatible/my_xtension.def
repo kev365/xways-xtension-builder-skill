@@ -1,0 +1,21 @@
+; Module definition for my_xtension.dll — exports the X-Ways X-Tension
+; entry points AND the manager-plugin entry by their unmangled names.
+;
+; Rename LIBRARY to match your DLL filename when forking this template.
+;
+; DO NOT remove XwaysManagerPluginEntry: that's what xways-xt-manager
+; looks for via GetProcAddress to detect plugin-compatible DLLs.
+LIBRARY my_xtension
+EXPORTS
+    ; Standalone-mode exports (X-Ways calls these directly)
+    XT_Init
+    XT_About
+    XT_Prepare
+    XT_ProcessItem
+    XT_ProcessItemEx
+    XT_ProcessSearchHit
+    XT_Finalize
+    XT_Done
+
+    ; Managed-mode export (xways-xt-manager calls this to detect us)
+    XwaysManagerPluginEntry

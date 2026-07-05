@@ -1,0 +1,30 @@
+# X-Ways X-Tension Builder Skill — project notes
+
+> Copy this file to `CLAUDE.md` (git-ignored) to give Claude Code project-level
+> instructions when working in this repo.
+
+This repo is the **`xways-xtension-authoring` skill** + starter templates + a
+distilled X-Tension knowledge base. It does **not** contain working X-Tensions,
+the X-Ways SDK, or the X-Ways manuals.
+
+## Rules
+
+- **Don't commit copyrighted X-Ways material.** The SDK header (`X-Tension.h`),
+  manuals, and user-forum content are copyright X-Ways AG. The `docs/` notes are
+  distilled / empirical only and cite official sources by link. See
+  [docs/getting-the-sdk.md](docs/getting-the-sdk.md).
+- **Don't commit binaries, secrets, local paths, or case data.** Run
+  `.claude/skills/xways-xtension-authoring/scripts/prepublish-scan.ps1 -Strict`
+  before any push.
+- **Templates are the read-only scaffold source** under
+  [templates/x-tensions/](templates/x-tensions/). Scaffold new X-Tensions into
+  your OWN project, not this repo.
+- **API correctness:** never invent `XWF_*` calls or flags. Verify against
+  `docs/`, the live API page, or your locally-acquired SDK header — see the
+  [API guardrail](.claude/skills/xways-xtension-authoring/references/api-guardrail.md).
+
+## Conventions
+
+The reusable patterns live in [docs/conventions/](docs/conventions/index.md) and
+are the single source of truth. The skill cites them by symbol; the convention
+pages cite the `wrapper` template, so nothing drifts.

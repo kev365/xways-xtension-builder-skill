@@ -1,0 +1,47 @@
+# MkDocs build output
+/site/
+
+# Local, non-shared project memory (copy CLAUDE.md.example -> CLAUDE.md)
+/CLAUDE.md
+
+# Remembered local X-Ways deploy target (build-xtension.ps1 -DeployRoot).
+# Your install path is your own environment — never shared.
+/.xtension-deploy.local
+
+# Upstream X-Ways SDK / manuals — copyright X-Ways Software Technology AG.
+# Never redistributed here. Acquire your own from x-ways.net / SourceForge —
+# see docs/getting-the-sdk.md.
+/references/
+
+# Compiled artifacts — X-Tensions ship via GitHub Releases, never committed.
+*.dll
+*.exe
+*.pdb
+*.obj
+*.lib
+*.exp
+*.res
+*.pdf
+
+# X-Ways config sidecars may hold DPAPI-encrypted credentials — only the
+# *.cfg.example samples are tracked.
+*.cfg
+!*.cfg.example
+
+# Claude Code per-user local settings (created when a cloner grants permissions)
+.claude/settings.local.json
+
+# Blog/social drafts — published on Medium/LinkedIn, not part of the repo
+/BLOG_POST.txt
+/LINKEDIN_POST.txt
+
+# X-Tensions authored in a clone of this repo (the scaffold scripts write here;
+# your work is yours — fork or move it to its own repo to publish it)
+/x-tensions/
+
+# Editor / OS cruft
+.vs/
+.idea/
+*.user
+Thumbs.db
+.DS_Store

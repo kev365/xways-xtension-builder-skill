@@ -1,0 +1,58 @@
+# my_xtension.cfg
+# =============================================================================
+# Source-tree reference cfg. Deployed alongside the DLL by build.bat. On the
+# X-Tension's first run this file is the model for the auto-created
+# `my_xtension.cfg` -- the X-Tension writes a fresh cfg from its compiled
+# defaults if none exists yet (see EnsureCfgExists / SerializeSettings).
+#
+# All keys are optional. The compiled defaults are listed after the `=`
+# (commented). Uncomment + edit to override. Edits take effect on the next
+# dialog open (use the "Open cfg" button to launch your text editor on it).
+# =============================================================================
+
+
+# ----- Tool binary ----------------------------------------------------------
+# Absolute path to your CLI tool's .exe. Empty = the X-Tension looks under the
+# DLL's own directory (see ResolveDefaultTool):
+#   <dll-dir>\tools\yourtool\yourtool.exe
+#   <dll-dir>\tools\yourtool.exe
+#   <dll-dir>\yourtool.exe
+# ...then a bounded recursive search. The Browse button always lets you
+# override. The binary is identity-checked (PE VERSIONINFO + --version banner)
+# before any run.
+# tool_exe=
+
+
+# ----- Output ---------------------------------------------------------------
+# Run output base. Auto-resolves to:
+#   <case dir>\my_xtension\         (XWF_GetCaseProp prop 6)
+#   <evidence working dir>\my_xtension\
+#   <%TEMP%>\my_xtension\
+# The "my_xtension" subfolder is part of the resolved path -- don't add it
+# yourself. Per-run output lands at <output_base>\run-YYYYMMDD-HHMMSS\.
+# output_base=
+
+
+# ----- Input filters --------------------------------------------------------
+# Items smaller than min_size_bytes or larger than max_size_mib MiB are
+# skipped before extraction.
+# min_size_bytes=1
+# max_size_mib=256
+
+
+# ----- Tool tuning ----------------------------------------------------------
+# Free-form pass-through appended to the tool command line (after the
+# X-Tension's built-in flags). The X-Tension never strips or rewrites these.
+# extra_args=
+
+
+# ----- Output tagging -------------------------------------------------------
+# tag_threshold=1            # min results before tagging an item
+# add_to_report_table=true   # add hits to the Report Table
+# add_comment=true           # one-line summary in the Comments column
+
+
+# ----- X-Tension verbosity --------------------------------------------------
+# Toggles the X-Tension's own per-item LogVerbose() output to the X-Ways
+# Messages window. Keep ON during development; OFF on large snapshots.
+# xtension_verbose=true

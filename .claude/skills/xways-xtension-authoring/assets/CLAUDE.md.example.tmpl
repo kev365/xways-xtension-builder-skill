@@ -1,0 +1,54 @@
+# {{NAME}} — Claude Code notes
+
+> **Per-X-Tension instructions for Claude Code.** Copy this file to `CLAUDE.md`
+> (git-ignored) in this folder and tailor it for your environment. Claude reads
+> `CLAUDE.md` as directory-level instructions. Keep this committed `.example`
+> **generic — no local paths, credentials, or case data.**
+>
+> Project-wide rules live in the repo-root `CLAUDE.md` and the authoring skill
+> (`.claude/skills/xways-xtension-authoring/`). This file captures only what is
+> specific to **{{NAME}}**.
+
+## What this X-Tension is
+
+{{DESCRIPTION}}
+
+- **Stem / DLL:** `{{NAME}}` → `{{NAME}}.dll`
+- **Version:** `{{VERSION}}` — beta until the first public release (see
+  `docs/conventions/versioning.md`).
+- **Identity constants** (top of `{{NAME}}.cpp`): `NAME`, `VERSION`,
+  `DESCRIPTION`, `REPORT_TABLE`.
+
+## Build
+
+```powershell
+.claude/skills/xways-xtension-authoring/scripts/build-xtension.ps1 -Name {{NAME}}
+```
+
+Close X-Ways first — the DLL is locked while it runs (no hot reload).
+
+## Wrapped tool / dependencies
+
+- _If this wraps an external CLI: name it, its `--version` identity needle, and
+  the exact argument shape used. See
+  `docs/conventions/helper-exe-verification.md`._
+
+## Config & sidecar files
+
+- _List cfg keys and any sidecar files that live next to the DLL. Live `.cfg`
+  files are git-ignored; only `.cfg.example` is committed._
+
+## Gotchas / notes
+
+- _Anything non-obvious about this X-Tension's behavior, quirks, or test data._
+
+## Conventions in play
+
+- Output directory → `docs/conventions/output-dir.md`
+- Verbose logging → `docs/conventions/verbose-logging.md`
+- _Add others as wired (ctrl-to-save, manager-compatibility, …)._
+
+## Don't commit
+
+- Compiled `{{NAME}}.dll`, live `.cfg`, local paths (`C:\Users\…`), or case
+  data. See `docs/conventions/repo-hygiene.md`.

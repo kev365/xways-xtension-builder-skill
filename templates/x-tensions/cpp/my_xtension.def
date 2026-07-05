@@ -1,0 +1,12 @@
+; Module definition for my_xtension.dll — exports the X-Ways X-Tension entry
+; points by their unmangled names. Rename LIBRARY to match your DLL filename.
+LIBRARY my_xtension
+EXPORTS
+    XT_Init
+    XT_About
+    XT_Prepare
+    XT_ProcessItem
+    XT_ProcessItemEx
+    XT_ProcessSearchHit
+    XT_Finalize
+    XT_Done

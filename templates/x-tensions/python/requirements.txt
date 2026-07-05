@@ -1,0 +1,3 @@
+# Third-party packages this X-Tension depends on.
+# Install into the Python environment that XT_Python.dll loads from.
+# Leave empty if the template uses only the standard library.
