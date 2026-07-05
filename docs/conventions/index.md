@@ -9,6 +9,7 @@ example is extracted from the `wrapper` template and cites the exact symbol.
 - [Events emission](events-emission.md) — FILETIME dedup bucketing (`XWF_GetEvent` drifts), `lpDescr` cap
 - [Output writers](output-writers.md) — UTF-8/XML sanitising, error propagation, memory bounding, row-count splitting
 - [Output directory](output-dir.md) — `<caseRoot>\<NAME>\`
+- [Add output to the case](add-output-to-case.md) — register output as an evidence object (`XWF_CreateEvObj`) or snapshot items (`XWF_CreateFile`)
 - [VERBOSE logging](verbose-logging.md)
 - [Subprocess stdio](subprocess-stdio.md) — the `NUL` + `STARTF_USESTDHANDLES` requirement
 - [Helper-exe verification](helper-exe-verification.md) — PE VERSIONINFO + `--version` gates, red-flash UI

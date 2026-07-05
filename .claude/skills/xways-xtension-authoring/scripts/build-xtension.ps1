@@ -3,18 +3,24 @@
     Build an X-Ways X-Tension DLL from its source directory.
 
 .DESCRIPTION
-    Locates x-tensions/xways-<name>/build.bat, ensures X-Ways is not running
-    (the DLL would be locked), bootstraps the MSVC x64 toolchain if needed,
-    runs the build, verifies the output DLL exists, and deploys the staged
-    xtensions\<name>\ folder into YOUR X-Ways install. The install path is your
-    own environment — pass -DeployRoot '<install-root>' once (it's remembered in
-    .xtension-deploy.local, git-ignored), or set $env:XWT_DEPLOY_ROOT. With
+    Locates <DestRoot>/x-tensions/xways-<name>/build.bat, ensures X-Ways is not
+    running (the DLL would be locked), bootstraps the MSVC x64 toolchain if
+    needed, runs the build, verifies the output DLL exists, and deploys the
+    staged xtensions\<name>\ folder into YOUR X-Ways install. The install path is
+    your own environment — pass -DeployRoot '<install-root>' once (it's remembered
+    in .xtension-deploy.local, git-ignored), or set $env:XWT_DEPLOY_ROOT. With
     neither set, the build still succeeds and stages locally; -NoDeploy skips
     deploy entirely.
 
 .PARAMETER Name
     The X-Tension identifier — either the short form 'foo' or the full form
     'xways-foo'. Both are accepted; the script always normalises to xways-foo.
+
+.PARAMETER DestRoot
+    Project root that holds x-tensions/xways-<name>/ (the source built here).
+    Default: the current directory. Pass the same -DestRoot used with
+    new-xtension.ps1 when the skill is installed as a plugin; the script refuses
+    to build from an installed plugin/marketplace cache.
 
 .PARAMETER Force
     Skip the X-Ways process check and proceed even if X-Ways appears to be open.
@@ -32,6 +38,8 @@
 param(
     [Parameter(Mandatory)]
     [string]$Name,
+
+    [string]$DestRoot,
 
     [switch]$Force,
 
@@ -73,15 +81,38 @@ if ($Name -match '^xways-(.+)$') {
 }
 
 # ---------------------------------------------------------------------------
-# 2. Resolve repo root
+# 2. Resolve the skill install root + the destination root (where the X-Tension
+#    source lives). DestRoot defaults to the current directory so a plugin
+#    install builds from the user's project, not the plugin cache.
 # ---------------------------------------------------------------------------
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
+$skillRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 
-if (-not (Test-Path (Join-Path $repoRoot 'x-tensions'))) {
-    Fail "Could not locate x-tensions/ under resolved repo root '$repoRoot'. Check script placement."
+if ($DestRoot) {
+    if (-not (Test-Path $DestRoot)) { Fail "-DestRoot '$DestRoot' does not exist." }
+    $destRootResolved = (Resolve-Path $DestRoot).Path
+} else {
+    $destRootResolved = (Get-Location).Path
 }
 
-$xtDir   = Join-Path $repoRoot "x-tensions\$fullName"
+# Refuse to build from inside the installed skill/plugin cache (a managed dir).
+$skillRootIsPlugin = ($skillRoot -match '[\\/]\.claude[\\/]plugins[\\/]') `
+                  -or ($skillRoot -match '[\\/]plugins[\\/](cache|marketplaces)[\\/]')
+if (-not $skillRootIsPlugin -and $env:CLAUDE_PLUGIN_ROOT) {
+    try {
+        $pr = (Resolve-Path $env:CLAUDE_PLUGIN_ROOT -ErrorAction Stop).Path.TrimEnd('\')
+        if ($skillRoot.TrimEnd('\').StartsWith($pr, [System.StringComparison]::OrdinalIgnoreCase)) { $skillRootIsPlugin = $true }
+    } catch { }
+}
+$destUnderSkill = $destRootResolved.TrimEnd('\').StartsWith($skillRoot.TrimEnd('\'), [System.StringComparison]::OrdinalIgnoreCase)
+if ($skillRootIsPlugin -and $destUnderSkill) {
+    Fail "Refusing to build from the installed plugin at '$skillRoot'. Run from your project directory, or pass -DestRoot '<your project path>' (the same one used with new-xtension.ps1)."
+}
+
+if (-not (Test-Path (Join-Path $destRootResolved 'x-tensions'))) {
+    Fail "Could not locate x-tensions/ under '$destRootResolved'. Scaffold first with new-xtension.ps1 (pass the same -DestRoot), or cd into your project."
+}
+
+$xtDir    = Join-Path $destRootResolved "x-tensions\$fullName"
 $buildBat = Join-Path $xtDir 'build.bat'
 
 # ---------------------------------------------------------------------------
@@ -224,7 +255,7 @@ if ($isManagerCompat) {
             Write-Host ""
             Write-Host "  WARNING: manager-plugin.h in $fullName has drifted from the canonical." -ForegroundColor Yellow
             Write-Host "           Managed loading may silently break. Sync the header before deploying." -ForegroundColor Yellow
-            Write-Host "           Canonical: $repoRoot\templates\x-tensions\cpp-xtmgr-compatible\manager-plugin.h" -ForegroundColor Yellow
+            Write-Host "           Canonical: $skillRoot\templates\x-tensions\cpp-xtmgr-compatible\manager-plugin.h" -ForegroundColor Yellow
         }
     } else {
         Write-Warning "check-manager-sync.ps1 not found at '$syncScript' — skipping manager-plugin.h check."
@@ -255,7 +286,7 @@ if ($NoDeploy) {
 # A candidate counts as an install only if it holds xwb64.exe (BYOD) or
 # xwforensics64.exe (licensed). Nothing is hardcoded — the install path is the
 # user's own environment, asked for once and remembered.
-$deployMemo = Join-Path $repoRoot '.xtension-deploy.local'
+$deployMemo = Join-Path $destRootResolved '.xtension-deploy.local'
 
 function Test-XWaysRoot([string]$p) {
     if (-not $p) { return $false }

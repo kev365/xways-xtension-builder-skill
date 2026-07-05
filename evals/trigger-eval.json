@@ -1,0 +1,102 @@
+[
+  {
+    "query": "i need to wrap trufflehog so it runs inside x-ways forensics and tags files that contain secrets — can you scaffold that as a dll?",
+    "should_trigger": true,
+    "note": "wrap flow, casual phrasing"
+  },
+  {
+    "query": "scaffold a new x-tension called filehasher from the cpp template, version 0.1.0-beta",
+    "should_trigger": true,
+    "note": "new/scaffold flow, explicit"
+  },
+  {
+    "query": "my older plugin calls XWF_AddToReportTable — is that still valid on 21.8 or did they rename it? want to make sure it still builds",
+    "should_trigger": true,
+    "note": "audit + API-recency question"
+  },
+  {
+    "query": "which XWF_ function do i call to read the raw bytes of an item from inside XT_ProcessItemEx, and what flags go with it?",
+    "should_trigger": true,
+    "note": "API question (which XWF_ call/flag)"
+  },
+  {
+    "query": "close x-ways and compile xways-linux-logs for me, then tell me if the dll came out",
+    "should_trigger": true,
+    "note": "build/compile flow"
+  },
+  {
+    "query": "port the helper-exe verification pattern (the one that checks the tool identifies as itself before spawning) into my bulk_extractor wrapper",
+    "should_trigger": true,
+    "note": "port-convention flow"
+  },
+  {
+    "query": "i wrote a C++ plugin for x-ways forensics that parses prefetch files, but x-ways hard-crashes when my code shells out to a helper exe. how am i supposed to be handling the child process stdio?",
+    "should_trigger": true,
+    "note": "edge: never says 'x-tension'; subprocess-stdio convention / audit"
+  },
+  {
+    "query": "get my xtension repo ready to publish on github — add a LICENSE, a README with a roadmap, and run a hygiene scan for secrets and local paths",
+    "should_trigger": true,
+    "note": "prep-for-public-release flow"
+  },
+  {
+    "query": "what should XT_Prepare return so my per-item callback actually fires for every file when i run as a Refine Volume Snapshot step?",
+    "should_trigger": true,
+    "note": "API/behavior question (return flags, RVS)"
+  },
+  {
+    "query": "i have a little dll that adds rows to the x-ways events viewer and i want to add a few more event categories — how do i pick the numeric event type codes so they filter correctly?",
+    "should_trigger": true,
+    "note": "edge: casual, Events API numeric nEvtType question"
+  },
+  {
+    "query": "someone gave me an x-tension dll — how do i actually run it in x-ways forensics? which menu is it under?",
+    "should_trigger": false,
+    "note": "near-miss: general X-Ways usage, not authoring (explicitly out of scope)"
+  },
+  {
+    "query": "what x-ways x-tension should i build to speed up ransomware triage? throw some ideas at me",
+    "should_trigger": false,
+    "note": "near-miss: open-ended ideation (belongs to brainstorming, out of scope)"
+  },
+  {
+    "query": "write me a python script that parses a folder full of EVTX event logs into one flattened CSV",
+    "should_trigger": false,
+    "note": "near-miss: adjacent DFIR parsing, not an X-Tension"
+  },
+  {
+    "query": "i need to carve all the jpegs out of this E01 image — walk me through doing it in x-ways",
+    "should_trigger": false,
+    "note": "near-miss: general X-Ways usage"
+  },
+  {
+    "query": "compile this rust project on windows, it uses cargo and won't build because of a linker error",
+    "should_trigger": false,
+    "note": "near-miss on 'compile/build' but not an X-Tension"
+  },
+  {
+    "query": "wrap this vendor REST API in a clean python client library with retries and typed models",
+    "should_trigger": false,
+    "note": "near-miss on 'wrap' but not a CLI-tool X-Tension"
+  },
+  {
+    "query": "help me build a plugin for Autopsy that does a timeline of user logins across the disk",
+    "should_trigger": false,
+    "note": "near-miss: a plugin for a DIFFERENT forensic tool (not X-Ways)"
+  },
+  {
+    "query": "review my C++ file for memory leaks and undefined behavior, it's a 400-line parser",
+    "should_trigger": false,
+    "note": "near-miss on 'audit/review C++' but generic, not X-Tension-specific"
+  },
+  {
+    "query": "how do i make a report table in x-ways and drag files into it through the directory browser?",
+    "should_trigger": false,
+    "note": "near-miss: report tables via GUI (general usage), not the XWF_ API"
+  },
+  {
+    "query": "set up a hash database in x-ways forensics and configure the notable-files filter for me",
+    "should_trigger": false,
+    "note": "near-miss: general X-Ways configuration, not X-Tension authoring"
+  }
+]

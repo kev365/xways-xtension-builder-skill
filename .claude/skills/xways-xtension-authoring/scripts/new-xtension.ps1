@@ -4,14 +4,23 @@
 
 .DESCRIPTION
     Copies a template (cpp / python / xtmgr / wrapper) or a locally available
-    exemplar directory into x-tensions/xways-<name>/, renames source files to
-    the xways-<name> stem, and patches identity constants (NAME, VERSION,
-    DESCRIPTION, REPORT_TABLE).
+    exemplar directory into <DestRoot>/x-tensions/xways-<name>/, renames source
+    files to the xways-<name> stem, and patches identity constants (NAME,
+    VERSION, DESCRIPTION, REPORT_TABLE). Templates are always read from the
+    installed skill; only the OUTPUT is written under -DestRoot.
     Use -DryRun to preview every planned operation without touching the filesystem.
 
 .PARAMETER Name
     The short identifier for the X-Tension — the '<name>' in 'xways-<name>'.
     A leading 'xways-' prefix will be stripped with a warning.
+
+.PARAMETER DestRoot
+    Project root the new X-Tension is scaffolded into — output lands in
+    <DestRoot>/x-tensions/xways-<name>/. Default: the current directory. Pass
+    this when the skill is installed as a Claude Code plugin so output goes into
+    your own project instead of the plugin cache; the script refuses to write
+    into an installed plugin/marketplace cache. In a clone, run from the repo
+    root (the default) to keep output in the working copy.
 
 .PARAMETER Template
     Which template to copy: cpp | python | xtmgr | wrapper.  Default: cpp.
@@ -62,6 +71,8 @@
 param(
     [Parameter(Mandatory)]
     [string]$Name,
+
+    [string]$DestRoot,
 
     [ValidateSet('cpp', 'python', 'xtmgr', 'wrapper')]
     [string]$Template = 'cpp',
@@ -294,24 +305,59 @@ if ($Name -notmatch '^[A-Za-z0-9][A-Za-z0-9_-]*$') {
 $fullName = "xways-$Name"
 
 # ---------------------------------------------------------------------------
-# 1. Resolve repo root (scripts/ -> xways-xtension-authoring/ -> skills/ -> .claude/ -> repo root)
+# 1. Resolve the SKILL install root (source of templates/ + assets/).
+#    scripts/ -> xways-xtension-authoring/ -> skills/ -> .claude/ -> skill root
 # ---------------------------------------------------------------------------
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
+$skillRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 
-# Confirm this looks like the xways repo
-if (-not (Test-Path (Join-Path $repoRoot 'templates\x-tensions'))) {
-    Fail "Could not locate templates\x-tensions under resolved repo root '$repoRoot'. Check script placement."
+if (-not (Test-Path (Join-Path $skillRoot 'templates\x-tensions'))) {
+    Fail "Could not locate templates\x-tensions under resolved skill root '$skillRoot'. Check script placement."
+}
+
+# ---------------------------------------------------------------------------
+# 1b. Resolve the DESTINATION root (where x-tensions/<name>/ is written).
+#     Defaults to the current directory so a plugin install scaffolds into the
+#     user's project, not the plugin cache. In a clone, run from the repo root.
+# ---------------------------------------------------------------------------
+if ($DestRoot) {
+    if (-not (Test-Path $DestRoot)) { Fail "-DestRoot '$DestRoot' does not exist. Pass an existing project directory." }
+    $destRootResolved = (Resolve-Path $DestRoot).Path
+} else {
+    $destRootResolved = (Get-Location).Path
+}
+
+# Refuse to scaffold into the installed skill/plugin — especially a marketplace
+# plugin cache, which Claude Code manages and overwrites on update. This fires
+# only when THIS script is running from a plugin-cache location AND the chosen
+# destination is inside it; a dev clone (skill root is a normal repo) is allowed.
+$skillRootIsPlugin = ($skillRoot -match '[\\/]\.claude[\\/]plugins[\\/]') `
+                  -or ($skillRoot -match '[\\/]plugins[\\/](cache|marketplaces)[\\/]')
+if (-not $skillRootIsPlugin -and $env:CLAUDE_PLUGIN_ROOT) {
+    try {
+        $pr = (Resolve-Path $env:CLAUDE_PLUGIN_ROOT -ErrorAction Stop).Path.TrimEnd('\')
+        if ($skillRoot.TrimEnd('\').StartsWith($pr, [System.StringComparison]::OrdinalIgnoreCase)) { $skillRootIsPlugin = $true }
+    } catch { }
+}
+$destUnderSkill = $destRootResolved.TrimEnd('\').StartsWith($skillRoot.TrimEnd('\'), [System.StringComparison]::OrdinalIgnoreCase)
+if ($skillRootIsPlugin -and $destUnderSkill) {
+    Fail @"
+Refusing to scaffold into the installed plugin at:
+  $skillRoot
+That directory is managed by Claude Code and is overwritten on plugin update.
+Run this from your project directory, or pass -DestRoot '<your project path>'.
+End-to-end authoring writes into your own project (see SKILL.md).
+"@
 }
 
 # ---------------------------------------------------------------------------
 # 2. Resolve source directory + source stem
 # ---------------------------------------------------------------------------
 if ($Exemplar) {
-    # An exemplar is any X-Tension folder present locally under x-tensions\
-    # (none are bundled in this repo — see docs/exemplars.md).
-    $srcDir = Join-Path $repoRoot "x-tensions\$Exemplar"
+    # An exemplar is any X-Tension folder you have locally under
+    # <DestRoot>/x-tensions/ (none are bundled in this repo — see docs/exemplars.md).
+    $srcDir = Join-Path $destRootResolved "x-tensions\$Exemplar"
     if (-not (Test-Path $srcDir)) {
-        Fail "Exemplar '$Exemplar' not found at x-tensions\$Exemplar. Exemplars are X-Tensions you have locally in this working copy; none are bundled — scaffold from a template instead, or clone an exemplar first (docs/exemplars.md)."
+        Fail "Exemplar '$Exemplar' not found at $srcDir. Exemplars are X-Tensions you already have under <DestRoot>/x-tensions/; none are bundled — scaffold from a template instead, or clone an exemplar first (docs/exemplars.md)."
     }
     $srcStem  = $Exemplar           # e.g. 'xways-yourtool'
     $srcKind  = "exemplar:$Exemplar"
@@ -322,7 +368,7 @@ if ($Exemplar) {
         'xtmgr'   = 'cpp-xtmgr-compatible'
         'wrapper' = 'wrapper'
     }
-    $srcDir = Join-Path $repoRoot "templates\x-tensions\$($templateDirMap[$Template])"
+    $srcDir = Join-Path $skillRoot "templates\x-tensions\$($templateDirMap[$Template])"
     # Python template uses 'xtension' as the main file stem; cpp templates use 'my_xtension'
     $srcStem = if ($Template -eq 'python') { 'xtension' } else { 'my_xtension' }
     $srcKind  = "template:$Template"
@@ -333,19 +379,20 @@ if (-not (Test-Path $srcDir)) {
 }
 
 # ---------------------------------------------------------------------------
-# 3. HARD GATE — never write under templates/ or references/
+# 3. HARD GATE — write only under <DestRoot>/x-tensions/, never into the skill's
+#    read-only templates/ or an SDK references/ tree.
 # ---------------------------------------------------------------------------
-$destDir = Join-Path $repoRoot "x-tensions\$fullName"
+$destDir = Join-Path $destRootResolved "x-tensions\$fullName"
 
 foreach ($protected in @('templates','references')) {
-    $protectedAbs = (Join-Path $repoRoot $protected).TrimEnd('\')
+    $protectedAbs = (Join-Path $skillRoot $protected).TrimEnd('\')
     if ($destDir.TrimEnd('\').StartsWith($protectedAbs, [System.StringComparison]::OrdinalIgnoreCase)) {
-        Fail "Destination '$destDir' falls inside protected directory '$protected'. Aborting."
+        Fail "Destination '$destDir' falls inside the skill's protected '$protected' directory. Aborting."
     }
 }
-$xtensionsDir = Join-Path $repoRoot 'x-tensions'
-if (-not $destDir.StartsWith($xtensionsDir, [System.StringComparison]::OrdinalIgnoreCase)) {
-    Fail "Destination '$destDir' is not inside x-tensions/. Aborting."
+$xtensionsDir = (Join-Path $destRootResolved 'x-tensions').TrimEnd('\')
+if (-not $destDir.TrimEnd('\').StartsWith($xtensionsDir, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Fail "Destination '$destDir' is not inside <DestRoot>/x-tensions/. Aborting."
 }
 
 # ---------------------------------------------------------------------------
@@ -613,5 +660,7 @@ Write-Host "  Generated: $generatedCount project files (LICENSE / README / CLAUD
 Write-Host "  Location : $destDir"
 Write-Host ''
 Write-Host 'Next: close X-Ways, then run:' -ForegroundColor Cyan
-Write-Host "  build-xtension.ps1 -Name $fullName" -ForegroundColor White
+$buildHint = "  build-xtension.ps1 -Name $fullName"
+if ($DestRoot) { $buildHint += " -DestRoot `"$destRootResolved`"" }
+Write-Host $buildHint -ForegroundColor White
 Write-Host '(from an x64 Native Tools Command Prompt for VS 2022, or let the script bootstrap MSVC for you)'

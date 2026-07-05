@@ -5,23 +5,39 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
-Quality items on the backlog (not install blockers):
+## [0.4.0] — 2026-07-05
 
-- **Plugin-mode scaffolding**: add a destination-root option (default
-  `Get-Location`) to `new-xtension.ps1` / `build-xtension.ps1` so a
-  marketplace-installed plugin can scaffold into the user's project instead of
-  the plugin cache, with a guard refusing to write into the cache. Until then,
-  authoring end to end is done in a clone (SKILL.md says so explicitly).
-- **`.claude/commands/xtension.md`**: use `${CLAUDE_PLUGIN_ROOT}` for script
-  paths.
-- **Disambiguate `references/`**: the skill's own `references/` (flow guides)
-  vs a user-acquired SDK tree (`<project>\references\api\...`) — qualify every
-  SDK mention so "never edit references/" can't be misread.
-- **Add `docs/conventions/add-output-to-case.md`** (evidence-object add-back via
-  `XWF_CreateEvObj` / `XWF_CreateFile`).
-- **Trigger-test suite**: a should-trigger / shouldn't-trigger / edge-case
-  phrase matrix plus a `skill-creator` eval run, tracking under- and
-  over-triggering across description changes.
+### Added
+
+- **Plugin-mode scaffolding.** `new-xtension.ps1` and `build-xtension.ps1` take a
+  new `-DestRoot` (default: the current directory) so a marketplace-installed
+  plugin scaffolds/builds into the user's own project, not the plugin cache — and
+  both **refuse to write into an installed plugin/marketplace cache**. Templates
+  and assets are still read from the installed skill. This removes the
+  "authoring requires a clone" limitation; SKILL.md and the `/xtension` command
+  are updated to match (scripts referenced via `${CLAUDE_PLUGIN_ROOT}`, run with
+  `-DestRoot <project>`). Verified end-to-end: scaffold + build into a temp
+  project succeeds with the skill install untouched.
+- **`docs/conventions/add-output-to-case.md`** — new convention page for
+  registering an X-Tension's output back into the case: a new evidence object
+  (`XWF_CreateEvObj`) or items in the snapshot (`XWF_CreateFile`), with the
+  parent / read-only / persistence gotchas and the zip-nesting trap. Signatures
+  confirmed against the SDK header; indexed in `conventions/index.md`,
+  `docs/INDEX.md`, and SKILL.md.
+- **Triggering evals** (`evals/`) — a 20-query should-trigger / should-not-trigger
+  matrix (`trigger-eval.json`, edge-case-heavy near-misses) to catch under- and
+  over-triggering as the description changes, a recorded baseline
+  (`baseline.md` — 20/20 on the v0.3.0 description), and a README on re-running it.
+
+### Changed
+
+- **Disambiguated `references/`.** The skill's own `references/*.md` flow guides
+  vs a user-acquired SDK tree (`references/api/...`) are now called out
+  explicitly: the "never edit `references/`" hard gate means the **SDK tree**, in
+  SKILL.md and the `/xtension` command, so it can't be misread as the flow guides.
+- **`${CLAUDE_PLUGIN_ROOT}` for command script paths** — `/xtension` now points at
+  the scaffold/build scripts under `${CLAUDE_PLUGIN_ROOT}` (plugin) or the repo
+  root (clone).
 
 ## [0.3.0] — 2026-07-04
 

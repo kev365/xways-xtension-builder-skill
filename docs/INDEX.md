@@ -98,6 +98,9 @@ symbol. See the [convention library index](conventions/index.md). Key pages:
   count (Excel / store-only-ZIP limits).
 - [output-dir.md](conventions/output-dir.md) — default output to
   `<caseRoot>\<NAME>\` (`GetCaseRootDir` / `DefaultOutputDir`).
+- [add-output-to-case.md](conventions/add-output-to-case.md) — register output
+  back into the case: a new evidence object (`XWF_CreateEvObj`) or items in the
+  snapshot (`XWF_CreateFile`), with the parent/read-only/persistence gotchas.
 - [verbose-logging.md](conventions/verbose-logging.md) — `VERBOSE` flag +
   `LogVerbose` no-op wrapper.
 - [subprocess-stdio.md](conventions/subprocess-stdio.md) — open `\NUL` +
