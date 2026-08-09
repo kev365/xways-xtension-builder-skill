@@ -67,6 +67,27 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- **Scaffolding silently skipped multi-dot sidecar files.**
+  `new-xtension.ps1` derived a file's stem with
+  `[Path]::GetFileNameWithoutExtension`, which strips only the *final*
+  extension — so `my_xtension.cfg.example` yielded base `my_xtension.cfg`, never
+  matched the stem `my_xtension`, and was copied through unrenamed.
+
+  This was a functional break, not a cosmetic one. The sidecar names are
+  load-bearing: the wrapper reads `GetSelfDirectory() + NAME + L".cfg"` and the
+  python entry point reads `f"{NAME}.config.json"`, and `NAME` *is* patched to
+  `xways-<name>` during scaffolding. Every scaffolded wrapper therefore shipped a
+  `my_xtension.cfg.example` that the scaffolded DLL would never look for.
+
+  The stem is now taken from the first dot-separated segment. Single-extension
+  and extensionless filenames are unaffected.
+
+- **The python template's config sidecar could never be renamed.** It shipped as
+  `xtension_template.config.json`, but the python template's source stem is
+  `xtension` — so even with multi-dot handling fixed, the names could not match.
+  Renamed to `xtension.config.json`, which the generic stem rule now resolves to
+  `xways-<name>.config.json` — the filename `xtension.py` actually reads.
+
 - Broken relative links in `docs/exemplars.md` and `docs/getting-the-sdk.md`
   (they pointed into the old `.claude/skills/…` path).
 - `references/api-guardrail.md` used Windows backslashes in its grep snippets and

@@ -437,8 +437,16 @@ function Get-DestRelPath([string]$srcFilePath, [string]$srcRootPath, [string]$st
     $rel  = $srcFilePath.Substring($srcRootPath.Length).TrimStart('\','/')
     $dir  = Split-Path $rel -Parent
     $leaf = Split-Path $rel -Leaf
-    $base = [System.IO.Path]::GetFileNameWithoutExtension($leaf)
-    $ext  = [System.IO.Path]::GetExtension($leaf)
+    # Split on the FIRST dot, not the last. [Path]::GetFileNameWithoutExtension
+    # strips only the final extension, so a multi-dot sidecar like
+    # 'my_xtension.cfg.example' yields base 'my_xtension.cfg', which never
+    # matches the stem and silently escapes the rename. Those sidecar names are
+    # load-bearing — the wrapper .cpp reads NAME + L".cfg" and the python
+    # entry point reads f"{NAME}.config.json" — so a missed rename ships a
+    # sidecar the scaffolded code will never find.
+    $dot  = $leaf.IndexOf('.')
+    $base = if ($dot -gt 0) { $leaf.Substring(0, $dot) } else { $leaf }
+    $ext  = if ($dot -gt 0) { $leaf.Substring($dot) }    else { '' }
     $newLeaf = if ($base -eq $stem) { "$newStem$ext" } else { $leaf }
     # Also rename directory path components that exactly match the source stem
     # (e.g. xtensions\xways-bulk_extractor\ -> xtensions\xways-skilltest\)
