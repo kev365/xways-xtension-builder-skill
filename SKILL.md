@@ -23,7 +23,7 @@ Everything this skill needs is bundled with it — every path below is relative 
 
 - **Never edit [`templates/x-tensions/`](templates/x-tensions/) in place** — it is the pristine source. Scaffold a copy into `<project>/x-tensions/xways-<name>/` first (the script does this). A user-acquired SDK lives in a `references/api/` tree in *their* project: read-only, and **never** committed (copyright). That SDK tree — not this skill's [`references/`](references/) flow guides — is what "never edit `references/`" means. See [getting-the-sdk](docs/getting-the-sdk.md).
 - **Never invent `XWF_` functions or flags.** Verify every call against, in order: (1) the distilled notes in [`docs/`](docs/INDEX.md); (2) the live `https://www.x-ways.net/forensics/x-tensions/XWF_functions.html`, which carries post-SDK additions; (3) a locally-downloaded SDK header, if present. Route API questions through [api-guardrail](references/api-guardrail.md).
-- **`x-tensions/` (hyphen) is the source tree; `xtensions\` (no hyphen) is the build-output / deploy folder.** A project convention, **not** an X-Ways discovery mechanism — X-Ways loads only from paths the analyst registers via *Tools | Run X-Tensions* (persisted in `X-Tensions.txt`) or `XT:<path>`; the DLL can live anywhere. The build scripts stage, verify, and mirror the no-hyphen path, so a wrong spelling breaks the tooling. See [naming-deployment](docs/conventions/naming-deployment.md).
+- **`x-tensions/` (hyphen) is the source tree; `xtensions\` (no hyphen) is the build-output / deploy folder.** The build scripts stage, verify, and mirror the no-hyphen path, so a wrong spelling breaks the tooling. It is a project convention, not an X-Ways discovery mechanism — how X-Ways actually finds a DLL is in [naming-deployment](docs/conventions/naming-deployment.md).
 - **Close X-Ways before building.** The DLL is locked while X-Ways is open; there is no hot reload.
 - **Events API ⇒ C++ template only.** `XT_Python.dll` does not expose `XWF_AddEvent` / `XWF_GetEvent`.
 - **Subprocess ⇒ open `\NUL` + `STARTF_USESTDHANDLES`.** X-Ways is a GUI-subsystem process with no console attached, so a child inherits null std handles and any helper writing to stdout/stderr can hard-crash. Hand the child real handles — `\NUL`, or a pipe if you capture output. See [subprocess-stdio](docs/conventions/subprocess-stdio.md).
@@ -46,9 +46,9 @@ Everything this skill needs is bundled with it — every path below is relative 
 | debug a build / encoding / DLL-loading failure | (any) | [build-and-iteration-gotchas](docs/build-and-iteration-gotchas.md) |
 | look up a script's full parameters or deploy behavior | (any) | [scripts](references/scripts.md) |
 
-The `guardrail` row is an always-on correctness layer applied during every flow — not a `/xtension` subcommand.
+The `guardrail` row is an always-on correctness layer applied during every flow.
 
-Scaffold from a starter template under [`templates/x-tensions/`](templates/x-tensions/) (`cpp`, `python`, or the CLI-wrapper `wrapper` template). For a CLI-tool wrapper, prefer the `wrapper` template (`-Template wrapper`) — it already wires helper-exe verification, Ctrl-to-save, output-dir, and subprocess stdio. [exemplars](docs/exemplars.md) is a registry of **community** exemplars (with X-Ways 21+ verdicts and attribution) to **read and port patterns from** — not bundled copy-targets; none are shipped in this repo. The `-Exemplar` script parameter applies only to exemplars you have locally in your own project.
+Scaffold from a starter template under [`templates/x-tensions/`](templates/x-tensions/) (`cpp`, `python`, or the CLI-wrapper `wrapper` template). For a CLI-tool wrapper, prefer the `wrapper` template (`-Template wrapper`) — it already wires helper-exe verification, Ctrl-to-save, output-dir, and subprocess stdio. [exemplars](docs/exemplars.md) is a registry of **community** exemplars (with X-Ways 21+ verdicts and attribution) to **read and port patterns from**; none are bundled here.
 
 ## Scripts (the deterministic core)
 
@@ -72,6 +72,7 @@ The reusable patterns live in [`docs/conventions/`](docs/conventions/index.md) �
 
 - **Correctness** — [item-collection](docs/conventions/item-collection.md) · [threading-model](docs/conventions/threading-model.md) · [output-writers](docs/conventions/output-writers.md) · [subprocess-stdio](docs/conventions/subprocess-stdio.md) · [events-emission](docs/conventions/events-emission.md)
 - **Wrapping a CLI tool** — [wrapper-anatomy](docs/conventions/wrapper-anatomy.md) · [tool-resolution](docs/conventions/tool-resolution.md) · [helper-exe-verification](docs/conventions/helper-exe-verification.md) · [ctrl-to-save](docs/conventions/ctrl-to-save.md)
+- **Settings dialogs** — [xtension-dialog-conventions](docs/xtension-dialog-conventions.md), the long-form UI companion (`.rc` layout, ID ranges, fonts, validation, cancel safety, progress, pickers). Load it when an X-Tension grows a dialog.
 - **Output** — [output-dir](docs/conventions/output-dir.md) · [add-output-to-case](docs/conventions/add-output-to-case.md) · [verbose-logging](docs/conventions/verbose-logging.md)
 - **Naming + release** — [naming-deployment](docs/conventions/naming-deployment.md) · [licensing](docs/conventions/licensing.md) · [versioning](docs/conventions/versioning.md) · [readme-roadmap](docs/conventions/readme-roadmap.md) · [xtension-claude-md](docs/conventions/xtension-claude-md.md) · [repo-hygiene](docs/conventions/repo-hygiene.md)
 
@@ -87,4 +88,4 @@ After learning something new about the API/behavior, record it: update the relev
 
 ## Invocation
 
-This skill auto-triggers on the phrases in its description. It is also reachable as the slash command **`/xtension <new|wrap|port|audit|docs> [name]`** (namespaced as `/xways-xtension-authoring:xtension` when installed as a plugin), which routes to the same flows.
+Reachable as the slash command **`/xtension <new|wrap|port|audit|docs> [name]`** (namespaced as `/xways-xtension-authoring:xtension` when installed as a plugin), which routes to the same flows. `guardrail` is deliberately absent from that list — it is a correctness layer, not a subcommand.

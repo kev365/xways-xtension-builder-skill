@@ -21,3 +21,14 @@ example is extracted from the `wrapper` template and cites the exact symbol.
 - [README & roadmap](readme-roadmap.md) — README structure + inline `## Roadmap`
 - [Per-X-Tension CLAUDE.md](xtension-claude-md.md) — tracked `CLAUDE.md.example` → local git-ignored `CLAUDE.md`
 - [Repo hygiene](repo-hygiene.md) — GitHub-readiness: no committed DLLs / creds / paths; `prepublish-scan.ps1`
+
+## Long-form companion
+
+[Dialog conventions](../xtension-dialog-conventions.md) is the settings-UI
+counterpart to this library — 29 sections covering `.rc` layout, ID ranges,
+font hierarchy, validation, cancel safety, progress reporting, and the pickers.
+It lives outside `conventions/` because it is a compendium rather than a
+one-pattern page, but it is the same kind of source of truth: load it whenever
+an X-Tension grows a dialog. [Ctrl-to-save](ctrl-to-save.md) is the one gesture
+extracted from it into its own page, because wrappers wire it without needing
+the rest.
