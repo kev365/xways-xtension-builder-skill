@@ -1,39 +1,73 @@
 # Trigger-eval baseline
 
-Baseline triggering accuracy for the `xways-xtension-authoring` skill
-`description`, measured against [`trigger-eval.json`](trigger-eval.json).
+Triggering accuracy for the `xways-xtension-authoring` `description`, measured
+against [`trigger-eval.json`](trigger-eval.json).
 
-- **Date:** 2026-07-04
-- **Description version:** the v0.3.0 SKILL.md description (starts *"This skill
-  should be used when the user asks to 'create/scaffold a new X-Tension'…"*).
-- **Method:** independent per-query judgment — each query was given, with only the
-  skill's name + description, to a fresh evaluator applying the realistic
-  triggering bar (consult the skill for substantive matches, not surface-keyword
-  near-misses). See the note below on the automated CLI path.
+## Current — 2026-08-09, v0.5.0
 
-## Result: 20 / 20 (100%)
+- **Description version:** unchanged since v0.4.0. v0.5.0 altered `metadata`,
+  the body and the layout, but not the `description` text, so this run
+  re-validates the v0.4.0 wording as well — it had never been measured.
+- **Method:** automated, [`run-trigger-eval.ps1`](run-trigger-eval.ps1),
+  3 runs per query, trigger threshold 0.5, against the skill installed as a
+  junction at `~/.claude/skills/xways-xtension-authoring`.
+
+### Result: 20 / 20 (100%), unanimous
 
 | | should-trigger | should-not-trigger |
 |---|---|---|
 | **correct** | 10 / 10 | 10 / 10 |
 
-No under-triggering and no over-triggering. The tricky near-misses were all
-handled correctly:
+60 of 60 runs valid; **zero** harness failures and **zero** `NO DATA` rows.
+Every should-trigger query fired 3/3 (rate 1.0) and every should-not-trigger
+query fired 0/3 (rate 0.0) — no case landed between the two, so nothing sits
+near the threshold.
 
-- Rejected (correct): a plugin for **Autopsy** (a different forensic tool), a
-  **Rust/cargo** build, wrapping a **REST API** in Python, a generic **C++
-  memory-leak review**, making a **report table via the GUI**, and configuring a
-  **hash database** — all share keywords with the skill but need something else.
-- Triggered (correct) even without the phrase "X-Tension": a C++ **x-ways plugin**
-  that crashes on subprocess **stdio**, and a **DLL adding rows to the Events
-  Viewer** asking about numeric event-type codes.
+No under-triggering and no over-triggering. The near-misses were all rejected
+correctly: an **Autopsy** plugin, a **Rust/cargo** build, wrapping a **REST API**
+in Python, a generic **C++ memory-leak review**, building a **report table via
+the GUI**, configuring a **hash database**, *running* a supplied X-Tension DLL,
+open-ended "**what should I build**" ideation, a standalone **EVTX python
+script**, and **carving JPEGs** from an image.
 
-## Note on the automated `run_eval` path (Windows)
+Both phrasings that never say "X-Tension" still triggered: the C++ **x-ways
+plugin** crashing on subprocess **stdio**, and the **DLL adding rows to the
+Events Viewer** asking about numeric event-type codes.
 
-skill-creator's `run_eval` / `run_loop` spawn the `claude` CLI via Python
-`subprocess` with a bare `["claude", …]` argv. On Windows the global `claude` is
-an npm shim (`claude` shell-script + `claude.cmd`/`.ps1`, no `claude.exe`), which
-`CreateProcess` cannot launch directly — every query fails with `WinError 2` and
-reports a false `0/3` trigger rate. Run the CLI path on macOS/Linux (or with a
-`claude.cmd` shim resolvable to `subprocess`); on Windows, use the independent
-judgment method above.
+### Caveat on what this measures
+
+The measurement is of the **installed** skill, competing against every other
+skill present in that environment. That is realistic rather than isolated — the
+Autopsy query, for instance, is correctly won by `superpowers:brainstorming`.
+A machine with a different skill set could produce different numbers, so record
+the environment alongside any future run.
+
+## Historical — 2026-07-04, v0.3.0
+
+- **Method:** independent per-query judgment — each query given, with only the
+  skill's name and description, to a fresh evaluator applying a realistic
+  triggering bar.
+- **Result:** 20 / 20 (100%), 10/10 both ways.
+
+Judgment-based rather than measured, because the automated path did not run on
+Windows at the time (see below). The two results agree, which is reassuring, but
+they are not the same kind of evidence.
+
+## Windows and the upstream runner
+
+The v0.3.0 note recorded that skill-creator's `run_eval` / `run_loop` cannot
+spawn the CLI on Windows: they call Python `subprocess` with a bare
+`["claude", …]` argv, and the global `claude` is an npm shim
+(`claude.ps1` / `claude.cmd`, no `claude.exe`), which `CreateProcess` will not
+launch. That prediction held exactly — re-tested on 2026-08-09, every query
+failed with `WinError 2` and the tool reported a meaningless 10/20 that reads
+like a severe regression.
+
+There is a second, independent blocker in the same script: it polls the child
+pipe with `select.select()`, which on Windows accepts sockets only. Both are
+POSIX assumptions rather than bugs.
+
+[`run-trigger-eval.ps1`](run-trigger-eval.ps1) replaces that path on Windows and
+mirrors the methodology, so numbers stay comparable. See the eval
+[README](README.md) for how it detects triggering and why it reports `NO DATA`
+rather than a zero when a run cannot be measured.
