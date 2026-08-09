@@ -89,4 +89,6 @@ jobs:
             || { echo "clone unavailable — skipping"; exit 0; }
           pip install -e /tmp/agentskills/skills-ref \
             || { echo "skills-ref install failed — skipping"; exit 0; }
-          skills-ref validate . || echo "skills-ref reported issues — review against tests/check-skill-spec.ps1"
+          # Absolute path, not '.': skills-ref derives the skill name from the
+          # directory name, and '.' makes it report an empty one.
+          skills-ref validate "$PWD" || echo "skills-ref reported issues — review against tests/check-skill-spec.ps1"
