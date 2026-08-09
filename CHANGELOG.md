@@ -71,10 +71,12 @@ All notable changes to this project are documented here. Versions follow
   already carry manager support are untouched — this only removes the skill's
   ability to generate *new* manager-compatible scaffolds.
 
-  The `wrapper` template keeps its dormant manager entry point and
-  `manager-plugin.h`. Stripping those is a 46-site edit to a 2,000-line C++ file
-  that wants a compile check, so it is deliberately left for a follow-up rather
-  than done blind.
+  The `wrapper` template's dormant manager entry point and `manager-plugin.h`
+  are gone too — 211 lines out of `my_xtension.cpp`, the
+  `XwaysManagerPluginEntry` export out of the `.def`, and the header deleted.
+  Compile-verified: the template built cleanly before the edit (284,160 bytes)
+  and after (271,360), and `dumpbin` confirms the rebuilt DLL exports exactly
+  the eight `XT_*` entry points with no manager entry.
 
 - **The report-table rename gate, from `SKILL.md`.** Added earlier in this
   release, then removed: it is reference detail that belongs in
@@ -131,6 +133,18 @@ the build.
   partial read still shows the file's full scope.
 
 ### Fixed
+
+- **The `cpp` template only resolved the pre-rename report-table call.** It
+  declared and called `XWF_AddToReportTable` and never mentioned `XWF_Label`, so
+  the skill's own starter code taught the outdated name — which is the most
+  likely reason generated report-table code kept reaching for it. It now mirrors
+  the `wrapper` template: resolve both, prefer `XWF_Label`, fall back to
+  `XWF_AddToReportTable` for hosts predating the rename, and never count the new
+  name as a missing export. Compile-verified before and after.
+
+  This is the deterministic half of the fix that prose could not achieve — the
+  gate text was removed from `SKILL.md` precisely because a behavioural test
+  showed it did not change the outcome.
 
 - **Scaffolding silently skipped multi-dot sidecar files.**
   `new-xtension.ps1` derived a file's stem with

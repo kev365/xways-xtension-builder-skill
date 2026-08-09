@@ -51,6 +51,7 @@ typedef const wchar_t* (__stdcall *pfn_XWF_GetItemName)(LONG nItemID);
 typedef INT64  (__stdcall *pfn_XWF_GetItemSize)(LONG nItemID);
 typedef VOID   (__stdcall *pfn_XWF_GetVolumeName)(HANDLE hVolume, wchar_t* lpString, DWORD nType);
 typedef BOOL   (__stdcall *pfn_XWF_AddToReportTable)(LONG nItemID, const wchar_t* lpReportTableName, DWORD nFlags);
+typedef BOOL   (__stdcall *pfn_XWF_Label)(LONG nItemID, const wchar_t* lpLabelName, DWORD nFlags);
 typedef BOOL   (__stdcall *pfn_XWF_AddComment)(LONG nItemID, const wchar_t* lpComment, DWORD nHowToAdd);
 // Evidence-property getter — used to ask X-Ways for the configured working/temp
 // directory for an evidence object. See docs/xways-getprop-reference.md for
@@ -66,6 +67,7 @@ static pfn_XWF_GetItemName      XWF_GetItemName      = nullptr;
 static pfn_XWF_GetItemSize      XWF_GetItemSize      = nullptr;
 static pfn_XWF_GetVolumeName    XWF_GetVolumeName    = nullptr;
 static pfn_XWF_AddToReportTable XWF_AddToReportTable = nullptr;
+static pfn_XWF_Label            XWF_Label            = nullptr;
 static pfn_XWF_AddComment       XWF_AddComment       = nullptr;
 static pfn_XWF_GetEvObjProp     XWF_GetEvObjProp     = nullptr;
 static pfn_XWF_GetCaseProp      XWF_GetCaseProp      = nullptr;
@@ -107,6 +109,11 @@ static int RetrieveFunctionPointers() {
     XWF_GetItemSize      = Resolve<pfn_XWF_GetItemSize     >(h, "XWF_GetItemSize",      missing);
     XWF_GetVolumeName    = Resolve<pfn_XWF_GetVolumeName   >(h, "XWF_GetVolumeName",    missing);
     XWF_AddToReportTable = Resolve<pfn_XWF_AddToReportTable>(h, "XWF_AddToReportTable", missing);
+    // XWF_Label is the current name (rename backported to 21.4 SR-11 / 21.5 SR-13
+    // / 21.6 SR-8 / 21.7 SR-4). Resolve it WITHOUT counting it as missing: hosts
+    // predating the rename export only XWF_AddToReportTable, and the fallback
+    // below keeps those working.
+    XWF_Label            = reinterpret_cast<pfn_XWF_Label>(GetProcAddress(h, "XWF_Label"));
     XWF_AddComment       = Resolve<pfn_XWF_AddComment      >(h, "XWF_AddComment",       missing);
     XWF_GetEvObjProp     = Resolve<pfn_XWF_GetEvObjProp    >(h, "XWF_GetEvObjProp",     missing);
     XWF_GetCaseProp      = Resolve<pfn_XWF_GetCaseProp     >(h, "XWF_GetCaseProp",      missing);
@@ -154,8 +161,11 @@ static std::wstring GetTempBase(HANDLE hEvidence) {
 }
 
 static void RecordHit(LONG nItemID, const std::wstring& reason) {
-    if (g.addToReportTable && XWF_AddToReportTable)
-        XWF_AddToReportTable(nItemID, REPORT_TABLE, 0);
+    // Prefer XWF_Label; fall back to the pre-rename XWF_AddToReportTable.
+    if (g.addToReportTable && (XWF_Label || XWF_AddToReportTable)) {
+        if (XWF_Label) XWF_Label(nItemID, REPORT_TABLE, 0);
+        else           XWF_AddToReportTable(nItemID, REPORT_TABLE, 0);
+    }
     if (g.addComment && XWF_AddComment) {
         std::wstring note = L"["; note += NAME; note += L"] "; note += reason;
         XWF_AddComment(nItemID, note.c_str(), COMMENT_APPEND);
@@ -233,7 +243,7 @@ LONG __stdcall XT_ProcessItemEx(LONG nItemID, HANDLE hItem, void* lpReserved) {
         wchar_t buf[512];
         swprintf_s(buf, L"large item (%lld bytes): %s", (long long)size, name ? name : L"<unnamed>");
         LogVerbose(buf);            // per-hit detail -- verbose-only
-        RecordHit(nItemID, buf);    // XWF_AddToReportTable / XWF_AddComment are per-item API
+        RecordHit(nItemID, buf);    // XWF_Label / XWF_AddComment are per-item API
     }
     {   // guard shared counters — a bare ++ is a data race under RVS
         std::lock_guard<std::mutex> lk(g_itemsMx);

@@ -2,7 +2,7 @@
 // =============================================================================
 //  my_xtension — CLI-tool-wrapper X-Tension TEMPLATE for X-Ways Forensics 21.7+
 //
-//  A generic, manager-compatible starting point for an X-Tension that wraps an
+//  A generic starting point for an X-Tension that wraps an
 //  external command-line tool. For each file in the active volume snapshot (or
 //  a Directory-Browser-Context selection) the X-Tension extracts the bytes via
 //  XWF_Read to a scratch file, invokes <yourtool>.exe on it, parses the tool's
@@ -37,8 +37,6 @@
 //    - Ctrl-to-save / Ctrl-to-save-as gesture on the action buttons.
 //    - Per-X-Tension output folder under <caseRoot>\<NAME>.
 //    - Subprocess stdio capture (open-NUL + STARTF_USESTDHANDLES).
-//    - xways-xt-manager compatibility (XwaysManagerPluginEntry + On* callbacks;
-//      the manager host is a separate project, not yet publicly released).
 //    - Verbose logging toggle (g_verbose / Log / LogVerbose).
 // =============================================================================
 
@@ -184,15 +182,6 @@ struct Collected {
     std::vector<LONG> items;
 };
 static Collected g_collected;
-
-// --- Managed-mode (xways-xt-manager) state ---------------------------------
-//   When this DLL is hosted by xways-xt-manager (instead of loaded directly by
-//   X-Ways), the manager creates the embedded settings dialog with lParam=0.
-//   SettingsDlgProc / PopulateDialog fall back to these module-local objects.
-static bool      g_managed_mode = false;
-static Settings  g_managed_settings;
-static RunCtx    g_managed_runctx;     // fallback for SettingsDlgProc / PopulateDialog
-static Collected g_managed_collected;  // item IDs gathered via OnProcessItem(Ex)
 
 // =============================================================================
 //  Helpers — logging, encoding, paths, files
@@ -1662,17 +1651,12 @@ static INT_PTR CALLBACK SettingsDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM l
 
     switch (msg) {
     case WM_INITDIALOG: {
-        // Standalone mode passes a std::pair<Settings*, RunCtx*>* via lParam.
-        // Managed mode (xways-xt-manager) creates the embedded dialog with
-        // lParam=0 -- fall back to the module-local managed objects.
-        if (lp) {
-            auto* pair = reinterpret_cast<std::pair<Settings*, RunCtx*>*>(lp);
-            s   = pair->first;
-            ctx = pair->second;
-        } else {
-            s   = &g_managed_settings;
-            ctx = &g_managed_runctx;
-        }
+        // lParam carries a std::pair<Settings*, RunCtx*>*. Without it there is
+        // nothing to bind the controls to, so refuse rather than dereference.
+        if (!lp) { EndDialog(hDlg, IDCANCEL); return (INT_PTR)TRUE; }
+        auto* pair = reinterpret_cast<std::pair<Settings*, RunCtx*>*>(lp);
+        s   = pair->first;
+        ctx = pair->second;
         ApplyTitleIcon(hDlg);
         PopulateDialog(hDlg, s, ctx);
         KillTimer(hDlg, kHelperFlashTimerId);
@@ -2267,202 +2251,6 @@ LONG __stdcall XT_Finalize(HANDLE, HANDLE, DWORD, void*) {
 LONG __stdcall XT_Done(void*) { Log(L"XT_Done"); return 0; }
 
 } // extern "C"
-
-// =============================================================================
-//  Manager-plugin integration (xways-xt-manager)
-// =============================================================================
-//   Lets the SAME DLL load as a plugin under xways-xt-manager. The manager
-//   finds us via the XwaysManagerPluginEntry export below. The On* callbacks
-//   delegate to the EXISTING standalone internals -- managed mode never shows
-//   the modal settings dialog; the embedded tab the manager hosts handles
-//   settings, and WrapperHarvestSettings reads them back.
-//
-//   on_finalize (not on_prepare) runs the scan because the filter-respected
-//   item set only exists after every on_process_item completes. The scan runs
-//   SYNCHRONOUSLY on the manager's thread with hDlg=NULL (every Post*() is a
-//   guarded no-op when hDlg is NULL; logs stream to the Messages window).
-
-#include "manager-plugin.h"
-
-static bool __stdcall WrapperOnInit(HMODULE, HWND hMainWnd, void*) {
-    g_hMainWnd = hMainWnd;
-
-    INITCOMMONCONTROLSEX icc = {};
-    icc.dwSize = sizeof(icc);
-    icc.dwICC  = ICC_PROGRESS_CLASS | ICC_STANDARD_CLASSES | ICC_BAR_CLASSES;
-    InitCommonControlsEx(&icc);
-
-    int missing = RetrieveFunctionPointers();
-    Log(FormatW(L"%s %s \x2014 managed mode via xways-xt-manager (%d missing exports)",
-                NAME, VERSION, missing));
-    if (missing > 0) {
-        Log(L"required XWF_* exports missing \x2014 plugin disabled");
-        return false;
-    }
-
-    g_managed_mode = true;
-    std::wstring cfgPath = GetSelfDirectory() + L"\\" + NAME + L".cfg";
-    EnsureCfgExists(cfgPath);
-    LoadCfg(cfgPath, g_managed_settings);
-    if (g_managed_settings.toolExe.empty())
-        g_managed_settings.toolExe = ResolveDefaultTool();
-    g_managed_runctx = RunCtx{};
-    return true;
-}
-
-static void __stdcall WrapperHarvestSettings(HWND hEmbeddedDlg, void*) {
-    if (!hEmbeddedDlg) return;
-    wchar_t buf[1024] = {0};
-    GetDlgItemTextW(hEmbeddedDlg, IDC_EDIT_TOOL_BIN, buf, _countof(buf));
-    g_managed_settings.toolExe = TrimW(buf);
-
-    // ReadDialogToSettings's only early-out is the exe-existence gate. When the
-    // exe IS valid it reads every field; when it's not, avoid the modal by
-    // reading the non-exe fields directly.
-    if (!g_managed_settings.toolExe.empty() && FileExists(g_managed_settings.toolExe)) {
-        ReadDialogToSettings(hEmbeddedDlg, g_managed_settings);
-    } else {
-        GetDlgItemTextW(hEmbeddedDlg, IDC_EDIT_OUTPUT_DIR, buf, _countof(buf));
-        g_managed_settings.outputBase = TrimW(buf);
-        GetDlgItemTextW(hEmbeddedDlg, IDC_EDIT_MIN_SIZE, buf, _countof(buf));
-        g_managed_settings.minSizeBytes = ParseInt64(buf, 1);
-        if (g_managed_settings.minSizeBytes < 0) g_managed_settings.minSizeBytes = 0;
-        GetDlgItemTextW(hEmbeddedDlg, IDC_EDIT_MAX_SIZE, buf, _countof(buf));
-        g_managed_settings.maxSizeMiB = ParseInt64(buf, 256);
-        if (g_managed_settings.maxSizeMiB < 0) g_managed_settings.maxSizeMiB = 0;
-        GetDlgItemTextW(hEmbeddedDlg, IDC_EDIT_EXTRA_ARGS, buf, _countof(buf));
-        g_managed_settings.extraArgs = TrimW(buf);
-        g_managed_settings.verbose =
-            IsDlgButtonChecked(hEmbeddedDlg, IDC_CHK_VERBOSE) == BST_CHECKED;
-    }
-
-    std::wstring cfgPath = GetSelfDirectory() + L"\\" + NAME + L".cfg";
-    if (!SaveSettingsToCfg(cfgPath, g_managed_settings))
-        Log(L"warning: could not save cfg from managed harvest to " + cfgPath);
-}
-
-static bool __stdcall WrapperOnPrepare(HANDLE hVolume, HANDLE hEvidence,
-                                       DWORD nOpType, void*) {
-    g_managed_collected = Collected{};
-    g_managed_collected.ready          = true;
-    g_managed_collected.hVolume        = hVolume;
-    g_managed_collected.hEvidence      = hEvidence;
-    g_managed_collected.invocationMode = (nOpType == XT_ACTION_DBC)
-        ? InvocationMode::Selection : InvocationMode::Run;
-    wchar_t volName[260] = {0};
-    if (hVolume && XWF_GetVolumeName) XWF_GetVolumeName(hVolume, volName, 0);
-    Log(FormatW(L"managed OnPrepare op=%lu volume=%s", (unsigned long)nOpType,
-                volName[0] ? volName : L"(none)"));
-    return true;
-}
-
-static LONG __stdcall WrapperOnProcessItem(LONG nItemID, HANDLE, void*) {
-    if (!g_managed_collected.ready) return 0;
-    g_managed_collected.items.push_back(nItemID);
-    return 0;
-}
-
-static bool __stdcall WrapperOnFinalize(HANDLE hVolume, HANDLE hEvidence,
-                                        DWORD /*nOpType*/, void*) {
-    if (!g_managed_collected.ready) return true;
-
-    Settings s = g_managed_settings;
-    if (s.toolExe.empty()) s.toolExe = ResolveDefaultTool();
-    if (s.toolExe.empty() || !FileExists(s.toolExe)) {
-        Log(L"tool .exe not found \x2014 set 'tool_exe' in the cfg or the tab, "
-            L"or drop the .exe next to the DLL");
-        g_managed_collected = Collected{};
-        return false;
-    }
-    // Helper-exe identity gate (no dialog to flash in managed mode).
-    {
-        std::wstring versionLine, detail;
-        bool ok = VerifyHelperIdentity(s.toolExe, kHelperIdentityNeedle,
-                                       versionLine, detail);
-        if (!ok) {
-            Log(L"helper-exe REJECTED (" + s.toolExe + L") -- " + detail +
-                L" -- refusing to run");
-            g_managed_collected = Collected{};
-            return false;
-        }
-        Log(L"helper-exe accepted (" + s.toolExe + L") -- " + detail);
-        s.toolVersion = versionLine;
-    }
-
-    // Output base: default to <case>\<NAME> (same logic as ShowDialogAndRun).
-    {
-        std::wstring caseDir = GetCaseRootDir();
-        bool cfgForDifferentCase = !caseDir.empty() && !s.outputBase.empty() &&
-            (s.outputBase.size() < caseDir.size() ||
-             _wcsnicmp(s.outputBase.c_str(), caseDir.c_str(), caseDir.size()) != 0);
-        if (s.outputBase.empty() || cfgForDifferentCase) {
-            std::wstring src;
-            s.outputBase = ResolveDefaultOutputBase(hEvidence, src);
-        }
-    }
-
-    RunCtx ctx;
-    ctx.hVolume        = hVolume ? hVolume : g_managed_collected.hVolume;
-    ctx.hEvidence      = hEvidence ? hEvidence : g_managed_collected.hEvidence;
-    ctx.invocationMode = g_managed_collected.invocationMode;
-    ctx.items          = g_managed_collected.items;
-
-    if (!ctx.hVolume) {
-        Log(L"managed run needs a volume handle to read item bytes (Case Root "
-            L"window?). Run inside a partition / image instead.");
-        g_managed_collected = Collected{};
-        return false;
-    }
-    if (ctx.items.empty()) {
-        Log(L"managed run: no items in scope");
-        g_managed_collected = Collected{};
-        return true;
-    }
-
-    Log(FormatW(L"managed run: scanning %zu item(s)", ctx.items.size()));
-
-    // Run the worker SYNCHRONOUSLY on this (manager) thread. hDlg=NULL routes
-    // every Post*/PostMessageW to a no-op; WorkerThread does not self-join or
-    // touch g_worker/g_workerThread, so a local WorkerCtx is self-contained.
-    WorkerCtx w;
-    w.s    = &s;
-    w.ctx  = &ctx;
-    w.hDlg = nullptr;
-    WorkerThread(&w);
-
-    g_managed_collected = Collected{};
-    return true;
-}
-
-extern "C" __declspec(dllexport)
-const XwaysManagerPluginDescriptor* __stdcall XwaysManagerPluginEntry(void) {
-    static const XwaysManagerPluginDescriptor desc = {
-        XWAYS_MANAGER_PLUGIN_ABI_VERSION,
-        sizeof(XwaysManagerPluginDescriptor),
-
-        NAME,                       // id
-        L"My X-Tension",            // display_name (TODO: friendly tab caption)
-        DESCRIPTION,                // description
-        VERSION,
-
-        IDD_SETTINGS,   // tab_dialog_resource_id (Option A — manager retrofits styles)
-        0,              // tab_dialog_embedded_resource_id (Option B; 0 = Option A)
-        SettingsDlgProc,
-
-        WrapperOnInit,
-        WrapperOnPrepare,
-        WrapperOnProcessItem,    // on_process_item: collect item IDs
-        nullptr,                 // on_process_item_ex: not used
-        WrapperOnFinalize,       // batch scan runs here
-
-        true,           // default_enabled
-        nullptr,        // reserved
-
-        // -------- Post-v1 additive fields --------
-        WrapperHarvestSettings
-    };
-    return &desc;
-}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) g_hSelf = hModule;
