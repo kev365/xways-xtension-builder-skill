@@ -33,6 +33,14 @@ jobs:
         shell: pwsh
         run: .\tests\test-scaffold-identity.ps1
 
+      - name: SKILL.md spec conformance
+        shell: pwsh
+        run: .\tests\check-skill-spec.ps1
+
+      - name: Relative markdown links resolve
+        shell: pwsh
+        run: .\tests\check-links.ps1
+
   markdownlint:
     name: Markdown lint (advisory)
     runs-on: ubuntu-latest
@@ -59,3 +67,26 @@ jobs:
         run: |
           npm install -g @anthropic-ai/claude-code || { echo "CLI install unavailable in CI"; exit 0; }
           claude plugin validate . || echo "plugin validate reported issues (or needs auth) — review locally"
+
+  skills-ref:
+    name: skills-ref validate (advisory)
+    runs-on: ubuntu-latest
+    # Advisory only, deliberately. skills-ref is the reference validator from
+    # agentskills/agentskills, but it has no PyPI release (it installs from a
+    # source checkout) and its authors state it is "intended for demonstration
+    # purposes only" and "not meant to be used in production". A second opinion
+    # is useful; a hard dependency on it is not. tests/check-skill-spec.ps1 is
+    # the actual gate and runs in the hygiene job above.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install skills-ref from source and validate
+        run: |
+          git clone --depth 1 https://github.com/agentskills/agentskills.git /tmp/agentskills \
+            || { echo "clone unavailable — skipping"; exit 0; }
+          pip install -e /tmp/agentskills/skills-ref \
+            || { echo "skills-ref install failed — skipping"; exit 0; }
+          skills-ref validate . || echo "skills-ref reported issues — review against tests/check-skill-spec.ps1"

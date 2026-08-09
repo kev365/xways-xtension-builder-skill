@@ -59,6 +59,26 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- **CI gates for the things this release changed.** `tests/check-links.ps1`
+  verifies every relative markdown link resolves — the layout depends on
+  relative paths, so a dangling link is a functional defect, and this already
+  caught four real breaks. `tests/check-skill-spec.ps1` validates `SKILL.md`
+  against the Agent Skills specification (name grammar and reserved words,
+  description and compatibility limits, `metadata` as a string→string map, body
+  length). Both are hard gates in the hygiene job, alongside the two scaffold
+  regression suites.
+
+  The upstream reference validator, `skills-ref`, runs as a separate **advisory**
+  job: it has no PyPI release and its authors describe it as being for
+  demonstration purposes only, so it is worth a second opinion but not worth a
+  hard dependency.
+
+  The link checker ignores links inside fenced blocks and inline code spans.
+  That is the correct reading of markdown rather than an exemption to silence a
+  false positive — `docs/conventions/readme-roadmap.md` documents a
+  `[LICENSE](LICENSE)` line that a *generated* X-Tension README should contain,
+  where it resolves in a different directory.
+
 - **`references/scripts.md`** — the script reference split out of `SKILL.md`.
 - **A `## Contents` table of contents in every `references/*.md`.** All nine are
   over 100 lines (`manager-compat.md` is 280), and the authoring guidance calls

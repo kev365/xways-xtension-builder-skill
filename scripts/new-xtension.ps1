@@ -263,11 +263,9 @@ function Get-Replacements {
     # --- Python: xtension.py (renamed to xways-<name>.py, but python uses different stem)
     # Python source file stem = 'xtension' (template) or same as renamed
     if ($ext -eq '.py' -and $Kind -eq 'python') {
-        # Only patch the main entry-point file (xtension.py / renamed), not helpers.py
-        $isPyMain = ($base -eq $DestStem) -or ($base -eq 'xtension')
-        # Be conservative: only patch if this is the file whose NAME constant we know
-        # The template file is named 'xtension.py' → renamed to 'xways-<name>.py'
-        # so after rename $base == $DestStem
+        # Only patch the main entry-point file, never helpers.py. The template
+        # ships it as xtension.py and the rename makes it xways-<name>.py, so by
+        # the time replacements run the stem already equals $DestStem.
         if ($base -eq $DestStem) {
             $reps.Add(@{
                 Pattern     = '(?m)^NAME\s*=\s*"[^"]*"'
