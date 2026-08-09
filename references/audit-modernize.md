@@ -13,6 +13,13 @@ parallel if you have a fan-out helper such as `superpowers:dispatching-parallel-
 
 ---
 
+## Contents
+
+- Pass 1 — Conformance audit
+- Pass 2 — API validity audit
+- Output: gap TODO
+- Cross-references
+
 ## Pass 1 — Conformance audit
 
 Check each item; record gaps in a TODO comment or task list; optionally fix

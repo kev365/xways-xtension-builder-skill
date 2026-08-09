@@ -2,6 +2,18 @@
 
 Use this reference when the flow router in `SKILL.md` routes to **wrap**.
 
+## Contents
+
+- 1. Scaffold from the wrapper template
+- 2. The six-element anatomy
+- 3. Tool resolution
+- 4. Identity verification (mandatory)
+- 5. Subprocess stdio (mandatory)
+- 6. UI convention for settings dialogs
+- 7. Output directory
+- 8. Build gate
+- Cross-references
+
 ## 1. Scaffold from the wrapper template
 
 The CLI-tool wrapper use-case is covered by the **wrapper** template

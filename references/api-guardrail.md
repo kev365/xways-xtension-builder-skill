@@ -4,6 +4,17 @@ Use this reference for any flow that requires verifying an `XWF_*` call, a
 flag bit, a property number, or an X-Ways behavior. It is also the always-on
 correctness layer — route every API question through it before writing code.
 
+## Contents
+
+- The rule
+- Grep by symbol, not by line number
+- Routing table — question type → authoritative doc
+- Known post-HEAD additions to check against live HTML
+- Deprecated / renamed calls (do not use)
+- Known behavior quirks
+- Quick self-check before writing an XWF_ call
+- Cross-references
+
 ## The rule
 
 Never emit an `XWF_*` function call or flag/property constant that cannot be

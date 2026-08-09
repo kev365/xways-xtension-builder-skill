@@ -2,6 +2,18 @@
 
 Use this reference when the flow router in `SKILL.md` routes to **new**.
 
+## Contents
+
+- 0. Ideation gate
+- 1. Pick template or exemplar
+- 2. Dry-run first
+- 3. Run for real
+- 4. Post-copy checklist
+- 5. Wire additional conventions
+- 6. Build gate
+- 7. Close the loop
+- Cross-references
+
 ## 0. Ideation gate
 
 If the tool concept is still open-ended ("what should I build next?"), decide the

@@ -7,6 +7,17 @@ The reference source for every symbol below is the **wrapper** template
 unless another source is specified. (Community exemplars in `docs/exemplars.md`
 are additional read-and-port references — none are bundled in this repo.)
 
+## Contents
+
+- General approach
+- Convention: output directory
+- Convention: helper-exe verification
+- Convention: Ctrl-to-save gesture
+- Convention: VERBOSE logging
+- Convention: subprocess stdio
+- After porting
+- Cross-references
+
 ## General approach
 
 1. Identify which convention is missing (from the user's request, or the audit

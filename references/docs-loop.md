@@ -4,6 +4,18 @@ Use this reference when the flow router in `SKILL.md` routes to **docs-loop**,
 or at the end of any other flow when new information was discovered or a
 convention was ported to an X-Tension.
 
+## Contents
+
+- When to write back
+- Consider sharing it upstream
+- Where to write
+- Rules for doc entries
+- How to record a completed rollout
+- How to update docs/exemplars.md
+- Running mkdocs after doc edits
+- Example entry format (new external source)
+- Cross-references
+
 ## When to write back
 
 Write back whenever:

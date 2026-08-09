@@ -57,6 +57,14 @@ All notable changes to this project are documented here. Versions follow
 - **`metadata.tags` is a string**, not a YAML list — the Agent Skills spec defines
   `metadata` as a map of string keys to string values.
 
+### Added
+
+- **`references/scripts.md`** — the script reference split out of `SKILL.md`.
+- **A `## Contents` table of contents in every `references/*.md`.** All nine are
+  over 100 lines (`manager-compat.md` is 280), and the authoring guidance calls
+  for a ToC above that length so a partial read still shows the file's full
+  scope.
+
 ### Fixed
 
 - Broken relative links in `docs/exemplars.md` and `docs/getting-the-sdk.md`

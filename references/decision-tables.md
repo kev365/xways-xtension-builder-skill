@@ -8,6 +8,15 @@ capture the decision logic, not a hardcoded inventory.
 
 ---
 
+## Contents
+
+- Table A — Template selection (cpp vs python vs xtmgr)
+- Table B — Which template to scaffold from
+- Table C — Dialog promotion thresholds
+- Table D — Subprocess vs XWF_Mount
+- Table E — Tracking a convention rollout across your wrappers
+- Cross-references
+
 ## Table A — Template selection (cpp vs python vs xtmgr)
 
 **Step 1 — language track:**

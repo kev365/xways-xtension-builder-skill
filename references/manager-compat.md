@@ -16,6 +16,14 @@ The full convention is in `docs/conventions/manager-compatibility.md`.
 
 ---
 
+## Contents
+
+- When to apply
+- Scaffold new (only when manager support is requested)
+- Port into an existing standalone X-Tension
+- Maintenance and sync
+- Cross-references
+
 ## When to apply
 
 | Situation | Action |
