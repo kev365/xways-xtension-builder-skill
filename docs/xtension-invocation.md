@@ -230,7 +230,8 @@ XT_Done()                       // when X-Ways unloads the DLL (often at app exi
 ### Refine Volume Snapshot (item-level processing)
 
 ```text
-XT_Prepare(..., nOpType=XT_ACTION_RVS)   // returns 0x01 | 0x04
+XT_Prepare(..., nOpType=XT_ACTION_RVS)   // returns 0x01 (CALLPI)
+                                         // add | 0x04 only if you create items
     ↓
 [X-Ways spawns worker pool]
     ↓

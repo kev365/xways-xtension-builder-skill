@@ -41,6 +41,10 @@ jobs:
         shell: pwsh
         run: .\tests\check-links.ps1
 
+      - name: No superseded guidance in the knowledge base
+        shell: pwsh
+        run: .\tests\check-stale-guidance.ps1
+
   markdownlint:
     name: Markdown lint (advisory)
     runs-on: ubuntu-latest

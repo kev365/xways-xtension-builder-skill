@@ -271,7 +271,7 @@ When events are anchored to an item via `nItemID`, several other XWF_ APIs surfa
 | --- | --- | --- | --- |
 | `XWF_AddComment(item, str, how)` | **Comments column** of the directory browser + Details pane (also visible next to anchored events) | wide string | ✓ |
 | `XWF_AddExtractedMetadata(item, str, how)` | **Metadata column** + Details pane | wide string | ✓ |
-| `XWF_AddToReportTable(item, name, 0)` | **Labels column** (formerly "Categorization"); same surface as Report Tables | wide string | ✓ in UI; ✗ in HTML report |
+| `XWF_Label(item, name, 0)` (pre-rename: `XWF_AddToReportTable`) | **Labels column** (formerly "Categorization"); same surface as Report Tables | wide string | ✓ in UI; ✗ in HTML report |
 | `XWF_AddSearchTerm(name, 0)` | **Search Terms** list (case-level, not per-item) | wide string | ✓ |
 | `XWF_SetItemType(item, label, status)` | **Type** column conditionally; **Type status** column always | wide string | renders with fallback glyph for SMP chars |
 
