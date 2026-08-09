@@ -53,9 +53,9 @@ function Write-Step([string]$label, [string]$detail = '') {
 }
 
 # ---------------------------------------------------------------------------
-# Resolve repo root: scripts/ -> xways-xtension-authoring/ -> skills/ -> .claude/ -> repo root
+# Resolve repo root: scripts/ -> repo root (= the skill root; SKILL.md lives there)
 # ---------------------------------------------------------------------------
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 
 if (-not (Test-Path (Join-Path $repoRoot 'templates\x-tensions'))) {
     Fail "Could not locate templates/x-tensions/ under resolved repo root '$repoRoot'. Check script placement."

@@ -123,7 +123,7 @@ only if the work shape requires them.
 ## See also
 
 - [`manager-plugin.h`](manager-plugin.h) — full contract documentation
-- [manager compatibility reference](../../../.claude/skills/xways-xtension-authoring/references/manager-compat.md) — how the `xways-xt-manager` contract works and how to adopt it
+- [manager compatibility reference](../../../references/manager-compat.md) — how the `xways-xt-manager` contract works and how to adopt it
 - [`../wrapper/`](../wrapper/) — the wrapper template is manager-compatible; a fuller example of this contract wired into a real settings dialog
 - [`docs/xtension-dialog-conventions.md`](../../../docs/xtension-dialog-conventions.md) — cross-X-Tension dialog UX patterns
 - [`templates/x-tensions/cpp/`](../cpp/) — the simpler template for X-Tensions that don't need manager compatibility

@@ -26,7 +26,7 @@ trigger rate against the current `SKILL.md` description.
 # from the skill-creator skill directory
 python -m scripts.run_eval \
   --eval-set  <this-repo>/evals/trigger-eval.json \
-  --skill-path <this-repo>/.claude/skills/xways-xtension-authoring \
+  --skill-path <this-repo> \
   --runs-per-query 3 --verbose
 ```
 

@@ -3,7 +3,56 @@
 All notable changes to this project are documented here. Versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.5.0] — unreleased
+
+### Changed
+
+- **The repository root is now the skill root.** `SKILL.md`, `references/`,
+  `scripts/`, `assets/`, and `commands/` moved up out of
+  `.claude/skills/xways-xtension-authoring/` to the top of the repo. `docs/` and
+  `templates/` did not move — they are now *inside* the skill root instead of
+  three levels above it.
+
+  **Why:** the skill previously resolved `docs/` and `templates/` via
+  `${CLAUDE_SKILL_DIR}/../../..`, reaching outside its own directory. That works
+  for a clone and a plugin install, but silently breaks the other supported
+  install paths (a copy or junction under `~/.claude/skills/`, or a zip upload)
+  — every `docs/…` citation dangles and `new-xtension.ps1` fails to find
+  `templates/x-tensions`. The skill is now self-contained: every path in
+  `SKILL.md` resolves beneath `SKILL.md`.
+
+  **Migration:** nothing to do for plugin users — `/plugin update` picks it up.
+  If you had the skill copied into a project's `.claude/skills/`, delete that
+  copy and junction your clone into `~/.claude/skills/` instead (see the README)
+  so there is only ever one copy to keep in sync.
+
+- **Path fixes that follow from the move** — script anchors (`$PSScriptRoot/..`
+  instead of four levels up), `plugin.json` (`commands` repointed; the `skills`
+  key dropped so the root `SKILL.md` auto-loads as a single-skill plugin), the CI
+  hygiene-scan path, README/`/xtension`/template-README/eval paths, and
+  `.gitignore` (now ignores `/references/api/` — the SDK subtree — instead of
+  `/references/`, which is the skill's own flow guides at the root).
+
+- **`SKILL.md` paths are markdown links.** Every `references/`, `scripts/`,
+  `docs/`, and `templates/` citation is now a real relative link rather than a
+  bare backticked path, so file resolution is mechanical. The "Path anchors"
+  paragraph that existed to explain which base directory each prefix resolved
+  against is deleted — there is one root now.
+
+- **Convention library is a table.** The 19 `docs/conventions/` pages are listed
+  with a one-line "covers" summary and a direct link, making each of them one hop
+  from `SKILL.md` rather than two (via a flow guide). Costs ~1k on-invoke tokens.
+
+- **`metadata.tags` is a string**, not a YAML list — the Agent Skills spec defines
+  `metadata` as a map of string keys to string values.
+
+### Fixed
+
+- Broken relative links in `docs/exemplars.md` and `docs/getting-the-sdk.md`
+  (they pointed into the old `.claude/skills/…` path).
+- `references/api-guardrail.md` used Windows backslashes in its grep snippets and
+  an ambiguous `references\api\…` path; both now use forward slashes and the SDK
+  path is explicitly marked as living in the user's own project.
 
 ## [0.4.0] — 2026-07-05
 

@@ -3,7 +3,7 @@
 Reusable starting points for new X-Tensions targeting **X-Ways Forensics 21.7+** (Windows x64).
 
 Don't edit these in place — scaffold a copy with the skill's
-[`new-xtension.ps1`](../../.claude/skills/xways-xtension-authoring/scripts/new-xtension.ps1)
+[`new-xtension.ps1`](../../scripts/new-xtension.ps1)
 (or `/xtension new`), which renames the files and sets the identity constants for you.
 
 ## Available

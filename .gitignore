@@ -11,7 +11,11 @@
 # Upstream X-Ways SDK / manuals — copyright X-Ways Software Technology AG.
 # Never redistributed here. Acquire your own from x-ways.net / SourceForge —
 # see docs/getting-the-sdk.md.
-/references/
+#
+# NOTE: only the SDK subtree is ignored, NOT /references/ itself — since the
+# skill now lives at the repo root, /references/ holds the skill's own flow
+# guides and they must stay tracked.
+/references/api/
 
 # Compiled artifacts — X-Tensions ship via GitHub Releases, never committed.
 *.dll

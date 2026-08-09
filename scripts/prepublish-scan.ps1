@@ -31,8 +31,8 @@ param([switch]$Strict)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# scripts/ -> xways-xtension-authoring/ -> skills/ -> .claude/ -> repo root
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
+# scripts/ -> repo root (= the skill root; SKILL.md lives there)
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 
 Push-Location $repoRoot
 try { $tracked = @(git ls-files) } finally { Pop-Location }

@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Pre-publish hygiene scan (HIGH-severity gate)
         shell: pwsh
-        run: .\.claude\skills\xways-xtension-authoring\scripts\prepublish-scan.ps1
+        run: .\scripts\prepublish-scan.ps1
       - name: Validate plugin + marketplace JSON
         shell: pwsh
         run: |

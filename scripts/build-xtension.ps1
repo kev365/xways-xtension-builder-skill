@@ -85,7 +85,7 @@ if ($Name -match '^xways-(.+)$') {
 #    source lives). DestRoot defaults to the current directory so a plugin
 #    install builds from the user's project, not the plugin cache.
 # ---------------------------------------------------------------------------
-$skillRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
+$skillRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 
 if ($DestRoot) {
     if (-not (Test-Path $DestRoot)) { Fail "-DestRoot '$DestRoot' does not exist." }

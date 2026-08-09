@@ -36,19 +36,21 @@ the header — search by symbol, not line number: line numbers shift across
 edits, symbols do not. Search by function-pointer typedef name (e.g.
 `XWF_GetCaseProp_t`) or by the `XWF_` prefix.
 
-Grep the distilled notes (always available in this repo):
+Grep the distilled notes (always bundled with this skill):
 
 ```powershell
-Select-String "XWF_GetCaseProp" docs\*.md
+Select-String "XWF_GetCaseProp" docs/*.md docs/conventions/*.md
 ```
 
 If — and only if — you downloaded the SDK header yourself (per
-`docs/getting-the-sdk.md`), you can also grep it as a fallback:
+[`docs/getting-the-sdk.md`](../docs/getting-the-sdk.md)), you can also grep it as
+a fallback. Note this is the **SDK tree in your own project**, not the skill's
+own `references/` flow guides:
 
 ```powershell
 # Only when the header is present locally — it is NOT shipped in this repo.
 Select-String "XWF_GetCaseProp" `
-  "references\api\xwf-api-code-c46a1bd2\src\X-Tension.h"
+  "<your-project>/references/api/xwf-api-code-c46a1bd2/src/X-Tension.h"
 ```
 
 ## Routing table — question type → authoritative doc

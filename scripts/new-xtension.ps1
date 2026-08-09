@@ -306,9 +306,9 @@ $fullName = "xways-$Name"
 
 # ---------------------------------------------------------------------------
 # 1. Resolve the SKILL install root (source of templates/ + assets/).
-#    scripts/ -> xways-xtension-authoring/ -> skills/ -> .claude/ -> skill root
+#    scripts/ -> skill root (= the repo root; SKILL.md lives there)
 # ---------------------------------------------------------------------------
-$skillRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
+$skillRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 
 if (-not (Test-Path (Join-Path $skillRoot 'templates\x-tensions'))) {
     Fail "Could not locate templates\x-tensions under resolved skill root '$skillRoot'. Check script placement."

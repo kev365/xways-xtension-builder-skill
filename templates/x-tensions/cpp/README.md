@@ -11,7 +11,7 @@ Minimal, self-contained C++ starting point for an X-Ways Forensics 21.7+ X-Tensi
 ## Use this template
 
 Scaffold a copy with the skill's
-[`new-xtension.ps1`](../../../.claude/skills/xways-xtension-authoring/scripts/new-xtension.ps1)
+[`new-xtension.ps1`](../../../scripts/new-xtension.ps1)
 (`-Template cpp`) — it copies the folder, renames the `my_xtension.*` files, and sets
 the identity constants. To do it by hand:
 
@@ -30,7 +30,7 @@ Only the exports actually used by the template are declared at the top of the `.
 2. Add a matching `pfn_` typedef + `static` pointer near the top of your `.cpp`.
 3. Add one more `Resolve<…>(h, "XWF_…", missing)` line inside `RetrieveFunctionPointers`.
 
-Don't invent signatures — `X-Tension.h` is authoritative and tracks real changes as the API evolves. Route every `XWF_*` question through the skill's [API guardrail](../../../.claude/skills/xways-xtension-authoring/references/api-guardrail.md).
+Don't invent signatures — `X-Tension.h` is authoritative and tracks real changes as the API evolves. Route every `XWF_*` question through the skill's [API guardrail](../../../references/api-guardrail.md).
 
 ## Per-X-Tension output folder
 

@@ -17,6 +17,6 @@ Route the subcommand to the skill's flow:
 
 If no subcommand is given, ask which flow is wanted (or infer it from the rest of the arguments). Load `SKILL.md` plus the matching reference and honor its hard gates.
 
-**Script paths.** When installed as a plugin, the skill's scaffold/build scripts are `${CLAUDE_PLUGIN_ROOT}/.claude/skills/xways-xtension-authoring/scripts/new-xtension.ps1` and `${CLAUDE_PLUGIN_ROOT}/.claude/skills/xways-xtension-authoring/scripts/build-xtension.ps1`; in a clone they are under the repo root at `.claude/skills/xways-xtension-authoring/scripts/`. Run them with `-DestRoot <the user's project>` (default: current directory) so output lands in the user's project, not the plugin cache — the scripts refuse to write into the cache.
+**Script paths.** When installed as a plugin, the skill's scaffold/build scripts are `${CLAUDE_PLUGIN_ROOT}/scripts/new-xtension.ps1` and `${CLAUDE_PLUGIN_ROOT}/scripts/build-xtension.ps1`; in a clone they are under the repo root at `scripts/`. Run them with `-DestRoot <the user's project>` (default: current directory) so output lands in the user's project, not the plugin cache — the scripts refuse to write into the cache.
 
 **Gates.** Consult `docs/exemplars.md` before copying anything; never invent `XWF_` calls; and don't edit the read-only `templates/x-tensions/` or a user-acquired SDK `references/api/` tree. (That SDK tree is the "never edit `references/`" gate — this skill's own `references/*.md` flow guides are normal files.)

@@ -39,8 +39,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 if (-not $Year) { $Year = (Get-Date).Year.ToString() }
 
-# scripts/ -> xways-xtension-authoring/ -> skills/ -> .claude/ -> repo root
-$repoRoot  = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
+# scripts/ -> repo root (= the skill root; SKILL.md lives there)
+$repoRoot  = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $assetsDir = (Resolve-Path (Join-Path $PSScriptRoot '..\assets')).Path
 $xtRoot    = Join-Path $repoRoot 'x-tensions'
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
