@@ -67,6 +67,43 @@ function Assert-InTree {
     }
 }
 
+# Per-file variants. Sidecar assertions are scoped to the sidecar itself so
+# that author-facing comments elsewhere (the .cpp header banner, the
+# placeholder GitHub URL) do not bleed into the result.
+function Assert-NotInFile {
+    param([string]$Path, [string]$Needle, [string]$Why)
+    if (-not (Test-Path $Path)) {
+        Write-Host "  FAIL  missing file $(Split-Path $Path -Leaf)" -ForegroundColor Red
+        $script:fail++
+        return
+    }
+    $hits = Select-String -Path $Path -Pattern $Needle -SimpleMatch -ErrorAction SilentlyContinue
+    if ($hits) {
+        Write-Host "  FAIL  $(Split-Path $Path -Leaf): leftover '$Needle' -- $Why" -ForegroundColor Red
+        $hits | ForEach-Object { Write-Host "          line $($_.LineNumber): $($_.Line.Trim())" -ForegroundColor DarkGray }
+        $script:fail++
+    } else {
+        Write-Host "  PASS  $(Split-Path $Path -Leaf): no leftover '$Needle'" -ForegroundColor Green
+        $script:pass++
+    }
+}
+
+function Assert-InFile {
+    param([string]$Path, [string]$Needle)
+    if (-not (Test-Path $Path)) {
+        Write-Host "  FAIL  missing file $(Split-Path $Path -Leaf)" -ForegroundColor Red
+        $script:fail++
+        return
+    }
+    if (Select-String -Path $Path -Pattern $Needle -SimpleMatch -ErrorAction SilentlyContinue) {
+        Write-Host "  PASS  $(Split-Path $Path -Leaf): contains '$Needle'" -ForegroundColor Green
+        $script:pass++
+    } else {
+        Write-Host "  FAIL  $(Split-Path $Path -Leaf): expected '$Needle'" -ForegroundColor Red
+        $script:fail++
+    }
+}
+
 $scaffold = Join-Path $SkillRoot 'scripts\new-xtension.ps1'
 if (-not (Test-Path $scaffold)) { throw "new-xtension.ps1 not found at $scaffold" }
 
@@ -82,7 +119,14 @@ $cases = @(
          @{ S = 'my_xtension: hits';       W = 'REPORT_TABLE constant' }
          @{ S = 'L"My X-Tension"';         W = 'descriptor display_name' }
        )
-       Expect = @('CAPTION "Idwrap - Settings"', 'CAPTION "About Idwrap"') }
+       Expect = @('CAPTION "Idwrap - Settings"', 'CAPTION "About Idwrap"')
+       Sidecars = @(
+         @{ File   = 'xways-idwrap.cfg.example'
+            # 'yourtool' is intentionally NOT rejected: it is the helper-exe
+            # placeholder paired with kHelperIdentityNeedle, an author TODO.
+            Reject = @(@{ S = 'my_xtension'; W = 'cfg sample still names the template' })
+            Expect = @('xways-idwrap.cfg', '<case dir>\xways-idwrap\') }
+       ) }
 
     @{ Template = 'xtmgr';   Name = 'idmgr';  Title = 'Idmgr'
        Reject = @(
@@ -98,6 +142,17 @@ $cases = @(
          @{ S = 'L"Template Findings"'; W = 'REPORT_TABLE constant' }
        )
        Expect = @() }
+
+    @{ Template = 'python';  Name = 'idpy';   Title = 'Idpy'
+       Reject = @()
+       Expect = @()
+       Sidecars = @(
+         @{ File   = 'xways-idpy.config.json'
+            # The scaffold renames this file now, so telling the analyst to
+            # rename it by hand is stale instruction.
+            Reject = @(@{ S = 'Rename to <NAME>.config.json'; W = 'stale manual-rename instruction' })
+            Expect = @('xways-idpy') }
+       ) }
 )
 
 try {
@@ -132,6 +187,12 @@ try {
 
         foreach ($r in $c.Reject) { Assert-NotInTree -Dir $out -Needle $r.S -Why $r.W }
         foreach ($e in $c.Expect) { Assert-InTree    -Dir $out -Needle $e }
+
+        foreach ($s in $c.Sidecars) {
+            $sPath = Join-Path $out $s.File
+            foreach ($r in $s.Reject) { Assert-NotInFile -Path $sPath -Needle $r.S -Why $r.W }
+            foreach ($e in $s.Expect) { Assert-InFile    -Path $sPath -Needle $e }
+        }
     }
 } finally {
     if (Test-Path $root) { Remove-Item -Recurse -Force $root -ErrorAction SilentlyContinue }

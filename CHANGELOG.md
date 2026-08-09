@@ -82,6 +82,23 @@ All notable changes to this project are documented here. Versions follow
   The stem is now taken from the first dot-separated segment. Single-extension
   and extensionless filenames are unaffected.
 
+- **Sidecar file *contents* were never patched, only their names.** Nothing in
+  `Get-Replacements` could address a multi-dot filename, because it derived the
+  base with `[Path]::GetFileNameWithoutExtension` too — so no rule could be
+  written for `.cfg.example` or `.config.json` in the first place.
+
+  The wrapper's cfg sample documents two things the analyst acts on: the cfg
+  file the DLL actually reads (`GetSelfDirectory() + NAME + L".cfg"`) and the
+  `<NAME>` output subfolder under the case root. Left at the template stem it
+  named a file that is never read and a directory that is never created —
+  `<case dir>\my_xtension\` instead of `<case dir>\xways-<name>\`. The python
+  sidecar's `_comment` told the analyst to rename the file by hand to match
+  `NAME`, which the scaffold now does for them.
+
+  Both are patched. `yourtool` in the cfg sample is deliberately left alone — it
+  is the helper-exe placeholder paired with `kHelperIdentityNeedle`, an author
+  TODO rather than an identity string.
+
 - **Scaffolded wrappers shipped the template's dialog titles.** The `.rc` rule
   matched the *literal* `CAPTION "My X-Tension - Settings"` — which is what the
   `xtmgr` template contains. The `wrapper` template reads

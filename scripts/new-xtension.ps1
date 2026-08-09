@@ -141,8 +141,13 @@ function Get-Replacements {
     )
 
     $reps = [System.Collections.Generic.List[hashtable]]::new()
-    $base = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
-    $ext  = [System.IO.Path]::GetExtension($FileName).ToLower()
+    # Split on the FIRST dot, matching Get-DestRelPath. Multi-dot sidecars
+    # ('xways-foo.cfg.example', 'xways-foo.config.json') otherwise yield a base
+    # of 'xways-foo.cfg' / 'xways-foo.config', which never equals the stem, so
+    # no rule can ever be written for them.
+    $dotIdx = $FileName.IndexOf('.')
+    $base   = if ($dotIdx -gt 0) { $FileName.Substring(0, $dotIdx) } else { $FileName }
+    $ext    = if ($dotIdx -gt 0) { $FileName.Substring($dotIdx).ToLower() } else { '' }
 
     # --- .def: always patch LIBRARY directive regardless of kind
     if ($ext -eq '.def') {
@@ -321,6 +326,36 @@ function Get-Replacements {
                 Description = "About title -> `"$displayNameTitle2`""
             })
         }
+        return ,$reps
+    }
+
+    # --- .cfg.example: the wrapper's documented cfg sample.
+    # Its prose names two things the analyst acts on: the cfg file the DLL
+    # actually reads (GetSelfDirectory() + NAME + L".cfg") and the <NAME>
+    # output subfolder under the case root. Left at the template stem, the
+    # sample points at a filename that is never read and a directory that is
+    # never created. 'yourtool' is deliberately untouched — that is the
+    # helper-exe placeholder paired with kHelperIdentityNeedle, an author TODO.
+    if ($ext -eq '.cfg.example' -and $base -eq $DestStem) {
+        $reps.Add(@{
+            Pattern     = [System.Text.RegularExpressions.Regex]::Escape($SrcStem)
+            Replacement = $DestStem.Replace('$', '$$')
+            Description = "cfg sample text: $SrcStem -> $DestStem"
+        })
+        return ,$reps
+    }
+
+    # --- .config.json: the python sidecar.
+    # Its _comment told the analyst to rename the file by hand to match NAME.
+    # The scaffold does that now, so the instruction is not just stale but
+    # actively misleading.
+    if ($ext -eq '.config.json' -and $Kind -eq 'python' -and $base -eq $DestStem) {
+        $note = "Optional sidecar config for $DestStem, read automatically from the X-Tension directory. Delete if not needed - the X-Tension falls back to DEFAULT_CONFIG."
+        $reps.Add(@{
+            Pattern     = '"_comment"\s*:\s*"[^"]*"'
+            Replacement = '"_comment": "' + $note.Replace('$', '$$') + '"'
+            Description = "_comment -> sidecar note for $DestStem"
+        })
         return ,$reps
     }
 
