@@ -29,6 +29,10 @@ jobs:
         shell: pwsh
         run: .\tests\test-scaffold-rename.ps1
 
+      - name: Scaffold identity regression test
+        shell: pwsh
+        run: .\tests\test-scaffold-identity.ps1
+
   markdownlint:
     name: Markdown lint (advisory)
     runs-on: ubuntu-latest

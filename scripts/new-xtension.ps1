@@ -185,18 +185,7 @@ function Get-Replacements {
                 Replacement = "static const wchar_t* DESCRIPTION  = L`"$Desc`";"
                 Description = "DESCRIPTION -> L`"$Desc`""
             })
-            # XwaysManagerPluginDescriptor id field — matched by proximity to ABI version line
-            # Pattern: the id L"..." is the FIRST string literal after the sizeof line
-            # Actual template layout (lines 251-255):
-            #   XWAYS_MANAGER_PLUGIN_ABI_VERSION,
-            #   sizeof(XwaysManagerPluginDescriptor),
-            #   L"my_xtension",                     // id
-            $reps.Add(@{
-                Pattern     = '(?m)(sizeof\(XwaysManagerPluginDescriptor\),\s*\r?\n\s*)L"[^"]*",([ \t]*//[ \t]*id)'
-                Replacement = "`${1}L`"$DestStem`",`$2"
-                Description = "descriptor id -> L`"$DestStem`""
-            })
-            # descriptor display_name  L"My X-Tension",
+            # descriptor display_name  L"My X-Tension",   — present in BOTH templates
             $displayName = (($DestStem -replace '^xways-', '') -replace '[-_]', ' ')
             $displayNameTitle = ($displayName -split ' ' | ForEach-Object {
                 if ($_.Length -gt 0) { $_.Substring(0,1).ToUpper() + $_.Substring(1) } else { $_ }
@@ -206,12 +195,40 @@ function Get-Replacements {
                 Replacement = "L`"$displayNameTitle`",`$1"
                 Description = "descriptor display_name -> L`"$displayNameTitle`""
             })
-            # descriptor description  L"Template X-Tension. Replace.",
-            $reps.Add(@{
-                Pattern     = '(?m)L"Template X-Tension\. Replace\.",([ \t]*//[ \t]*description)'
-                Replacement = "L`"$Desc`",`$1"
-                Description = "descriptor description -> L`"$Desc`""
-            })
+
+            # The two templates fill the descriptor differently, so the
+            # remaining rules are NOT shared. xtmgr writes string literals:
+            #     L"my_xtension",                  // id
+            #     L"Template X-Tension. Replace.", // description
+            # wrapper references the already-patched constants instead:
+            #     NAME,                            // id
+            #     DESCRIPTION,                     // description
+            # Registering the literal rules for wrapper produced replacements
+            # that could never match — which is what made -DryRun over-promise.
+            if ($Kind -eq 'xtmgr') {
+                # id is the first string literal after the sizeof line
+                $reps.Add(@{
+                    Pattern     = '(?m)(sizeof\(XwaysManagerPluginDescriptor\),\s*\r?\n\s*)L"[^"]*",([ \t]*//[ \t]*id)'
+                    Replacement = "`${1}L`"$DestStem`",`$2"
+                    Description = "descriptor id -> L`"$DestStem`""
+                })
+                $reps.Add(@{
+                    Pattern     = '(?m)L"Template X-Tension\. Replace\.",([ \t]*//[ \t]*description)'
+                    Replacement = "L`"$Desc`",`$1"
+                    Description = "descriptor description -> L`"$Desc`""
+                })
+            }
+
+            # REPORT_TABLE exists in the wrapper template but not in xtmgr.
+            # Omitting it left every scaffolded wrapper advertising the
+            # template's own report-table name to the analyst.
+            if ($Kind -eq 'wrapper') {
+                $reps.Add(@{
+                    Pattern     = '(?m)^static const wchar_t\* REPORT_TABLE\s*=\s*L"[^"]*";'
+                    Replacement = "static const wchar_t* REPORT_TABLE = L`"$RepTable`";"
+                    Description = "REPORT_TABLE -> L`"$RepTable`""
+                })
+            }
         } else {
             # cpp (plain template or exemplar)
             $reps.Add(@{
@@ -271,17 +288,39 @@ function Get-Replacements {
         return ,$reps
     }
 
-    # --- .rc: patch CAPTION for xtmgr template
+    # --- .rc: patch analyst-visible dialog text
     if ($ext -eq '.rc' -and ($Kind -eq 'xtmgr' -or $Kind -eq 'wrapper') -and $base -eq $DestStem) {
         $displayName2 = (($DestStem -replace '^xways-', '') -replace '[-_]', ' ')
         $displayNameTitle2 = ($displayName2 -split ' ' | ForEach-Object {
             if ($_.Length -gt 0) { $_.Substring(0,1).ToUpper() + $_.Substring(1) } else { $_ }
         }) -join ' '
+
+        # Match the CAPTION's SHAPE, not a literal. The previous rule looked for
+        # the exact string 'CAPTION "My X-Tension - Settings"', which is what the
+        # xtmgr template happens to contain; the wrapper template reads
+        # 'CAPTION "my_xtension - Settings"', so it never matched and every
+        # scaffolded wrapper shipped a dialog titled "my_xtension - Settings".
         $reps.Add(@{
-            Pattern     = 'CAPTION "My X-Tension - Settings"'
+            Pattern     = '(?m)^CAPTION\s+"[^"]*\s+-\s+Settings"'
             Replacement = "CAPTION `"$displayNameTitle2 - Settings`""
             Description = "CAPTION -> `"$displayNameTitle2 - Settings`""
         })
+
+        # Only the wrapper template ships an About dialog.
+        if ($Kind -eq 'wrapper') {
+            $reps.Add(@{
+                Pattern     = '(?m)^CAPTION\s+"About\s+[^"]*"'
+                Replacement = "CAPTION `"About $displayNameTitle2`""
+                Description = "CAPTION -> `"About $displayNameTitle2`""
+            })
+            # The About box's title LTEXT, keyed off its control id so the rule
+            # does not depend on the placeholder text.
+            $reps.Add(@{
+                Pattern     = '(?m)(LTEXT\s+)"[^"]*"(,\s*IDC_ABOUT_TITLE)'
+                Replacement = "`${1}`"$displayNameTitle2`"`$2"
+                Description = "About title -> `"$displayNameTitle2`""
+            })
+        }
         return ,$reps
     }
 
@@ -525,6 +564,7 @@ if ($DryRun) {
     Write-Host ''
     Write-Host 'IDENTITY REPLACEMENTS' -ForegroundColor Magenta
     $anyReplacement = $false
+    $noMatchCount   = 0
     foreach ($op in $plan) {
         $fName = Split-Path $op.DestRel -Leaf
         $reps  = Get-Replacements -Kind $effectiveKind -SrcStem $srcStem -DestStem $fullName `
@@ -532,10 +572,35 @@ if ($DryRun) {
         if ($reps.Count -gt 0) {
             $anyReplacement = $true
             Write-Host "  File: $($op.DestRel)" -ForegroundColor DarkCyan
+
+            # Test each pattern against the real source text. Previously the plan
+            # printed every generated rule without checking whether it could
+            # match, so -DryRun promised 9 replacements where execute applied 5.
+            # -DryRun is a hard gate in the skill; a preview that overstates is
+            # worse than no preview.
+            $srcText = ''
+            try   { $srcText = [System.IO.File]::ReadAllText($op.SrcPath, [System.Text.Encoding]::UTF8) }
+            catch { $srcText = '' }
+
             foreach ($r in $reps) {
-                Write-DryOp '  REPLACE' $r.Description
+                $hit = [System.Text.RegularExpressions.Regex]::IsMatch(
+                           $srcText, $r.Pattern,
+                           [System.Text.RegularExpressions.RegexOptions]::Multiline)
+                if ($hit) {
+                    Write-DryOp '  REPLACE' $r.Description
+                } else {
+                    $noMatchCount++
+                    Write-Host '  [DRY] ' -ForegroundColor Yellow -NoNewline
+                    Write-Host '  NO MATCH' -ForegroundColor Red -NoNewline
+                    Write-Host " $($r.Description)  -- pattern not present in $fName" -ForegroundColor Yellow
+                }
             }
         }
+    }
+    if ($noMatchCount -gt 0) {
+        Write-Host ''
+        Write-Host "  WARNING: $noMatchCount replacement rule(s) do not match this template." -ForegroundColor Red
+        Write-Host '           Those identity strings will be left at their template values.' -ForegroundColor Red
     }
     if (-not $anyReplacement) {
         Write-Host '  (none — no known identity constants for this file set)' -ForegroundColor DarkGray
@@ -614,6 +679,19 @@ foreach ($op in $plan) {
             $content  = [System.IO.File]::ReadAllText($destPath, [System.Text.Encoding]::UTF8)
             $modified = $false
             foreach ($r in $reps) {
+                # Decide "did the rule apply?" by whether the pattern MATCHED,
+                # not by whether the text changed. A rule can legitimately match
+                # and rewrite to the identical string (e.g. VERSION is already
+                # 0.1.0-beta); treating that as a miss under-reported the count
+                # and made it indistinguishable from a genuinely dead pattern.
+                $hit = [System.Text.RegularExpressions.Regex]::IsMatch(
+                           $content, $r.Pattern,
+                           [System.Text.RegularExpressions.RegexOptions]::Multiline)
+                if (-not $hit) {
+                    Write-Host '    NO MATCH' -ForegroundColor Red -NoNewline
+                    Write-Host " [$fName] $($r.Description)  -- left at the template value" -ForegroundColor Yellow
+                    continue
+                }
                 $newContent = [System.Text.RegularExpressions.Regex]::Replace(
                     $content, $r.Pattern, $r.Replacement,
                     [System.Text.RegularExpressions.RegexOptions]::Multiline
@@ -621,9 +699,9 @@ foreach ($op in $plan) {
                 if ($newContent -ne $content) {
                     $content  = $newContent
                     $modified = $true
-                    $replacedCount++
-                    Write-Step '    Replace' "[$fName] $($r.Description)"
                 }
+                $replacedCount++
+                Write-Step '    Replace' "[$fName] $($r.Description)"
             }
             if ($modified) {
                 # No BOM: rc.exe rejects a UTF-8 BOM on .rc files (RC2135); cl/link

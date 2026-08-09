@@ -82,6 +82,34 @@ All notable changes to this project are documented here. Versions follow
   The stem is now taken from the first dot-separated segment. Single-extension
   and extensionless filenames are unaffected.
 
+- **Scaffolded wrappers shipped the template's dialog titles.** The `.rc` rule
+  matched the *literal* `CAPTION "My X-Tension - Settings"` — which is what the
+  `xtmgr` template contains. The `wrapper` template reads
+  `CAPTION "my_xtension - Settings"`, so the rule never matched and every
+  scaffolded wrapper opened a settings dialog titled **"my_xtension - Settings"**
+  with an about box titled **"About my_xtension"** (the second caption and the
+  about-title `LTEXT` were not handled at all). The rules now match the caption's
+  shape rather than a fixed string, and the wrapper's about dialog is covered.
+
+- **`REPORT_TABLE` was never patched for the wrapper template.** It was only
+  registered for the plain `cpp` template, so scaffolded wrappers advertised
+  `my_xtension: hits` to the analyst as the report-table name.
+
+- **`-DryRun` promised replacements that could not happen.** The plan listed
+  every generated rule without testing its pattern against the source, reporting
+  9 replacements for a wrapper where 5 applied. Both the preview and the execute
+  pass now test each pattern and print a red **NO MATCH** line plus a summary
+  warning when a rule is dead — most valuable when scaffolding from an exemplar
+  whose identity constants do not follow the template shape, which previously
+  produced a silently mis-named X-Tension. Relatedly, a rule that matches but
+  rewrites to an identical string (e.g. `VERSION` already `0.1.0-beta`) now
+  counts as applied instead of being indistinguishable from a dead pattern.
+
+  The `xtmgr` and `wrapper` rule sets are also split apart: the two templates
+  fill the manager descriptor differently (`xtmgr` uses string literals, the
+  wrapper references the already-patched `NAME` / `DESCRIPTION` constants), so
+  sharing one rule set guaranteed dead rules on one side or the other.
+
 - **The python template's config sidecar could never be renamed.** It shipped as
   `xtension_template.config.json`, but the python template's source stem is
   `xtension` — so even with multi-dot handling fixed, the names could not match.
