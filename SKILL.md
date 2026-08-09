@@ -17,20 +17,20 @@ Author and maintain X-Ways Forensics X-Tensions — the `xways-<name>` DLLs that
 
 This skill owns the X-Ways-specific *how*. For open-ended "what should this new tool do" ideation, brainstorm the tool's purpose first (the `superpowers:brainstorming` skill helps if you have it), then return here for template choice, scaffolding, conventions, and build.
 
-**Everything this skill needs is bundled with it.** [`references/`](references/) holds the flow guides, [`scripts/`](scripts/) the PowerShell tooling, [`assets/`](assets/) the file templates, [`docs/`](docs/INDEX.md) the distilled API knowledge base, and [`templates/x-tensions/`](templates/x-tensions/) the starter templates. Every path below is relative to this file. The scripts read templates and assets from here but write scaffold/build output under the **current directory** (or `-DestRoot`) — never into the skill install.
+Everything this skill needs is bundled with it — every path below is relative to this file.
 
 ## Hard gates (never violate)
 
-- **Read-only template source + SDK tree.** [`templates/x-tensions/`](templates/x-tensions/) is the pristine template source — never edit, move, or delete it in place; scaffold a copy into `<project>/x-tensions/xways-<name>/` first (the scaffold script does this). Separately, a user-acquired X-Ways SDK lives in an **SDK `references/api/` tree** under the user's own project (per [getting-the-sdk](docs/getting-the-sdk.md)) — that tree is read-only and must **never** be committed (copyright). "Never edit `references/`" means that SDK tree — it is *not* this skill's own [`references/`](references/) flow guides, which are normal skill files.
-- **Never invent `XWF_` functions or flags.** Verify every call, in this priority order: (1) the distilled notes in [`docs/`](docs/INDEX.md) (the routing-table targets — primary); (2) the live official API page `https://www.x-ways.net/forensics/x-tensions/XWF_functions.html` (authoritative for additions made after the SDK snapshot); (3) an optional locally-downloaded SDK header (`references/api/.../X-Tension.h`) if you acquired it per [getting-the-sdk](docs/getting-the-sdk.md) (fallback — may be absent). Route any API question through [api-guardrail](references/api-guardrail.md).
-- **`x-tensions/` (hyphen) is the source tree; `xtensions\` (no hyphen) is the build-output / deploy folder** — a **project convention**, not an X-Ways discovery mechanism (X-Ways loads X-Tensions only from paths the analyst registers via *Tools | Run X-Tensions*, persisted in `X-Tensions.txt`, or via the `XT:<path>` command line — the DLL can live anywhere). Never confuse the two spellings: the build scripts stage, verify, and mirror the no-hyphen path, so a wrong spelling breaks the build/deploy tooling. See [naming-deployment](docs/conventions/naming-deployment.md).
+- **Never edit [`templates/x-tensions/`](templates/x-tensions/) in place** — it is the pristine source. Scaffold a copy into `<project>/x-tensions/xways-<name>/` first (the script does this). A user-acquired SDK lives in a `references/api/` tree in *their* project: read-only, and **never** committed (copyright). That SDK tree — not this skill's [`references/`](references/) flow guides — is what "never edit `references/`" means. See [getting-the-sdk](docs/getting-the-sdk.md).
+- **Never invent `XWF_` functions or flags.** Verify every call against, in order: (1) the distilled notes in [`docs/`](docs/INDEX.md); (2) the live `https://www.x-ways.net/forensics/x-tensions/XWF_functions.html`, which carries post-SDK additions; (3) a locally-downloaded SDK header, if present. Route API questions through [api-guardrail](references/api-guardrail.md).
+- **`x-tensions/` (hyphen) is the source tree; `xtensions\` (no hyphen) is the build-output / deploy folder.** A project convention, **not** an X-Ways discovery mechanism — X-Ways loads only from paths the analyst registers via *Tools | Run X-Tensions* (persisted in `X-Tensions.txt`) or `XT:<path>`; the DLL can live anywhere. The build scripts stage, verify, and mirror the no-hyphen path, so a wrong spelling breaks the tooling. See [naming-deployment](docs/conventions/naming-deployment.md).
 - **Close X-Ways before building.** The DLL is locked while X-Ways is open; there is no hot reload.
 - **Events API ⇒ C++ template only.** `XT_Python.dll` does not expose `XWF_AddEvent` / `XWF_GetEvent`.
-- **Subprocess ⇒ open `\NUL` + `STARTF_USESTDHANDLES`.** X-Ways runs as a GUI-subsystem process — it accepts command-line *parameters*, but has no console window attached, so a child you spawn inherits null std handles and any helper that writes to stdout/stderr can hard-crash. Always hand the child real handles (open `\NUL`, or a pipe if you capture output) with `STARTF_USESTDHANDLES`. See [subprocess-stdio](docs/conventions/subprocess-stdio.md).
-- **`0x01` calls whichever per-item callback you export — export both and BOTH fire; synchronise shared state.** `XT_Prepare` returning `0x01` delivers each item to *whichever* of `XT_ProcessItem`/`XT_ProcessItemEx` you export — export both and each item hits both (empirically verified: RVS delivers each item to both callbacks from a multi-threaded worker pool — the "2N" double-count). Do per-item work in **one** callback (use `XT_ProcessItemEx` for `hItem`) or route both through one deduping collector; RVS is multi-threaded, so shared state needs a mutex. `0x04` is `EXPECTMOREITEMS`, *not* "call `Ex`". See [item-collection](docs/conventions/item-collection.md).
-- **Run synchronously on X-Ways' thread — never call `XWF_*` from a worker thread you spawned.** `XWF_AddEvent` off-thread can corrupt the event store / crash the host. A settings dialog should *request* a run, then run it in `XT_Finalize`. See [threading-model](docs/conventions/threading-model.md).
-- **Output writers: sanitise to valid UTF-8/XML, propagate I/O errors, bound memory.** Raw log bytes break an `encoding="UTF-8"` XLSX (Excel rejects it); a silent write error truncates evidence; buffering every row OOMs. Spill + stream + split. See [output-writers](docs/conventions/output-writers.md).
-- **Public-repo hygiene.** Never commit credentials, live `.cfg`, local paths (`C:\Users\…`), case data, or compiled DLLs/EXEs — binaries ship via GitHub Releases once the repo is public. Run [prepublish-scan.ps1](scripts/prepublish-scan.ps1) before a public push. See [repo-hygiene](docs/conventions/repo-hygiene.md).
+- **Subprocess ⇒ open `\NUL` + `STARTF_USESTDHANDLES`.** X-Ways is a GUI-subsystem process with no console attached, so a child inherits null std handles and any helper writing to stdout/stderr can hard-crash. Hand the child real handles — `\NUL`, or a pipe if you capture output. See [subprocess-stdio](docs/conventions/subprocess-stdio.md).
+- **`0x01` delivers each item to *every* per-item callback you export.** Export both `XT_ProcessItem` and `XT_ProcessItemEx` and each item hits both — the empirically verified "2N" double-count. Do per-item work in **one** callback (`XT_ProcessItemEx` for `hItem`), or route both through one deduping collector. RVS is multi-threaded, so shared state needs a mutex. `0x04` is `EXPECTMOREITEMS`, *not* "call `Ex`". See [item-collection](docs/conventions/item-collection.md).
+- **Never call `XWF_*` from a worker thread you spawned** — run synchronously on X-Ways' thread. `XWF_AddEvent` off-thread can corrupt the event store or crash the host. A settings dialog should *request* a run, then run it in `XT_Finalize`. See [threading-model](docs/conventions/threading-model.md).
+- **Output writers: sanitise to valid UTF-8/XML, propagate I/O errors, bound memory.** Raw log bytes break an `encoding="UTF-8"` XLSX; a silent write error truncates evidence; buffering every row OOMs. Spill + stream + split. See [output-writers](docs/conventions/output-writers.md).
+- **Never commit credentials, live `.cfg`, local paths (`C:\Users\…`), case data, or compiled binaries** — binaries ship via GitHub Releases. Run [prepublish-scan.ps1](scripts/prepublish-scan.ps1) before a public push. See [repo-hygiene](docs/conventions/repo-hygiene.md).
 
 ## Choose the flow, then load its reference
 
@@ -45,6 +45,7 @@ This skill owns the X-Ways-specific *how*. For open-ended "what should this new 
 | record a new finding / mark a rollout item done | docs-loop | [docs-loop](references/docs-loop.md) |
 | pick template vs exemplar, or decide on a dialog | (any) | [decision-tables](references/decision-tables.md) |
 | debug a build / encoding / DLL-loading failure | (any) | [build-and-iteration-gotchas](docs/build-and-iteration-gotchas.md) |
+| look up a script's full parameters or deploy behavior | (any) | [scripts](references/scripts.md) |
 
 The `guardrail` row is an always-on correctness layer applied during every flow — not a `/xtension` subcommand.
 
@@ -52,40 +53,30 @@ Scaffold from a starter template under [`templates/x-tensions/`](templates/x-ten
 
 ## Scripts (the deterministic core)
 
-The scripts live in [`scripts/`](scripts/) next to this file. They read templates/assets from the installed skill and can be run from any working directory; **scaffold/build output goes under the current directory by default, or a project passed via `-DestRoot`** — never the plugin cache (the scripts refuse to write there). Installed as a plugin, they are at `${CLAUDE_PLUGIN_ROOT}/scripts/`; run them with `-DestRoot <the user's project>` (or from that project directory) so output lands in the user's project. The `-DestRoot` passed to `new-xtension.ps1` must be passed to `build-xtension.ps1` too.
+In [`scripts/`](scripts/), runnable from any working directory. Output lands under the **current directory** by default, or a project passed via `-DestRoot` — never the skill install. Full parameters, deploy-target resolution, and the plugin-mode invocation: [scripts](references/scripts.md).
 
-- **[new-xtension.ps1](scripts/new-xtension.ps1)** — copy a starter template (or a locally-available exemplar) into `<DestRoot>/x-tensions/xways-<name>/`, rename the source files to the `xways-<name>` stem, and set the identity constants. Always run with `-DryRun` first to review the planned copies / renames / edits before committing to them.
-  - Parameters: `-Name <name>` (the `xways-<name>` stem), `-DestRoot <project>` (where output lands — default: current directory; pass it in plugin mode), `-Template cpp|python|xtmgr|wrapper` **or** `-Exemplar <local-exemplar>` (only for an exemplar under `<DestRoot>/x-tensions/` — none are bundled here), optional `-Version -Description -ReportTable`, `-DryRun`, `-Force`. (`xtmgr` = [`templates/x-tensions/cpp-xtmgr-compatible/`](templates/x-tensions/cpp-xtmgr-compatible/); `wrapper` = the CLI-wrapper template at [`templates/x-tensions/wrapper/`](templates/x-tensions/wrapper/) — it ships a dormant manager entry point, but manager hosting stays opt-in.)
-- **[build-xtension.ps1](scripts/build-xtension.ps1) `-Name <name>`** — locate the X-Tension under `<DestRoot>/x-tensions/` (`-DestRoot` default: current directory — pass the same one used to scaffold), refuse to build while X-Ways is running, bootstrap the MSVC x64 environment if needed, run the X-Tension's `build.bat`, verify `xtensions\xways-<name>\xways-<name>.dll` was produced, then **deploy** the staged folder into your X-Ways install at `xtensions\xways-<name>\`. The deploy target is **the user's own environment** — nothing is hardcoded: pass `-DeployRoot '<install-root>'` once (the folder holding `xwb64.exe` / `xwforensics64.exe`; it's remembered in a git-ignored `.xtension-deploy.local`), or set `$env:XWT_DEPLOY_ROOT`. With neither set, the build still succeeds and stages the DLL locally; `-NoDeploy` skips deploy outright. **On a user's first build, ask them for their X-Ways install path** and pass it via `-DeployRoot` (remembered thereafter). The mirror is newer-only so an analyst-edited sidecar `.cfg`/`.yaml` in the install survives rebuilds. This is the **build gate** — never claim a scaffold "works" without pasting this script's success output.
-- **[check-manager-sync.ps1](scripts/check-manager-sync.ps1) `[-Name <name>]`** — verify each manager-compatible X-Tension's `manager-plugin.h` copy matches the canonical [`templates/x-tensions/cpp-xtmgr-compatible/manager-plugin.h`](templates/x-tensions/cpp-xtmgr-compatible/manager-plugin.h) (catches ABI drift that silently breaks managed loading). `build-xtension.ps1` runs it automatically for manager-compatible X-Tensions.
-- **[prepublish-scan.ps1](scripts/prepublish-scan.ps1) `[-Strict]`** — read-only pre-publish hygiene scan over git-tracked files: flags local paths (`C:\Users\…`), tracked binaries, and `case/` data (high-severity, non-zero exit), plus credential-ish keywords / emails (review advisories). Clear it before any public push. See [repo-hygiene](docs/conventions/repo-hygiene.md).
-- **[backfill-standards.ps1](scripts/backfill-standards.ps1) `[-DryRun] [-Force]`** — additively backfill a missing `LICENSE` (MIT) + `CLAUDE.md.example` into every active X-Tension that lacks them (idempotent; pulls each tool's name/description/version from source). Does not touch versions or READMEs. See [licensing](docs/conventions/licensing.md) + [xtension-claude-md](docs/conventions/xtension-claude-md.md).
+| Script | Does |
+|---|---|
+| [new-xtension.ps1](scripts/new-xtension.ps1) | copy a starter template into `<DestRoot>/x-tensions/xways-<name>/`, rename to the `xways-<name>` stem, set identity constants, generate LICENSE / README / CLAUDE.md.example |
+| [build-xtension.ps1](scripts/build-xtension.ps1) | run `build.bat`, verify the DLL, deploy into the X-Ways install |
+| [check-manager-sync.ps1](scripts/check-manager-sync.ps1) | catch `manager-plugin.h` ABI drift (auto-run by the build) |
+| [prepublish-scan.ps1](scripts/prepublish-scan.ps1) | hygiene scan over git-tracked files before a public push |
+| [backfill-standards.ps1](scripts/backfill-standards.ps1) | backfill a missing LICENSE + CLAUDE.md.example |
+
+Two rules that always apply:
+
+- **`-DryRun` first** on `new-xtension.ps1` — review the planned copies, renames, and edits before committing to them.
+- **`build-xtension.ps1` is the build gate** — never claim a scaffold "works" without pasting its success output. Close X-Ways first, and pass the same `-DestRoot` used to scaffold. On a user's first build, ask them for their X-Ways install path and pass it via `-DeployRoot`.
 
 ## Convention library
 
-The reusable patterns live in [`docs/conventions/`](docs/conventions/index.md) — the single source of truth. The references cite these pages by symbol; the pages cite the `wrapper` template's code ([`templates/x-tensions/wrapper/`](templates/x-tensions/wrapper/)), so nothing drifts.
+The reusable patterns live in [`docs/conventions/`](docs/conventions/index.md) — the single source of truth. The pages cite the `wrapper` template's code ([`templates/x-tensions/wrapper/`](templates/x-tensions/wrapper/)), so nothing drifts. Load the one you need:
 
-| Page | Covers |
-|---|---|
-| [`naming-deployment.md`](docs/conventions/naming-deployment.md) | `xways-<name>` stem, `x-tensions/` vs `xtensions\`, deploy layout |
-| [`item-collection.md`](docs/conventions/item-collection.md) | `XT_Prepare` return flags, the 2N double-callback, deduping collector |
-| [`threading-model.md`](docs/conventions/threading-model.md) | run on X-Ways' thread, dialog-requests-run, `XT_Finalize` |
-| [`events-emission.md`](docs/conventions/events-emission.md) | `XWF_AddEvent`, event types, Events Viewer behavior |
-| [`output-writers.md`](docs/conventions/output-writers.md) | UTF-8/XML sanitising, streaming, split, I/O error propagation |
-| [`output-dir.md`](docs/conventions/output-dir.md) | `<caseRoot>\<NAME>\` default output folder |
-| [`add-output-to-case.md`](docs/conventions/add-output-to-case.md) | `XWF_CreateEvObj` / `XWF_CreateFile` register-back |
-| [`verbose-logging.md`](docs/conventions/verbose-logging.md) | the `VERBOSE` flag + `LogVerbose` pattern |
-| [`subprocess-stdio.md`](docs/conventions/subprocess-stdio.md) | `\NUL` + `STARTF_USESTDHANDLES`, capture pipes |
-| [`helper-exe-verification.md`](docs/conventions/helper-exe-verification.md) | PE VERSIONINFO + `--version` identity gate, rejection UI |
-| [`ctrl-to-save.md`](docs/conventions/ctrl-to-save.md) | Ctrl+Run = Save, Ctrl+Close = Save as… |
-| [`wrapper-anatomy.md`](docs/conventions/wrapper-anatomy.md) | the CLI-wrapper skeleton, section by section |
-| [`tool-resolution.md`](docs/conventions/tool-resolution.md) | cfg / bundled / PATH / Browse… helper lookup order |
-| [`manager-compatibility.md`](docs/conventions/manager-compatibility.md) | the `xways-xt-manager` ABI-1 contract |
-| [`licensing.md`](docs/conventions/licensing.md) | MIT LICENSE, attribution, third-party notices |
-| [`versioning.md`](docs/conventions/versioning.md) | `0.1.0-beta` start, when the suffix drops |
-| [`readme-roadmap.md`](docs/conventions/readme-roadmap.md) | per-X-Tension README + roadmap shape |
-| [`xtension-claude-md.md`](docs/conventions/xtension-claude-md.md) | the per-X-Tension `CLAUDE.md.example` |
-| [`repo-hygiene.md`](docs/conventions/repo-hygiene.md) | what never gets committed; the pre-publish gate |
+- **Correctness** — [item-collection](docs/conventions/item-collection.md) · [threading-model](docs/conventions/threading-model.md) · [output-writers](docs/conventions/output-writers.md) · [subprocess-stdio](docs/conventions/subprocess-stdio.md) · [events-emission](docs/conventions/events-emission.md)
+- **Wrapping a CLI tool** — [wrapper-anatomy](docs/conventions/wrapper-anatomy.md) · [tool-resolution](docs/conventions/tool-resolution.md) · [helper-exe-verification](docs/conventions/helper-exe-verification.md) · [ctrl-to-save](docs/conventions/ctrl-to-save.md)
+- **Output** — [output-dir](docs/conventions/output-dir.md) · [add-output-to-case](docs/conventions/add-output-to-case.md) · [verbose-logging](docs/conventions/verbose-logging.md)
+- **Naming + release** — [naming-deployment](docs/conventions/naming-deployment.md) · [licensing](docs/conventions/licensing.md) · [versioning](docs/conventions/versioning.md) · [readme-roadmap](docs/conventions/readme-roadmap.md) · [xtension-claude-md](docs/conventions/xtension-claude-md.md) · [repo-hygiene](docs/conventions/repo-hygiene.md)
+- **Hosting** — [manager-compatibility](docs/conventions/manager-compatibility.md)
 
 **Manager compatibility (opt-in — do not default to it).** `xways-xt-manager` (the tabbed host that loads manager-compatible X-Tensions) is a **separate project that is not yet public, and its contract may still change**, so do **not** make X-Tensions manager-compatible by default. Use a plain template (`cpp`, `python`, or `wrapper`) unless the user **specifically asks** for manager support — only then scaffold with `-Template xtmgr` or port it in. The contract (`manager-plugin.h`, ABI 1) and how to add it are documented in [manager-compat](references/manager-compat.md).
 

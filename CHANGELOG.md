@@ -39,9 +39,20 @@ All notable changes to this project are documented here. Versions follow
   paragraph that existed to explain which base directory each prefix resolved
   against is deleted — there is one root now.
 
-- **Convention library is a table.** The 19 `docs/conventions/` pages are listed
-  with a one-line "covers" summary and a direct link, making each of them one hop
-  from `SKILL.md` rather than two (via a flow guide). Costs ~1k on-invoke tokens.
+- **`SKILL.md` trimmed to ~4.5k on-invoke tokens** (from ~5.5k on 0.4.0), under
+  the 5k the Agent Skills spec recommends. Four cuts, no rules dropped:
+  - Script parameters, deploy-target resolution, and plugin-mode invocation moved
+    to a new `references/scripts.md`; `SKILL.md` keeps a five-row summary table
+    plus the two always-on rules (`-DryRun` first, and the build gate).
+  - Hard-gate wording compressed to rule + consequence + pointer. All ten gates
+    and every consequence clause are intact — only explanatory prose already
+    duplicated in `docs/conventions/` was cut.
+  - The 19 convention pages are a grouped link list (correctness / wrapping /
+    output / naming+release / hosting) rather than a described table. Still one
+    hop from `SKILL.md`, and the grouping aids selection more than the one-line
+    summaries did.
+  - The bundled-paths paragraph in the intro reduced to a single sentence; the
+    README covers the layout.
 
 - **`metadata.tags` is a string**, not a YAML list — the Agent Skills spec defines
   `metadata` as a map of string keys to string values.
