@@ -10,7 +10,7 @@ correctness layer — route every API question through it before writing code.
 - Grep by symbol, not by line number
 - Routing table — question type → authoritative doc
 - Known post-HEAD additions to check against live HTML
-- Deprecated / renamed calls (do not use)
+- Renamed calls — prefer the new name, keep the old as a fallback
 - Known behavior quirks
 - Quick self-check before writing an XWF_ call
 - Cross-references
@@ -98,12 +98,25 @@ against the live HTML or `docs/xways-api-recency-research.md` before use:
 - Custom numeric `nEvtType`s (≥25000, ≤65535) listed in the Events filter
   dialog (21.9 Preview 1 — see `docs/xways-events-api.md`)
 
-## Deprecated / renamed calls (do not use)
+## Renamed calls — prefer the new name, keep the old as a fallback
 
-| Old name | Replacement | Since |
+| Current name | Former name | Since |
 |---|---|---|
-| `XWF_AddToReportTable` | `XWF_Label` (also removes a label when called with `nFlags` `0x80000000`, v21.8+) | rename backported to 21.4 SR-11 / 21.5 SR-13 / 21.6 SR-8 / 21.7 SR-4 |
-| `XWF_GetReportTableAssocs` | `XWF_GetLabels` | rename backported to 21.4 SR-11 / 21.5 SR-13 / 21.6 SR-8 / 21.7 SR-4 |
+| `XWF_Label` (also removes a label when called with `nFlags` `0x80000000`, v21.8+) | `XWF_AddToReportTable` | rename backported to 21.4 SR-11 / 21.5 SR-13 / 21.6 SR-8 / 21.7 SR-4 |
+| `XWF_GetLabels` | `XWF_GetReportTableAssocs` | rename backported to 21.4 SR-11 / 21.5 SR-13 / 21.6 SR-8 / 21.7 SR-4 |
+
+**These are renames, not removals — do not treat the old names as forbidden.**
+Hosts predating the rename export only the old name, so the correct shape is to
+resolve both and prefer the new one, exactly as the `wrapper` template does:
+
+```cpp
+if (XWF_Label) XWF_Label(nItemID, REPORT_TABLE, 0);
+else           XWF_AddToReportTable(nItemID, REPORT_TABLE, 0);
+```
+
+What *is* wrong is code that names **only** the old call — that is out of date.
+Most published X-Ways material predates the rename, so this is easy to get wrong
+from memory.
 
 Source: `docs/xways-reading-events-and-items.md`.
 

@@ -66,7 +66,6 @@ This template ships with **no settings dialog** — `XT_Prepare` runs straight f
 - **Ctrl-to-save / Save-as gesture** (Ctrl+Run saves the cfg sidecar; Ctrl+Close exports a copy) → [docs/conventions/ctrl-to-save.md](../../../docs/conventions/ctrl-to-save.md).
 - **Subprocess stdio** (see the caveat below) → [docs/conventions/subprocess-stdio.md](../../../docs/conventions/subprocess-stdio.md).
 - **Dialog layout / UX** (filter-aware item collection, bold group titles, cue banners, tooltips, progress bar, worker thread, one cfg serializer, folder pickers) → [docs/xtension-dialog-conventions.md](../../../docs/xtension-dialog-conventions.md).
-- **Manager (`xways-xt-manager`) compatibility** → the [`cpp-xtmgr-compatible/`](../cpp-xtmgr-compatible/) template + [docs/conventions/manager-compatibility.md](../../../docs/conventions/manager-compatibility.md).
 
 Real-world implementations to study: [xways-trufflehog](https://github.com/kev365/xways-trufflehog) (the canonical tool-wrap) and [xways-ual-timeliner](https://github.com/kev365/xways-ual-timeliner) (dialog + Ctrl-to-save + helper-exe verification).
 

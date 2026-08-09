@@ -73,9 +73,6 @@ $cases = @(
     @{ Template = 'cpp';     Name = 'cpptest'
        Expect = @('xways-cpptest.cpp', 'xways-cpptest.def')
        Reject = @('my_xtension.cpp') }
-    @{ Template = 'xtmgr';   Name = 'mgrtest'
-       Expect = @('xways-mgrtest.cpp', 'xways-mgrtest.def', 'xways-mgrtest.rc')
-       Reject = @('my_xtension.cpp') }
 )
 
 try {

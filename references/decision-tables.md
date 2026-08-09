@@ -10,14 +10,14 @@ capture the decision logic, not a hardcoded inventory.
 
 ## Contents
 
-- Table A — Template selection (cpp vs python vs xtmgr)
+- Table A — Template selection (cpp vs python vs wrapper)
 - Table B — Which template to scaffold from
 - Table C — Dialog promotion thresholds
 - Table D — Subprocess vs XWF_Mount
 - Table E — Tracking a convention rollout across your wrappers
 - Cross-references
 
-## Table A — Template selection (cpp vs python vs xtmgr)
+## Table A — Template selection (cpp vs python vs wrapper)
 
 **Step 1 — language track:**
 
@@ -35,16 +35,6 @@ capture the decision logic, not a hardcoded inventory.
 |---|---|
 | Wraps an external CLI tool | **wrapper** |
 | Analyst-facing (dialog/cfg) or a minimal probe / one-shot | **cpp** (bare) |
-| The user **explicitly asked** for `xways-xt-manager` tab support | **xtmgr** (manager-compatible) |
-
-Note: `xtmgr` is a **superset of `cpp`** — the same DLL exports `XT_*` (standalone)
-**and** `XwaysManagerPluginEntry` (a managed tab in `xways-xt-manager`). But
-**manager compatibility is opt-in and deferred**: `xways-xt-manager` is a work in
-progress and its contract may still change, so do **not** default to `xtmgr` —
-use it only when the user specifically asks. It can also be added to an existing
-standalone X-Tension later — see `references/manager-compat.md`. **Python
-X-Tensions cannot be manager-compatible** (`XwaysManagerPluginEntry` is a C++
-export).
 
 ---
 
@@ -53,9 +43,9 @@ export).
 | Signal | Recommended starting template |
 |---|---|
 | Greenfield — no dialog, no cfg, no external tool | Bare **cpp** or **python** template |
-| Analyst-facing C++ (dialog/cfg), not a CLI wrapper | Bare **cpp** (add `xtmgr` only if manager support is explicitly requested) |
+| Analyst-facing C++ (dialog/cfg), not a CLI wrapper | Bare **cpp** |
 | Needs a CLI-tool wrapper with dialog + cfg (canonical) | **wrapper** template (`-Template wrapper`) |
-| Needs a CLI-tool wrapper, minimal (cfg-only, no dialog) | **wrapper** template, then drop the dialog (manager support stays opt-in — do not reach for `xtmgr` unless requested) |
+| Needs a CLI-tool wrapper, minimal (cfg-only, no dialog) | **wrapper** template, then drop the dialog |
 | Needs full-featured dialog + cfg + helper-exe verification + Ctrl-to-save | **wrapper** template (all four already wired) |
 | Pattern needed exists only in a community exemplar | Scaffold from a template, then port the **pattern with attribution** from the exemplar |
 
@@ -129,7 +119,6 @@ has a dedicated section to list its rollout targets:
 - Scaffold flow (uses Tables A/B) → `references/scaffold-new.md`
 - Wrapper flow (uses Tables B/C/D) → `references/wrapper-generator.md`
 - Port flow (uses Table E) → `references/port-convention.md`
-- Manager-compat flow (uses Table A step 2) → `references/manager-compat.md`
 - Audit flow (uses Table E) → `references/audit-modernize.md`
 - Community exemplar registry (read-and-port, not bundled) → `docs/exemplars.md`
 - Dialog conventions detail → `docs/xtension-dialog-conventions.md`

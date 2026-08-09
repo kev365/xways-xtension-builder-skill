@@ -838,8 +838,8 @@ right-clicked selection. Same code path either way.
 The cpp template at [templates/x-tensions/cpp/](../templates/x-tensions/cpp/)
 ships a minimal `XT_Prepare` with no dialog. Promote to a dialog by:
 
-1. Add `xways-<name>.rc` + `resource.h` (copy from the `cpp-xtmgr-compatible`
-   template — `templates/x-tensions/cpp-xtmgr-compatible/` — and strip; keep
+1. Add `xways-<name>.rc` + `resource.h` (copy from the `wrapper` template —
+   `templates/x-tensions/wrapper/` — and strip; keep
    only `IDD_SETTINGS` + one GROUPBOX).
 2. Update `build.bat`:
    - Add `rc /nologo /fo xways-<name>.res xways-<name>.rc || goto :fail`
@@ -849,4 +849,4 @@ ships a minimal `XT_Prepare` with no dialog. Promote to a dialog by:
 4. Call `ShowSettingsDialog(g_hMainWnd, settings)` from `XT_Prepare` after
    loading the cfg, before setting up `runDir`.
 
-Scaffold from the `cpp-xtmgr-compatible` template for a fresh example.
+Scaffold from the `wrapper` template for a fresh example.

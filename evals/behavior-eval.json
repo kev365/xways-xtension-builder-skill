@@ -8,7 +8,7 @@
       "States plainly that the symbol cannot be verified, rather than hedging while still using it",
       "Checks the distilled notes in docs/ first, and treats the live XWF_functions.html page as the tiebreaker for post-SDK additions",
       "Proposes an alternative drawn from the verified API surface, or says what it would need to check",
-      "Uses XWF_Label rather than the renamed-away XWF_AddToReportTable if it reaches report-table code"
+      "Prefers XWF_Label over XWF_AddToReportTable if it reaches report-table code (the old name is valid only as an explicit older-host fallback, as the wrapper template does; code naming only the old call is out of date)"
     ]
   },
   {
@@ -60,14 +60,14 @@
     ]
   },
   {
-    "id": "wrap-picks-wrapper-not-manager",
+    "id": "wrap-picks-wrapper-template",
     "query": "I want to wrap the yara CLI so analysts can run it from inside X-Ways and have matches tagged on the items.",
-    "probes": "Template selection, plus the opt-in-only rule for manager compatibility. An agent that reaches for the plain cpp template, or that volunteers -Template xtmgr, fails.",
+    "probes": "Template selection under a request that never names a template. An agent that reaches for the plain cpp template, or hand-rolls a wrapper instead of scaffolding, fails.",
     "expected_behavior": [
       "Chooses the wrapper template (-Template wrapper), not the plain cpp template",
       "Notes that the wrapper already wires helper-exe verification, Ctrl-to-save, output-dir and subprocess stdio",
-      "Does NOT scaffold as manager-compatible; manager support is opt-in and only when explicitly requested",
       "Raises helper-exe identity verification before spawning yara, rather than resolving a path and trusting it",
+      "Runs new-xtension.ps1 rather than hand-rolling the scaffold",
       "Defaults analyst-facing output to <caseRoot>\\xways-yara\\"
     ]
   }

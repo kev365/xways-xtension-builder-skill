@@ -39,7 +39,7 @@ All notable changes to this project are documented here. Versions follow
   paragraph that existed to explain which base directory each prefix resolved
   against is deleted — there is one root now.
 
-- **`SKILL.md` trimmed to ~4.5k on-invoke tokens** (from ~5.5k on 0.4.0), under
+- **`SKILL.md` trimmed to ~4.1k on-invoke tokens** (from ~5.5k on 0.4.0), under
   the 5k the Agent Skills spec recommends. Four cuts, no rules dropped:
   - Script parameters, deploy-target resolution, and plugin-mode invocation moved
     to a new `references/scripts.md`; `SKILL.md` keeps a five-row summary table
@@ -47,8 +47,8 @@ All notable changes to this project are documented here. Versions follow
   - Hard-gate wording compressed to rule + consequence + pointer. All ten gates
     and every consequence clause are intact — only explanatory prose already
     duplicated in `docs/conventions/` was cut.
-  - The 19 convention pages are a grouped link list (correctness / wrapping /
-    output / naming+release / hosting) rather than a described table. Still one
+  - The convention pages are a grouped link list (correctness / wrapping /
+    output / naming+release) rather than a described table. Still one
     hop from `SKILL.md`, and the grouping aids selection more than the one-line
     summaries did.
   - The bundled-paths paragraph in the intro reduced to a single sentence; the
@@ -56,6 +56,32 @@ All notable changes to this project are documented here. Versions follow
 
 - **`metadata.tags` is a string**, not a YAML list — the Agent Skills spec defines
   `metadata` as a map of string keys to string values.
+
+### Removed
+
+- **The `cpp-xtmgr-compatible` template and all `xways-xt-manager` support.**
+  Gone: the template itself, `references/manager-compat.md`,
+  `docs/conventions/manager-compatibility.md`, `scripts/check-manager-sync.ps1`,
+  the `-Template xtmgr` option, the manager row in the flow router, and every
+  doc/reference/test mention.
+
+  `xways-xt-manager` is not public and the skill was offering to scaffold
+  against a contract nobody can use. Nothing is lost: the ABI contract stays
+  documented where the manager work actually happens, and the X-Tensions that
+  already carry manager support are untouched — this only removes the skill's
+  ability to generate *new* manager-compatible scaffolds.
+
+  The `wrapper` template keeps its dormant manager entry point and
+  `manager-plugin.h`. Stripping those is a 46-site edit to a 2,000-line C++ file
+  that wants a compile check, so it is deliberately left for a follow-up rather
+  than done blind.
+
+- **The report-table rename gate, from `SKILL.md`.** Added earlier in this
+  release, then removed: it is reference detail that belongs in
+  `references/api-guardrail.md`, it cost ~300 on-invoke tokens on every
+  invocation, and a behavioural test showed prose in `SKILL.md` did not change
+  the outcome anyway — the skill read the file and still emitted only the old
+  name. `api-guardrail.md` now carries the accurate prefer-with-fallback rule.
 
 ### Known and accepted deviation
 
@@ -100,10 +126,9 @@ the build.
   where it resolves in a different directory.
 
 - **`references/scripts.md`** — the script reference split out of `SKILL.md`.
-- **A `## Contents` table of contents in every `references/*.md`.** All nine are
-  over 100 lines (`manager-compat.md` is 280), and the authoring guidance calls
-  for a ToC above that length so a partial read still shows the file's full
-  scope.
+- **A `## Contents` table of contents in every `references/*.md`.** All are over
+  100 lines, and the authoring guidance calls for a ToC above that length so a
+  partial read still shows the file's full scope.
 
 ### Fixed
 

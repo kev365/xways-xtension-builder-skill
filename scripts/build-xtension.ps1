@@ -234,35 +234,6 @@ Write-Host "  DLL  : $expectedDll"
 Write-Host "  Size : $sizeKb KB ($($dllItem.Length) bytes)"
 
 # ---------------------------------------------------------------------------
-# 8. Manager-compatibility sync check
-# ---------------------------------------------------------------------------
-# Detect if this X-Tension is manager-compatible: either it carries a local
-# manager-plugin.h copy OR its .def exports XwaysManagerPluginEntry.
-$managerHeader = Join-Path $xtDir 'manager-plugin.h'
-$defFile       = Join-Path $xtDir "$fullName.def"
-$isManagerCompat = (Test-Path $managerHeader)
-if (-not $isManagerCompat -and (Test-Path $defFile)) {
-    $defContent = Get-Content $defFile -Raw -ErrorAction SilentlyContinue
-    $isManagerCompat = ($defContent -match 'XwaysManagerPluginEntry')
-}
-
-if ($isManagerCompat) {
-    Write-Step "Manager-compat check" "(verifying manager-plugin.h is in sync with canonical)"
-    $syncScript = Join-Path $PSScriptRoot 'check-manager-sync.ps1'
-    if (Test-Path $syncScript) {
-        & pwsh -File $syncScript -Name $fullName
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host ""
-            Write-Host "  WARNING: manager-plugin.h in $fullName has drifted from the canonical." -ForegroundColor Yellow
-            Write-Host "           Managed loading may silently break. Sync the header before deploying." -ForegroundColor Yellow
-            Write-Host "           Canonical: $skillRoot\templates\x-tensions\cpp-xtmgr-compatible\manager-plugin.h" -ForegroundColor Yellow
-        }
-    } else {
-        Write-Warning "check-manager-sync.ps1 not found at '$syncScript' — skipping manager-plugin.h check."
-    }
-}
-
-# ---------------------------------------------------------------------------
 # 9. Deploy into the X-Ways install (consistent xtensions\<name>\ layout)
 # ---------------------------------------------------------------------------
 # build.bat stages a ready-to-copy folder at x-tensions\<name>\xtensions\<name>\.

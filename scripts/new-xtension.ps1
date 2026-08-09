@@ -3,7 +3,7 @@
     Scaffold a new X-Ways X-Tension from a template or a local exemplar.
 
 .DESCRIPTION
-    Copies a template (cpp / python / xtmgr / wrapper) or a locally available
+    Copies a template (cpp / python / wrapper) or a locally available
     exemplar directory into <DestRoot>/x-tensions/xways-<name>/, renames source
     files to the xways-<name> stem, and patches identity constants (NAME,
     VERSION, DESCRIPTION, REPORT_TABLE). Templates are always read from the
@@ -23,8 +23,8 @@
     root (the default) to keep output in the working copy.
 
 .PARAMETER Template
-    Which template to copy: cpp | python | xtmgr | wrapper.  Default: cpp.
-    (wrapper = the manager-compatible CLI-tool-wrapper template with helper-exe
+    Which template to copy: cpp | python | wrapper.  Default: cpp.
+    (wrapper = the CLI-tool-wrapper template with helper-exe
     verification, Ctrl-to-save, output-dir, and subprocess stdio already wired.)
     Ignored when -Exemplar is set.
 
@@ -74,7 +74,7 @@ param(
 
     [string]$DestRoot,
 
-    [ValidateSet('cpp', 'python', 'xtmgr', 'wrapper')]
+    [ValidateSet('cpp', 'python', 'wrapper')]
     [string]$Template = 'cpp',
 
     [string]$Exemplar,
@@ -131,7 +131,7 @@ function Expand-Template {
 # Returns [System.Collections.Generic.List[hashtable]] (always a list, never null).
 function Get-Replacements {
     param(
-        [string]$Kind,        # 'cpp' | 'python' | 'xtmgr' | 'wrapper'
+        [string]$Kind,        # 'cpp' | 'python' | 'wrapper'
         [string]$SrcStem,     # source stem being replaced (e.g. 'my_xtension')
         [string]$DestStem,    # target stem (e.g. 'xways-skilltest')
         [string]$Ver,
@@ -173,7 +173,7 @@ function Get-Replacements {
     if ($ext -eq '.cpp' -and $base -eq $DestStem) {
         if ($Kind -eq 'python') {
             # Should not happen — python has no .cpp — but guard anyway
-        } elseif ($Kind -eq 'xtmgr' -or $Kind -eq 'wrapper') {
+        } elseif ($Kind -eq 'wrapper') {
             # Same identity constants as cpp template
             $reps.Add(@{
                 Pattern     = '(?m)^static const wchar_t\* NAME\s*=\s*L"[^"]*";'
@@ -201,39 +201,16 @@ function Get-Replacements {
                 Description = "descriptor display_name -> L`"$displayNameTitle`""
             })
 
-            # The two templates fill the descriptor differently, so the
-            # remaining rules are NOT shared. xtmgr writes string literals:
-            #     L"my_xtension",                  // id
-            #     L"Template X-Tension. Replace.", // description
-            # wrapper references the already-patched constants instead:
-            #     NAME,                            // id
-            #     DESCRIPTION,                     // description
-            # Registering the literal rules for wrapper produced replacements
-            # that could never match — which is what made -DryRun over-promise.
-            if ($Kind -eq 'xtmgr') {
-                # id is the first string literal after the sizeof line
-                $reps.Add(@{
-                    Pattern     = '(?m)(sizeof\(XwaysManagerPluginDescriptor\),\s*\r?\n\s*)L"[^"]*",([ \t]*//[ \t]*id)'
-                    Replacement = "`${1}L`"$DestStem`",`$2"
-                    Description = "descriptor id -> L`"$DestStem`""
-                })
-                $reps.Add(@{
-                    Pattern     = '(?m)L"Template X-Tension\. Replace\.",([ \t]*//[ \t]*description)'
-                    Replacement = "L`"$Desc`",`$1"
-                    Description = "descriptor description -> L`"$Desc`""
-                })
-            }
-
-            # REPORT_TABLE exists in the wrapper template but not in xtmgr.
-            # Omitting it left every scaffolded wrapper advertising the
-            # template's own report-table name to the analyst.
-            if ($Kind -eq 'wrapper') {
-                $reps.Add(@{
-                    Pattern     = '(?m)^static const wchar_t\* REPORT_TABLE\s*=\s*L"[^"]*";'
-                    Replacement = "static const wchar_t* REPORT_TABLE = L`"$RepTable`";"
-                    Description = "REPORT_TABLE -> L`"$RepTable`""
-                })
-            }
+            # The wrapper's descriptor references the already-patched NAME and
+            # DESCRIPTION constants rather than string literals, so no separate
+            # id/description rules are needed here — registering literal rules
+            # for it produced replacements that could never match, which is what
+            # made -DryRun over-promise.
+            $reps.Add(@{
+                Pattern     = '(?m)^static const wchar_t\* REPORT_TABLE\s*=\s*L"[^"]*";'
+                Replacement = "static const wchar_t* REPORT_TABLE = L`"$RepTable`";"
+                Description = "REPORT_TABLE -> L`"$RepTable`""
+            })
         } else {
             # cpp (plain template or exemplar)
             $reps.Add(@{
@@ -292,38 +269,35 @@ function Get-Replacements {
     }
 
     # --- .rc: patch analyst-visible dialog text
-    if ($ext -eq '.rc' -and ($Kind -eq 'xtmgr' -or $Kind -eq 'wrapper') -and $base -eq $DestStem) {
+    if ($ext -eq '.rc' -and $Kind -eq 'wrapper' -and $base -eq $DestStem) {
         $displayName2 = (($DestStem -replace '^xways-', '') -replace '[-_]', ' ')
         $displayNameTitle2 = ($displayName2 -split ' ' | ForEach-Object {
             if ($_.Length -gt 0) { $_.Substring(0,1).ToUpper() + $_.Substring(1) } else { $_ }
         }) -join ' '
 
-        # Match the CAPTION's SHAPE, not a literal. The previous rule looked for
-        # the exact string 'CAPTION "My X-Tension - Settings"', which is what the
-        # xtmgr template happens to contain; the wrapper template reads
-        # 'CAPTION "my_xtension - Settings"', so it never matched and every
-        # scaffolded wrapper shipped a dialog titled "my_xtension - Settings".
+        # Match the CAPTION's SHAPE, not a literal. An earlier rule looked for
+        # an exact caption string that this template does not contain, so it
+        # never matched and every scaffolded wrapper shipped a dialog titled
+        # "my_xtension - Settings".
         $reps.Add(@{
             Pattern     = '(?m)^CAPTION\s+"[^"]*\s+-\s+Settings"'
             Replacement = "CAPTION `"$displayNameTitle2 - Settings`""
             Description = "CAPTION -> `"$displayNameTitle2 - Settings`""
         })
 
-        # Only the wrapper template ships an About dialog.
-        if ($Kind -eq 'wrapper') {
-            $reps.Add(@{
-                Pattern     = '(?m)^CAPTION\s+"About\s+[^"]*"'
-                Replacement = "CAPTION `"About $displayNameTitle2`""
-                Description = "CAPTION -> `"About $displayNameTitle2`""
-            })
-            # The About box's title LTEXT, keyed off its control id so the rule
-            # does not depend on the placeholder text.
-            $reps.Add(@{
-                Pattern     = '(?m)(LTEXT\s+)"[^"]*"(,\s*IDC_ABOUT_TITLE)'
-                Replacement = "`${1}`"$displayNameTitle2`"`$2"
-                Description = "About title -> `"$displayNameTitle2`""
-            })
-        }
+        # The About dialog's caption.
+        $reps.Add(@{
+            Pattern     = '(?m)^CAPTION\s+"About\s+[^"]*"'
+            Replacement = "CAPTION `"About $displayNameTitle2`""
+            Description = "CAPTION -> `"About $displayNameTitle2`""
+        })
+        # The About box's title LTEXT, keyed off its control id so the rule
+        # does not depend on the placeholder text.
+        $reps.Add(@{
+            Pattern     = '(?m)(LTEXT\s+)"[^"]*"(,\s*IDC_ABOUT_TITLE)'
+            Replacement = "`${1}`"$displayNameTitle2`"`$2"
+            Description = "About title -> `"$displayNameTitle2`""
+        })
         return ,$reps
     }
 
@@ -437,7 +411,6 @@ if ($Exemplar) {
     $templateDirMap = @{
         'cpp'     = 'cpp'
         'python'  = 'python'
-        'xtmgr'   = 'cpp-xtmgr-compatible'
         'wrapper' = 'wrapper'
     }
     $srcDir = Join-Path $skillRoot "templates\x-tensions\$($templateDirMap[$Template])"

@@ -18,10 +18,8 @@ Use this reference when the flow router in `SKILL.md` routes to **wrap**.
 
 The CLI-tool wrapper use-case is covered by the **wrapper** template
 (`templates/x-tensions/wrapper/`) — a CLI-wrapper that already wires helper-exe
-verification, Ctrl-to-save, output-dir, and subprocess stdio. (It also ships a
-dormant manager entry point; manager hosting stays opt-in — see
-`references/manager-compat.md`.) It is the rich scaffold path for wrapping an
-external command-line tool:
+verification, Ctrl-to-save, output-dir, and subprocess stdio. It is the rich
+scaffold path for wrapping an external command-line tool:
 the full dialog + cfg-sidecar lifecycle is in place, so you adapt rather than
 build from scratch.
 
@@ -35,9 +33,9 @@ scripts/new-xtension.ps1 -Name xways-<name> -Template wrapper
 Then follow the post-copy checklist in `references/scaffold-new.md` §4.
 
 If the target tool has few settings and sidecar-only config suffices (no
-analyst dialog), you can instead start from the bare `xtmgr` template and add
-only the wrapper anatomy below — but the `wrapper` template is the default
-starting point.
+analyst dialog), you can instead start from the bare `cpp` template and add only
+the wrapper anatomy below — but the `wrapper` template is the default starting
+point.
 
 For prior-art patterns beyond what the template wires, `docs/exemplars.md`
 registers **community** wrappers to read and port-from with attribution (none

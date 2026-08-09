@@ -32,9 +32,11 @@ pwsh -File evals/run-trigger-eval.ps1 -RunsPerQuery 3 -JsonOut result.json
 pwsh -File evals/run-trigger-eval.ps1 -Filter "trufflehog" -RunsPerQuery 1
 ```
 
-Each case runs `claude -p` in a scratch project containing **only** the skill's
-name and description, so the description alone is under test, and counts the run
-as triggered when the `Skill` tool fires for it.
+Each case runs `claude -p` in an empty scratch project and counts the run as
+triggered when the `Skill` tool fires for this skill. It measures the
+**installed** skill (junction or plugin), which is still a test of the
+description: only `name` and `description` are pre-loaded into the system
+prompt, and the body is read only after the skill triggers.
 
 ### Why not skill-creator's `run_eval.py`
 
@@ -75,7 +77,7 @@ the easy one:
 | `subprocess-stdio-crash` | `\NUL` + `STARTF_USESTDHANDLES`, reached from a symptom |
 | `threading-refuses-worker-xwf-calls` | no `XWF_*` off-thread, under a UI-responsiveness rationale |
 | `scaffold-dryrun-and-build-gate` | `-DryRun` first; no completion claim without build output |
-| `wrap-picks-wrapper-not-manager` | wrapper template; manager-compat stays opt-in |
+| `wrap-picks-wrapper-template` | wrapper template chosen over bare cpp; helper-exe verification raised |
 
 There is no automated judge. Run a scenario's `query` against the skill and
 check the response against its `expected_behavior` list — by reading it, or by

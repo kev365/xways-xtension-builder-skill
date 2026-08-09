@@ -16,7 +16,6 @@ example is extracted from the `wrapper` template and cites the exact symbol.
 - [Ctrl-to-save gesture](ctrl-to-save.md)
 - [Wrapper anatomy](wrapper-anatomy.md) — the 6 elements
 - [Tool resolution](tool-resolution.md) — the 4-level `ResolveToolPath` order
-- [Manager-plugin compatibility](manager-compatibility.md) — `XwaysManagerPluginEntry` contract, ABI versioning, dual-mode delegation, dialog embedding
 - [Licensing](licensing.md) — MIT `LICENSE` + source header; third-party attribution for wrapped tools
 - [Versioning](versioning.md) — `0.Y.Z-beta` until the first public release
 - [README & roadmap](readme-roadmap.md) — README structure + inline `## Roadmap`

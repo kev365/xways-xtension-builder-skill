@@ -1,6 +1,6 @@
 # Scripts reference
 
-Full parameters and behavior for the five PowerShell scripts in
+Full parameters and behavior for the four PowerShell scripts in
 [`scripts/`](../scripts/). `SKILL.md` carries only the one-line summaries and the
 two always-on rules (`-DryRun` first; the build gate) — everything else is here.
 
@@ -9,7 +9,6 @@ two always-on rules (`-DryRun` first; the build gate) — everything else is her
 - Where output goes (`-DestRoot`) — read this first
 - `new-xtension.ps1` — scaffold
 - `build-xtension.ps1` — build + deploy
-- `check-manager-sync.ps1` — ABI drift
 - `prepublish-scan.ps1` — hygiene gate
 - `backfill-standards.ps1` — LICENSE / CLAUDE.md.example backfill
 
@@ -39,7 +38,7 @@ edits before committing to them.
 | --- | --- |
 | `-Name <name>` | the `xways-<name>` stem |
 | `-DestRoot <project>` | where output lands. Default: current directory. Pass it in plugin mode |
-| `-Template cpp\|python\|xtmgr\|wrapper` | which starter template to copy |
+| `-Template cpp\|python\|wrapper` | which starter template to copy |
 | `-Exemplar <local-exemplar>` | copy an exemplar under `<DestRoot>/x-tensions/` instead. None are bundled in this repo |
 | `-Version` `-Description` `-ReportTable` | identity constants. Version defaults to `0.1.0-beta` |
 | `-Author` `-Year` | stamped into the generated `LICENSE` / `CLAUDE.md.example` |
@@ -47,9 +46,7 @@ edits before committing to them.
 | `-Force` | overwrite an existing destination |
 
 Template names map to [`templates/x-tensions/`](../templates/x-tensions/):
-`cpp`, `python`, `xtmgr` = `cpp-xtmgr-compatible/`, `wrapper` = the CLI-wrapper
-template. The `wrapper` template ships a dormant manager entry point, but manager
-hosting stays opt-in.
+`cpp`, `python`, `wrapper` = the CLI-wrapper template.
 
 Beyond copying and renaming, the script generates three project files from
 [`assets/`](../assets/): `LICENSE`, `README.md` (replacing the template's generic
@@ -91,18 +88,6 @@ via `-DeployRoot`.
 
 The mirror is newer-only, so an analyst-edited sidecar `.cfg` / `.yaml` in the
 install survives rebuilds.
-
-## `check-manager-sync.ps1`
-
-```powershell
-check-manager-sync.ps1 [-Name <name>]
-```
-
-Verifies each manager-compatible X-Tension's `manager-plugin.h` copy matches the
-canonical
-[`templates/x-tensions/cpp-xtmgr-compatible/manager-plugin.h`](../templates/x-tensions/cpp-xtmgr-compatible/manager-plugin.h).
-Catches ABI drift that silently breaks managed loading. `build-xtension.ps1` runs
-it automatically for manager-compatible X-Tensions.
 
 ## `prepublish-scan.ps1`
 

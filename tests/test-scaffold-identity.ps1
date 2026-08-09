@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     Scope is runtime-visible strings only — dialog captions, the About title,
-    the report-table name, and the manager tab caption. Author-facing TODO
+    and the report-table name. Author-facing TODO
     placeholders are deliberately NOT asserted on:
 
       - the header-banner comment at the top of the .cpp
@@ -127,15 +127,6 @@ $cases = @(
             Reject = @(@{ S = 'my_xtension'; W = 'cfg sample still names the template' })
             Expect = @('xways-idwrap.cfg', '<case dir>\xways-idwrap\') }
        ) }
-
-    @{ Template = 'xtmgr';   Name = 'idmgr';  Title = 'Idmgr'
-       Reject = @(
-         @{ S = 'My X-Tension - Settings';        W = '.rc settings-dialog CAPTION' }
-         @{ S = 'L"my_xtension"';                 W = 'descriptor id' }
-         @{ S = 'L"My X-Tension"';                W = 'descriptor display_name' }
-         @{ S = 'L"Template X-Tension. Replace."'; W = 'descriptor description' }
-       )
-       Expect = @('CAPTION "Idmgr - Settings"') }
 
     @{ Template = 'cpp';     Name = 'idcpp';  Title = 'Idcpp'
        Reject = @(

@@ -10,7 +10,7 @@ Browser).
 
 It gives Claude the X-Ways-specific *how*: pick a template, scaffold + rename +
 set identity, wire in the project conventions (helper-exe verification,
-Ctrl-to-save, output directory, subprocess stdio, manager compatibility), and
+Ctrl-to-save, output directory, subprocess stdio), and
 verify every `XWF_*` API call against distilled, citable reference notes so
 generated code never invents API.
 
@@ -29,11 +29,11 @@ or zipped for upload.
 | Path | What's there |
 | --- | --- |
 | [`SKILL.md`](SKILL.md) | The skill — flow router, hard gates, convention index |
-| [`references/`](references/) | Per-flow guides (new / wrap / port / manager / audit / guardrail / docs-loop) |
-| [`scripts/`](scripts/) | PowerShell scaffold / build / manager-sync / hygiene / backfill tooling |
+| [`references/`](references/) | Per-flow guides (new / wrap / port / audit / guardrail / docs-loop) |
+| [`scripts/`](scripts/) | PowerShell scaffold / build / hygiene / backfill tooling |
 | [`assets/`](assets/) | `LICENSE` / `README` / `CLAUDE.md.example` file templates |
 | [`commands/xtension.md`](commands/xtension.md) | The `/xtension` slash command |
-| [`templates/x-tensions/`](templates/x-tensions/) | Starter templates: `cpp`, `cpp-xtmgr-compatible`, `python`, and a rich CLI-wrapper `wrapper` template |
+| [`templates/x-tensions/`](templates/x-tensions/) | Starter templates: `cpp`, `python`, and a rich CLI-wrapper `wrapper` template |
 | [`docs/`](docs/INDEX.md) | Distilled X-Tension API reference notes + the [convention library](docs/conventions/index.md) |
 | [`CHANGELOG.md`](CHANGELOG.md) | Release history + known issues queued for the next release |
 

@@ -23,7 +23,6 @@ Everything this skill needs is bundled with it — every path below is relative 
 
 - **Never edit [`templates/x-tensions/`](templates/x-tensions/) in place** — it is the pristine source. Scaffold a copy into `<project>/x-tensions/xways-<name>/` first (the script does this). A user-acquired SDK lives in a `references/api/` tree in *their* project: read-only, and **never** committed (copyright). That SDK tree — not this skill's [`references/`](references/) flow guides — is what "never edit `references/`" means. See [getting-the-sdk](docs/getting-the-sdk.md).
 - **Never invent `XWF_` functions or flags.** Verify every call against, in order: (1) the distilled notes in [`docs/`](docs/INDEX.md); (2) the live `https://www.x-ways.net/forensics/x-tensions/XWF_functions.html`, which carries post-SDK additions; (3) a locally-downloaded SDK header, if present. Route API questions through [api-guardrail](references/api-guardrail.md).
-- **Report-table code resolves `XWF_Label` first, `XWF_AddToReportTable` only as the older-host fallback.** The rename (`XWF_AddToReportTable` → `XWF_Label`, `XWF_GetReportTableAssocs` → `XWF_GetLabels`) shipped in 21.4 SR-11 / 21.5 SR-13 / 21.6 SR-8 / 21.7 SR-4, so both names are live in the field and the fallback is deliberate — see the `wrapper` template's `if (XWF_Label) … else XWF_AddToReportTable(…)`. Code that names **only** the old call is out of date; most published X-Ways material predates the rename, so this is easy to get wrong from memory. See [api-guardrail](references/api-guardrail.md).
 - **`x-tensions/` (hyphen) is the source tree; `xtensions\` (no hyphen) is the build-output / deploy folder.** A project convention, **not** an X-Ways discovery mechanism — X-Ways loads only from paths the analyst registers via *Tools | Run X-Tensions* (persisted in `X-Tensions.txt`) or `XT:<path>`; the DLL can live anywhere. The build scripts stage, verify, and mirror the no-hyphen path, so a wrong spelling breaks the tooling. See [naming-deployment](docs/conventions/naming-deployment.md).
 - **Close X-Ways before building.** The DLL is locked while X-Ways is open; there is no hot reload.
 - **Events API ⇒ C++ template only.** `XT_Python.dll` does not expose `XWF_AddEvent` / `XWF_GetEvent`.
@@ -40,7 +39,6 @@ Everything this skill needs is bundled with it — every path below is relative 
 | scaffold a brand-new X-Tension | new | [scaffold-new](references/scaffold-new.md) |
 | wrap an external CLI tool | wrap | [wrapper-generator](references/wrapper-generator.md) |
 | inject a convention into an existing X-Tension | port | [port-convention](references/port-convention.md) |
-| make an X-Tension manager-compatible (an `xways-xt-manager` tab) | manager | [manager-compat](references/manager-compat.md) |
 | audit / modernize an untested X-Tension | audit | [audit-modernize](references/audit-modernize.md) |
 | answer an X-Ways API/behavior question correctly | guardrail | [api-guardrail](references/api-guardrail.md) |
 | record a new finding / mark a rollout item done | docs-loop | [docs-loop](references/docs-loop.md) |
@@ -50,7 +48,7 @@ Everything this skill needs is bundled with it — every path below is relative 
 
 The `guardrail` row is an always-on correctness layer applied during every flow — not a `/xtension` subcommand.
 
-Scaffold from a starter template under [`templates/x-tensions/`](templates/x-tensions/) (`cpp`, `cpp-xtmgr-compatible`, `python`, or the CLI-wrapper `wrapper` template). For a CLI-tool wrapper, prefer the `wrapper` template (`-Template wrapper`) — it already wires helper-exe verification, Ctrl-to-save, output-dir, and subprocess stdio. [exemplars](docs/exemplars.md) is a registry of **community** exemplars (with X-Ways 21+ verdicts and attribution) to **read and port patterns from** — not bundled copy-targets; none are shipped in this repo. The `-Exemplar` script parameter applies only to exemplars you have locally in your own project.
+Scaffold from a starter template under [`templates/x-tensions/`](templates/x-tensions/) (`cpp`, `python`, or the CLI-wrapper `wrapper` template). For a CLI-tool wrapper, prefer the `wrapper` template (`-Template wrapper`) — it already wires helper-exe verification, Ctrl-to-save, output-dir, and subprocess stdio. [exemplars](docs/exemplars.md) is a registry of **community** exemplars (with X-Ways 21+ verdicts and attribution) to **read and port patterns from** — not bundled copy-targets; none are shipped in this repo. The `-Exemplar` script parameter applies only to exemplars you have locally in your own project.
 
 ## Scripts (the deterministic core)
 
@@ -60,7 +58,6 @@ In [`scripts/`](scripts/), runnable from any working directory. Output lands und
 |---|---|
 | [new-xtension.ps1](scripts/new-xtension.ps1) | copy a starter template into `<DestRoot>/x-tensions/xways-<name>/`, rename to the `xways-<name>` stem, set identity constants, generate LICENSE / README / CLAUDE.md.example |
 | [build-xtension.ps1](scripts/build-xtension.ps1) | run `build.bat`, verify the DLL, deploy into the X-Ways install |
-| [check-manager-sync.ps1](scripts/check-manager-sync.ps1) | catch `manager-plugin.h` ABI drift (auto-run by the build) |
 | [prepublish-scan.ps1](scripts/prepublish-scan.ps1) | hygiene scan over git-tracked files before a public push |
 | [backfill-standards.ps1](scripts/backfill-standards.ps1) | backfill a missing LICENSE + CLAUDE.md.example |
 
@@ -77,9 +74,6 @@ The reusable patterns live in [`docs/conventions/`](docs/conventions/index.md) �
 - **Wrapping a CLI tool** — [wrapper-anatomy](docs/conventions/wrapper-anatomy.md) · [tool-resolution](docs/conventions/tool-resolution.md) · [helper-exe-verification](docs/conventions/helper-exe-verification.md) · [ctrl-to-save](docs/conventions/ctrl-to-save.md)
 - **Output** — [output-dir](docs/conventions/output-dir.md) · [add-output-to-case](docs/conventions/add-output-to-case.md) · [verbose-logging](docs/conventions/verbose-logging.md)
 - **Naming + release** — [naming-deployment](docs/conventions/naming-deployment.md) · [licensing](docs/conventions/licensing.md) · [versioning](docs/conventions/versioning.md) · [readme-roadmap](docs/conventions/readme-roadmap.md) · [xtension-claude-md](docs/conventions/xtension-claude-md.md) · [repo-hygiene](docs/conventions/repo-hygiene.md)
-- **Hosting** — [manager-compatibility](docs/conventions/manager-compatibility.md)
-
-**Manager compatibility (opt-in — do not default to it).** `xways-xt-manager` (the tabbed host that loads manager-compatible X-Tensions) is a **separate project that is not yet public, and its contract may still change**, so do **not** make X-Tensions manager-compatible by default. Use a plain template (`cpp`, `python`, or `wrapper`) unless the user **specifically asks** for manager support — only then scaffold with `-Template xtmgr` or port it in. The contract (`manager-plugin.h`, ABI 1) and how to add it are documented in [manager-compat](references/manager-compat.md).
 
 ## Close the loop
 

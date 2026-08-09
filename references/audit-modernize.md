@@ -79,19 +79,6 @@ Convention page: `docs/conventions/ctrl-to-save.md`. A wrapper lacking a
 
 Convention page: `docs/conventions/subprocess-stdio.md`.
 
-### 1g. Manager compatibility (analyst-facing C++ X-Tensions)
-
-- If the X-Tension exports `XwaysManagerPluginEntry` (grep the `.def` / `.cpp`),
-  it is manager-aware: verify its local `manager-plugin.h` matches canonical —
-  run `scripts/check-manager-sync.ps1 -Name <name>` and flag any ABI drift.
-- If it does **not** export it, that is **not a gap** — manager compatibility
-  is strictly opt-in (see `references/manager-compat.md`). Offer to port it
-  only if the user has asked for manager support. Python X-Tensions are n/a.
-
-Convention page: `docs/conventions/manager-compatibility.md`. Port flow:
-`references/manager-compat.md`.
-
----
 
 ## Pass 2 — API validity audit
 
