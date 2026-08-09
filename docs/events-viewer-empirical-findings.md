@@ -15,18 +15,18 @@ Authoritative API header: the X-Ways SDK header (see [getting-the-sdk.md](gettin
 ## Contents
 
 - TL;DR
-- 1. Complete `nEvtType` → Type label map (dense sweep)
-- 2. `nFlags` semantics (empirical)
-- 3. `lpDescr` capacity
-- 4. Other writable channels
-- 5. Item linkage (`nItemID` / `nOfs`)
-- 6. Color / highlighting
-- 7. Default timezone
+- 1\. Complete `nEvtType` → Type label map (dense sweep)
+- 2\. `nFlags` semantics (empirical)
+- 3\. `lpDescr` capacity
+- 4\. Other writable channels
+- 5\. Item linkage (`nItemID` / `nOfs`)
+- 6\. Color / highlighting
+- 7\. Default timezone
 - 7a. `XWF_AddEvent` / `XWF_GetEvent` FILETIME round-trip drift (2026-05-12)
-- 8. Worked example — subcode picks for a UAL-ingesting X-Tension
-- 9. Open questions (residual, low priority)
-- 10. Config-driven custom file typing — `File Type Categories User.txt`
-- 11. X-Ways 21.8 re-validation (2026-06-05)
+- 8\. Worked example — subcode picks for a UAL-ingesting X-Tension
+- 9\. Open questions (residual, low priority)
+- 10\. Config-driven custom file typing — `File Type Categories User.txt`
+- 11\. X-Ways 21.8 re-validation (2026-06-05)
 
 ## TL;DR
 

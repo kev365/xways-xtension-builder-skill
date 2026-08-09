@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-07-04
+author: project
+---
+
 # Helper-exe identity verification
 
 !!! warning "Required for any X-Tension that wraps an external CLI tool"

@@ -147,7 +147,13 @@ foreach ($rel in $mdFiles) {
         $hn = Normalize $h.Text
         $keep = $null
         foreach ($e in $entries) { if ((Normalize $e).StartsWith($hn)) { $keep = $e; break } }
-        if ($keep) { "- $keep" } else { "- $($h.Text)" }
+        $text = if ($keep) { $keep } else { $h.Text }
+        # A heading like "## 1. Tool deployment" would otherwise render as
+        # "- 1. Tool deployment", which markdown reads as a nested ordered list
+        # (and markdownlint flags as MD029). Escaping the dot keeps the visible
+        # text identical while leaving it a plain bullet.
+        $text = [regex]::Replace($text, '^(\d+)\.\s', '$1\. ')
+        "- $text"
     }
     $block = @('## Contents', '') + $newEntries + @('')
 

@@ -14,12 +14,12 @@ Reference implementation: the `wrapper` template (`templates/x-tensions/wrapper/
 
 ## Contents
 
-- 1. Getting bytes to the tool — extraction is required
-- 2. Tool binary deployment
-- 3. Subprocess invocation
-- 4. Output integration
-- 5. Default conventions for new wrappers
-- 6. When NOT to use this pattern
+- 1\. Getting bytes to the tool — extraction is required
+- 2\. Tool binary deployment
+- 3\. Subprocess invocation
+- 4\. Output integration
+- 5\. Default conventions for new wrappers
+- 6\. When NOT to use this pattern
 - See also
 
 ## 1. Getting bytes to the tool — extraction is required

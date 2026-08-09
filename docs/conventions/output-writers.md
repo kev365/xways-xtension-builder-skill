@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-07-04
+author: project
+---
+
 # Output writers (CSV / XLSX / large exports)
 
 !!! warning "Forensic data is hostile to naive writers — four rules"

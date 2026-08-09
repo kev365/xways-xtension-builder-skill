@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-07-04
+author: project
+---
+
 # Item collection (`XT_ProcessItem` / `XT_ProcessItemEx`)
 
 !!! danger "Traps when you process or collect selected items"

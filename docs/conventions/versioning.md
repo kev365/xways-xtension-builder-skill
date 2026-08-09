@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-07-04
+author: project
+---
+
 # Versioning
 
 X-Tensions use a **semver-style `MAJOR.MINOR.PATCH`** string with a **`-beta`

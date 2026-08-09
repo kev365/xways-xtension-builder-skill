@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-07-04
+author: project
+---
+
 # Per-X-Tension CLAUDE.md
 
 Each X-Tension carries Claude Code guidance specific to that tool, following the

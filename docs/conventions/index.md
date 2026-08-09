@@ -1,3 +1,9 @@
+---
+type: index
+last_updated: 2026-08-09
+author: project
+---
+
 # Convention Reference
 
 One page per convention, each with a vetted, copy-pasteable example plus a do/don't. Each

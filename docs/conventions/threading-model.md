@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-07-04
+author: project
+---
+
 # Threading model
 
 !!! danger "Run on X-Ways' thread — don't call `XWF_*` from a worker thread you spawned"

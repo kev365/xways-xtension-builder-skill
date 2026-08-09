@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-07-04
+author: project
+---
+
 # Ctrl-to-save gesture
 
 X-Tensions with a settings dialog and cfg sidecar expose a uniform keyboard

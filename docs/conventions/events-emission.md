@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-07-04
+author: project
+---
+
 # Events emission (`XWF_AddEvent` / `XWF_GetEvent`)
 
 !!! warning "Cross-run dedup must bucket the timestamp — `XWF_GetEvent` drifts the FILETIME"

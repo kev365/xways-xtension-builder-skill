@@ -49,6 +49,10 @@ jobs:
         shell: pwsh
         run: .\tests\check-toc.ps1
 
+      - name: Version and name agree across manifests
+        shell: pwsh
+        run: .\tests\check-version-sync.ps1
+
   markdownlint:
     name: Markdown lint (advisory)
     runs-on: ubuntu-latest

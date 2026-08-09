@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-08-09
+author: project
+---
+
 # CLI-wrapper anatomy
 
 Every X-Tension that wraps an external command-line tool follows a six-element

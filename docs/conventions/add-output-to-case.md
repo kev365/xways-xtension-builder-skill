@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-08-09
+author: project
+---
+
 # Add output back to the case
 
 An X-Tension that produces analyst-facing artifacts — an export tree, a report, a
