@@ -64,6 +64,28 @@ drift out of sync:
   mklink /J "%USERPROFILE%\.claude\skills\xways-xtension-authoring" "C:\path\to\xways-xtension-builder-skill"
   ```
 
+  A directory junction needs no special privileges. To also get the `/xtension`
+  slash command, link the one command file — this needs Windows Developer Mode
+  (Settings → System → For developers) or an elevated prompt, because *file*
+  symlinks are privileged where junctions are not:
+
+  ```powershell
+  New-Item -ItemType SymbolicLink `
+    -Path   "$env:USERPROFILE\.claude\commands\xtension.md" `
+    -Target "C:\path\to\xways-xtension-builder-skill\commands\xtension.md"
+  ```
+
+  If that is refused, skip it — the skill still auto-triggers, and you can invoke
+  it directly as `/xways-xtension-authoring`. Prefer that over copying the file:
+  a copy is the drift this layout exists to prevent.
+
+  To undo either link, remove the link itself — never the target:
+
+  ```bat
+  rmdir "%USERPROFILE%\.claude\skills\xways-xtension-authoring"
+  del   "%USERPROFILE%\.claude\commands\xtension.md"
+  ```
+
 - **Cloned and opened in Claude Code** — the skill auto-loads from the repo root,
   and the scaffold/build scripts run against the clone (they create
   `x-tensions/<name>/` there). Also `claude --plugin-dir .` from the clone to
