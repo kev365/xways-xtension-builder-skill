@@ -10,6 +10,19 @@ author: project notes
 
 Known pitfalls. Each entry: symptom → root cause → fix.
 
+## Contents
+
+- rc.exe code-page mangling (em-dash → "â€"")
+- DLL locking — no hot-reload
+- vcvars64.bat with VS BuildTools 2019
+- `build.bat` not found from cmd /c after vcvars
+- Bundle in repo: `.gitignore` un-ignore pattern
+- String encoding across the API surface
+- DLL surface area: only export what you need
+- Common stack-trace traps
+- Build environment quick-reference
+- See also
+
 ## rc.exe code-page mangling (em-dash → "â€"")
 
 **Symptom:** A non-ASCII character in a `.rc` file (e.g., `CAPTION "bulk_extractor — Settings"`) renders in the dialog title as `bulk_extractor â€" Settings`.

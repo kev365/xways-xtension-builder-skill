@@ -16,6 +16,15 @@ How to ask the analyst for input or surface a dialog from inside an X-Tension. T
 
 These compose: load defaults from a sidecar, prompt with `XWF_GetUserInput` for the one value that varies per run, fall back to a Win32 dialog if the input is too rich for a single field.
 
+## Contents
+
+- `XWF_GetUserInput`
+- Win32 dialog parented to `hMainWnd`
+- Sidecar config file
+- `XWF_OutputMessage` for status / errors
+- Caveats
+- See also
+
 ## `XWF_GetUserInput`
 
 Available in **v18.5 and later** (per the official docs page). SDK header signature in the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)):

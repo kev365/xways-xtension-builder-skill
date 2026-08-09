@@ -45,6 +45,10 @@ jobs:
         shell: pwsh
         run: .\tests\check-stale-guidance.ps1
 
+      - name: Long pages carry an accurate table of contents
+        shell: pwsh
+        run: .\tests\check-toc.ps1
+
   markdownlint:
     name: Markdown lint (advisory)
     runs-on: ubuntu-latest

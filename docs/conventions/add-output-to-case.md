@@ -25,6 +25,15 @@ and they add output at different levels:
     add-back — the output is still on disk. `XWF_CreateFile` is a core export and
     does not need this treatment.
 
+## Contents
+
+- Which one applies
+- Signatures (header-confirmed)
+- Pattern — new evidence object (`XWF_CreateEvObj`)
+- Pattern — items in the existing snapshot (`XWF_CreateFile`)
+- Do / Don't
+- See also
+
 ## Which one applies
 
 | | `XWF_CreateEvObj` | `XWF_CreateFile` |

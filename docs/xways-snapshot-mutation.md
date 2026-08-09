@@ -16,6 +16,17 @@ First empirical map of the **item-creation / snapshot-mutation** API region.
 > (SAVE_SNAPSHOT); X-Ways reported **"+8 files, Events: 1 (+1)"** per volume and
 > persisted them. Run on a throwaway case only.
 
+## Contents
+
+- XWF_CreateFile — works from `XT_Prepare`; flag space mapped
+- XWF_SetItemSize return value (21.3) — `-1` success / `0` failure
+- XWF_FindItem1 nFlags — `0x01` = case-sensitive
+- XWF_GetItemName pointer lifetime — more stable than assumed
+- Created-item interop — mostly first-class
+- nOpType read-only bit
+- Still open
+- Multi-volume invocation note
+
 ## XWF_CreateFile — works from `XT_Prepare`; flag space mapped
 
 `XWF_CreateFile(pName, nCreationFlags, nParentItemID, pSourceInfo)` succeeds when

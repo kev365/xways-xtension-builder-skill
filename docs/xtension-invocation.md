@@ -10,6 +10,17 @@ author: X-Ways Software Technology AG; empirical research notes from testing + C
 
 How X-Ways calls into an X-Tension DLL: the entry points, the invocation modes, the threading model, the return-value semantics, and the patterns that fall out of these mechanics. Authoritative SDK declarations: the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)).
 
+## Contents
+
+- Entry points
+- Invocation modes (`nOpType` values)
+- Threading
+- Invocation flow examples
+- Common patterns
+- Pitfalls
+- DLL placement and sidecar files
+- See also
+
 ## Entry points
 
 X-Ways calls these by name (no decoration — exported via the `.def` file). Only `XT_Init` is mandatory; the rest are optional and only invoked if you've exported them.

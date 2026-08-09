@@ -26,6 +26,38 @@ Reference implementations:
   a target-query path); promote to a real dialog once user-facing toggles
   multiply.
 
+## Contents
+
+- When to use which pattern
+- File layout (.rc dialogs)
+- Identifier numbering convention
+- Standard section layout
+- Title bar
+- Font hierarchy
+- Settings round-trip (LPARAM convention)
+- Context-aware defaults
+- Hint text for disabled controls
+- One-time detection caching
+- Browse buttons
+- Status-text coloring (optional polish)
+- Programmatic children inside a GROUPBOX (padTop must clear the title)
+- Auto-fit shrink-to-content (advanced)
+- Common control IDs (recommended)
+- Sidecar cfg ↔ dialog state
+- Cancel safety
+- Validation
+- Don't
+- Cue-banner placeholders (every edit gets one)
+- Tooltip popups (every non-obvious control)
+- Progress + task status pattern (worker-driven)
+- Default output base = case directory
+- Button label conventions
+- Modifier-key state on action buttons
+- Folder pickers: prefer `IFileOpenDialog` over `SHBrowseForFolderW`
+- Sidecar cfg: one source of truth + Ctrl-to-save
+- Filter-aware item collection (always-collect path)
+- Template integration
+
 ## When to use which pattern
 
 | Pattern | When | Examples |

@@ -16,6 +16,12 @@ Before porting from an older X-Tension, sanity-check that its `XWF_*` calls stil
 exist on X-Ways 21+ — see [api-guardrail](../references/api-guardrail.md)
 and [xways-api-recency-research.md](xways-api-recency-research.md).
 
+## Contents
+
+- Reference X-Tensions by the skill's maintainer
+- Community X-Tensions
+- Related tooling & research (not X-Tensions)
+
 ## Reference X-Tensions by the skill's maintainer
 
 Public X-Tensions by this skill's maintainer — the `wrapper` template

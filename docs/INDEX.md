@@ -15,6 +15,15 @@ to these pages so generated code never invents `XWF_*` calls.
 > content (copyright X-Ways AG). To build, acquire the SDK yourself —
 > [getting-the-sdk.md](getting-the-sdk.md).
 
+## Contents
+
+- Getting started
+- API reference
+- Empirical findings & API recency
+- Command line
+- Conventions
+- Patterns & integration
+
 ## Getting started
 
 - [getting-the-sdk.md](getting-the-sdk.md) — where to download the X-Ways

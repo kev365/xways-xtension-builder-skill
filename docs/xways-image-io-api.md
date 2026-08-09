@@ -17,6 +17,17 @@ Three exported functions, no version handshake, no `XT_*` lifecycle. The DLL sta
 - API page: the official Image I/O API page at <https://www.x-ways.net/forensics/x-tensions/Image_IO_API.html>
 - Demo zip (Delphi source + 32-bit + 64-bit demo DLL): the official `IIO.zip` from <https://www.x-ways.net/forensics/x-tensions/> (see [getting-the-sdk.md](getting-the-sdk.md))
 
+## Contents
+
+- When to use it (and when not to)
+- Deployment (different from X-Tensions)
+- Three required exports
+- Empirical findings (xwb 21.7 SR-3)
+- Still open
+- Calling convention + name decoration
+- Threading
+- Cross-references
+
 ## When to use it (and when not to)
 
 **Use it** when X-Ways doesn't natively understand the image format you have and you want analysts to be able to add such images to a case the normal way (Tools → Add Image, drag-and-drop, etc.). Candidate applications: an `e01-rs`-backed fallback, or `vmdk-rs`-backed VMware support.

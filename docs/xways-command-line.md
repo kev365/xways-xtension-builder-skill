@@ -15,6 +15,17 @@ Synthesised reference for what `xwforensics64.exe` / `xwb64.exe` / `winhex64.exe
 - **X-Tensions API page** — <https://www.x-ways.net/forensics/x-tensions/api.html> documents `XTParam:` (added v19.4 SR-6, predates its appearance in the manual). Format: `XTParam:<id>:<value>` where `<id>` identifies the target X-Tension.
 - **The X-Ways SDK header** (see [getting-the-sdk.md](getting-the-sdk.md)) — silent on CLI; the SDK is for in-process X-Tensions only, not external invocation.
 
+## Contents
+
+- TL;DR — there is no `--help`
+- Documented parameters (21.6 manual § 3.10)
+- End-to-end recipe (Polito blog)
+- Getting the version (no `--version`, but `GetLicID:` + msglog works)
+- Things to keep in mind
+- Empirical findings (X-Ways 21.7, 2026-05)
+- Open / unverified
+- Source pointers
+
 ## TL;DR — there is no `--help`
 
 `xwforensics64.exe` does **not** print a usage screen. The supported parameters all take the shape `Verb:Argument` (case-sensitive verb, colon, no space) or are positional file paths. There's no `/?`, no `--version`, no help screen — the manual section is the canonical list. Ordering matters except for `Cfg:`, which always sorts first.

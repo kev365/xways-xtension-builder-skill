@@ -12,6 +12,27 @@ Reference for adding rows to X-Ways' **Events** viewer and enumerating existing 
 
 Authoritative SDK declarations: the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)). Empirical methodology and per-channel writeups: [events-viewer-empirical-findings.md](events-viewer-empirical-findings.md).
 
+## Contents
+
+- The `EventInfo` struct
+- `XWF_AddEvent`
+- `XWF_GetEvent`
+- `nEvtType` — full lookup map (empirical)
+- `nFlags` — empirical semantics
+- `lpDescr` — 254-byte display ceiling
+- Item linkage (`nItemID`, `nOfs`)
+- Writable channels adjacent to events
+- `XWF_SetItemType` and `nTypeStatus`
+- Color rendering and Conditional Coloring
+- Default timezone behavior
+- Relationship to `Event Log Events.txt`
+- Modifying existing events
+- Python exposure
+- Threading
+- Practical usage shape (C++)
+- Caveats
+- See also
+
 ## The `EventInfo` struct
 
 ```c

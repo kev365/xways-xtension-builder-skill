@@ -12,6 +12,15 @@ Companion to [`xways-api-recency-research.md`](xways-api-recency-research.md), w
 
 The 2024-05-31 SDK header lands roughly mid-21.3, so most additions in this file are present in the header but not always in the right context. A few late-21.3 / 21.4 additions post-date the header (e.g. `XWF_VSPROP_RESET` in 21.4 Beta 3, expanded `XWF_GetReportTableAssocs()` semantics in 21.3 Beta 3) — these are the same gap surfaced in [`xways-api-recency-research.md`](xways-api-recency-research.md).
 
+## Contents
+
+- Methodology — coverage and sources
+- Forum thread index (one URL per version)
+- Per-version X-Tension API additions / changes
+- Cross-references
+- Caveats
+- Verbatim recoveries (2026-05-03)
+
 ## Methodology — coverage and sources
 
 For each version 19.0..21.4, the corresponding public announcement thread on `x-ways.net/winhex/forum/messages/1/<NNNN>.html` was fetched and scanned for occurrences of "X-Tension", "XWF_", "XT_", and "API". Thread numbers were located via Google `site:x-ways.net forum "<version>"` queries. Every paragraph mentioning the X-Tension surface area was extracted with its version-channel header and post date. Non-API content (UI tweaks, file-system parsers, indexing, OCR, gallery, etc.) was filtered out. Where a single thread had multiple X-Tension entries across different channels, each one is its own row. Versions that announced zero X-Tension changes get one "(no X-Tension changes announced)" row so the timeline is gap-free.

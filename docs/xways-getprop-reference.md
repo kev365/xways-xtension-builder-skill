@@ -12,6 +12,15 @@ The two property-getter functions in the X-Tension API expose case-level and evi
 
 **This doc captures the property numbers explicitly so they can be used without re-fetching the live page.**
 
+## Contents
+
+- `XWF_GetCaseProp`
+- `XWF_GetVSProp` (volume snapshot properties)
+- `XWF_GetProp` (volume / item handle)
+- `XWF_GetEvObjProp`
+- Recommended pattern: temp base resolution
+- See also
+
 ## `XWF_GetCaseProp`
 
 ```c

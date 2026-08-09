@@ -3,6 +3,12 @@
 Every X-Tension that wraps an external command-line tool follows a six-element
 anatomy. The canonical implementation is the `wrapper` template (`templates/x-tensions/wrapper/`).
 
+## Contents
+
+- The six elements
+- Pattern
+- Do / Don't
+
 ## The six elements
 
 1. **`RunSettings` struct** — sidecar config payload (fields map 1:1 to `key = value` cfg lines).

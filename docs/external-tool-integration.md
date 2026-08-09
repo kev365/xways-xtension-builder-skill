@@ -12,6 +12,16 @@ Pattern guide for X-Tensions that wrap a third-party command-line tool (e.g. `ya
 
 Reference implementation: the `wrapper` template (`templates/x-tensions/wrapper/`) — subprocess spawn + Win32 settings dialog + report-table tagging, with the CLI-wrapper anatomy already wired in. See [Wrapper anatomy](conventions/wrapper-anatomy.md).
 
+## Contents
+
+- 1. Getting bytes to the tool — extraction is required
+- 2. Tool binary deployment
+- 3. Subprocess invocation
+- 4. Output integration
+- 5. Default conventions for new wrappers
+- 6. When NOT to use this pattern
+- See also
+
 ## 1. Getting bytes to the tool — extraction is required
 
 **The fundamental constraint:** X-Tension APIs and external CLI tools live in separate worlds and don't share file handles.

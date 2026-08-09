@@ -12,6 +12,22 @@ What an X-Tension can and can't put into the Events viewer (and adjacent writabl
 
 Authoritative API header: the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)).
 
+## Contents
+
+- TL;DR
+- 1. Complete `nEvtType` → Type label map (dense sweep)
+- 2. `nFlags` semantics (empirical)
+- 3. `lpDescr` capacity
+- 4. Other writable channels
+- 5. Item linkage (`nItemID` / `nOfs`)
+- 6. Color / highlighting
+- 7. Default timezone
+- 7a. `XWF_AddEvent` / `XWF_GetEvent` FILETIME round-trip drift (2026-05-12)
+- 8. Worked example — subcode picks for a UAL-ingesting X-Tension
+- 9. Open questions (residual, low priority)
+- 10. Config-driven custom file typing — `File Type Categories User.txt`
+- 11. X-Ways 21.8 re-validation (2026-06-05)
+
 ## TL;DR
 
 - **Complete `nEvtType` → Type label map for all 7 ranges, sweep-confirmed.** Every label increments by 1 from the range base. An X-Tension can pick subcodes that produce semantically correct Type labels in the viewer (e.g. `14005 = Session start`, `14012 = Application resource`).
