@@ -11,6 +11,11 @@ against [`trigger-eval.json`](trigger-eval.json).
 - **Method:** automated, [`run-trigger-eval.ps1`](run-trigger-eval.ps1),
   3 runs per query, trigger threshold 0.5, against the skill installed as a
   junction at `~/.claude/skills/xways-xtension-authoring`.
+- **Measured twice**, before and after the `cpp-xtmgr-compatible` removal — the
+  content change was large enough that re-measuring was cheaper than assuming.
+  Both runs are identical in every particular, which is the useful result: the
+  removal did not disturb triggering. The stored artifact is the second (final)
+  run.
 
 ### Result: 20 / 20 (100%), unanimous
 
