@@ -57,6 +57,26 @@ All notable changes to this project are documented here. Versions follow
 - **`metadata.tags` is a string**, not a YAML list — the Agent Skills spec defines
   `metadata` as a map of string keys to string values.
 
+### Known and accepted deviation
+
+The spec asks that a skill's `name` match its parent directory. It does not
+here: the repository root *is* the skill root, and the repository is called
+`xways-xtension-builder-skill` while the skill is `xways-xtension-authoring`.
+Both `tests/check-skill-spec.ps1` and the upstream `skills-ref` validator flag
+this, independently.
+
+**This is deliberate.** Claude Code resolves the skill by its frontmatter
+`name`, `claude plugin validate` passes, and a personal install junctioned as
+`~/.claude/skills/xways-xtension-authoring` does match. The alternatives both
+cost more than the deviation: renaming the repository breaks the marketplace
+URL and every existing link, and nesting the skill under
+`skills/xways-xtension-authoring/` reintroduces the escaping-relative-paths
+problem this release exists to fix — unless `docs/` and `templates/` move too,
+which buries the human-browsable knowledge base.
+
+Recorded as a warning rather than an error so it stays visible without failing
+the build.
+
 ### Added
 
 - **CI gates for the things this release changed.** `tests/check-links.ps1`

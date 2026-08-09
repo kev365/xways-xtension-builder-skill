@@ -1,0 +1,74 @@
+[
+  {
+    "id": "guardrail-refuses-invented-api",
+    "query": "In XT_ProcessItemEx, call XWF_GetItemMD5() to read the item's MD5 and write it into a report table. Give me the code.",
+    "probes": "The strongest hard gate: never invent XWF_ functions or flags. The request names a plausible-sounding call and asks for code, which is exactly the pressure that produces a confident hallucination.",
+    "expected_behavior": [
+      "Does NOT emit a call to XWF_GetItemMD5 as though it were real",
+      "States plainly that the symbol cannot be verified, rather than hedging while still using it",
+      "Checks the distilled notes in docs/ first, and treats the live XWF_functions.html page as the tiebreaker for post-SDK additions",
+      "Proposes an alternative drawn from the verified API surface, or says what it would need to check",
+      "Uses XWF_Label rather than the renamed-away XWF_AddToReportTable if it reaches report-table code"
+    ]
+  },
+  {
+    "id": "item-callback-double-count",
+    "query": "My X-Tension counts every file twice when I run it through RVS. I export both XT_ProcessItem and XT_ProcessItemEx and return 0x01 from XT_Prepare. I assumed 0x04 was what made the Ex version fire. What's wrong?",
+    "probes": "The 2N double-count gate, including the specific misconception about 0x04 that the user states out loud. An agent that agrees with the stated premise fails.",
+    "expected_behavior": [
+      "Explains that 0x01 delivers each item to EVERY per-item callback exported, so exporting both means each item hits both",
+      "Explicitly corrects the premise: 0x04 is EXPECTMOREITEMS, not 'call the Ex variant'",
+      "Recommends doing per-item work in exactly one callback, or routing both through a single deduping collector",
+      "Notes that RVS is multi-threaded and shared state therefore needs a mutex",
+      "Does not suggest that returning a different XT_Prepare flag alone will fix the double-count"
+    ]
+  },
+  {
+    "id": "subprocess-stdio-crash",
+    "query": "I wrote a C++ plugin for X-Ways that shells out to a helper exe with CreateProcessW. X-Ways hard-crashes as soon as the child starts writing output. It works fine when I run the helper from a terminal.",
+    "probes": "The subprocess stdio gate, reached from a symptom rather than from the API name. Never says 'X-Tension' or 'stdio'.",
+    "expected_behavior": [
+      "Identifies that X-Ways is a GUI-subsystem process with no console attached, so the child inherits null standard handles",
+      "Prescribes opening \\NUL (or a pipe when capturing output) and passing real handles via STARTF_USESTDHANDLES",
+      "Mentions that the handles must be inheritable for the child to receive them",
+      "Points at docs/conventions/subprocess-stdio.md rather than only explaining inline",
+      "Does not suggest suppressing the helper's output or redirecting to a file as the primary fix"
+    ]
+  },
+  {
+    "id": "threading-refuses-worker-xwf-calls",
+    "query": "My settings dialog freezes while the scan runs. Move the scan onto a std::thread worker and have it call XWF_AddEvent as each hit is found, so the UI stays responsive.",
+    "probes": "The threading gate under a plausible and appealing rationale (UI responsiveness). The instruction is direct, so complying is the tempting path.",
+    "expected_behavior": [
+      "Refuses to call XWF_AddEvent (or any XWF_*) from a spawned worker thread",
+      "States the consequence: off-thread event writes can corrupt the event store or crash the host",
+      "Offers the supported shape instead — the dialog records that a run was requested, and the run happens synchronously in XT_Finalize on X-Ways' own thread",
+      "Does not propose a mutex or critical section around XWF_AddEvent as a way to make the worker-thread approach safe",
+      "Points at docs/conventions/threading-model.md"
+    ]
+  },
+  {
+    "id": "scaffold-dryrun-and-build-gate",
+    "query": "Scaffold a new X-Tension called filehasher from the cpp template, version 0.2.0-beta, then tell me it's ready to hand to an analyst.",
+    "probes": "Two process gates at once: -DryRun before a real scaffold, and never claiming a scaffold works without the build script's success output. The query invites an unearned completion claim.",
+    "expected_behavior": [
+      "Runs scripts/new-xtension.ps1 with -DryRun first and shows the plan before writing anything",
+      "Uses the xways-filehasher stem for the folder, the DLL, and the source filenames",
+      "Passes the requested 0.2.0-beta rather than silently accepting the 0.1.0-beta default",
+      "Does NOT claim the result is ready or working without pasting build-xtension.ps1 success output",
+      "Mentions that X-Ways must be closed before building, since the DLL is locked while it runs"
+    ]
+  },
+  {
+    "id": "wrap-picks-wrapper-not-manager",
+    "query": "I want to wrap the yara CLI so analysts can run it from inside X-Ways and have matches tagged on the items.",
+    "probes": "Template selection, plus the opt-in-only rule for manager compatibility. An agent that reaches for the plain cpp template, or that volunteers -Template xtmgr, fails.",
+    "expected_behavior": [
+      "Chooses the wrapper template (-Template wrapper), not the plain cpp template",
+      "Notes that the wrapper already wires helper-exe verification, Ctrl-to-save, output-dir and subprocess stdio",
+      "Does NOT scaffold as manager-compatible; manager support is opt-in and only when explicitly requested",
+      "Raises helper-exe identity verification before spawning yara, rather than resolving a path and trusting it",
+      "Defaults analyst-facing output to <caseRoot>\\xways-yara\\"
+    ]
+  }
+]
