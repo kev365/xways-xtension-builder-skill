@@ -57,6 +57,26 @@ All notable changes to this project are documented here. Versions follow
 - **`metadata.tags` is a string**, not a YAML list — the Agent Skills spec defines
   `metadata` as a map of string keys to string values.
 
+- **`docs/xtension-dialog-conventions.md` is reachable from `SKILL.md`** and from
+  the convention index. It declares itself a convention in its own frontmatter
+  and is cited by four `references/` pages, yet appeared in neither index —
+  reachable only through `docs/INDEX.md`. Linked rather than moved: it is a
+  29-section compendium and the library is one-pattern pages of 32–198 lines.
+
+- **`docs/conventions/*.md` carry the same frontmatter as `docs/*.md`.** All 23
+  of the latter had `source` / `type` / `last_updated`; none of the 19
+  conventions did — so `last_updated` was absent from exactly the pages the
+  docs-loop is meant to maintain. Dates derive from each file's last commit
+  rather than from the day they were added, so the field states a fact.
+
+- **Three duplicated clarifications cut from `SKILL.md`** — how X-Ways discovers
+  a DLL (already in `naming-deployment.md`, near-verbatim), the scope of
+  `-Exemplar` (already in `scripts.md` and `scaffold-new.md`), and one fact
+  negated twice in a single sentence. The "guardrail is not a `/xtension`
+  subcommand" note moved down to `Invocation`, where the subcommand list lives;
+  the half of that sentence which is a real instruction stayed with the flow
+  table.
+
 ### Removed
 
 - **The `cpp-xtmgr-compatible` template and all `xways-xt-manager` support.**
@@ -132,7 +152,50 @@ the build.
   100 lines, and the authoring guidance calls for a ToC above that length so a
   partial read still shows the file's full scope.
 
+- **Three more CI gates**, from a second, deeper conformance audit. Each was
+  verified to fail before it was trusted:
+  - `tests/check-stale-guidance.ps1` — encodes each reversed convention as a
+    rule, so a page that keeps teaching a superseded one fails the build. Rules
+    match within a two-line window, because a correct fallback branch names the
+    preferred call one line above the old one; a same-line check produced false
+    positives on `api-guardrail.md`, whose job is to document the rename.
+  - `tests/check-toc.ps1` — extends the ToC rule from `references/` to the whole
+    knowledge base. Twenty pages over 100 lines had none; the largest were 896,
+    446 and 430 lines. It checks accuracy rather than presence, since a drifted
+    ToC is worse than none: every H2 must be listed and every entry must map to
+    a real H2. `-Fix` writes them.
+  - `tests/check-version-sync.ps1` — the release version was declared in four
+    places (SKILL.md, `plugin.json`, and two fields in `marketplace.json`) with
+    nothing checking they agreed.
+
+  The advisory markdownlint job now reports zero issues across all 55 payload
+  files, which it did not before.
+
 ### Fixed
+
+- **The knowledge base taught three superseded things.** In every case the
+  canonical page was correct and a second page had drifted — which is why prose
+  review never caught it: each stale page reads perfectly well on its own.
+  - `docs/xtension-dialog-conventions.md` taught **Shift**-to-save across six
+    sites, including a skeleton labelled "usable verbatim", against the
+    canonical **Ctrl**-to-save. Rewritten from the wrapper template's actual
+    implementation: `GetKeyState(VK_CONTROL)` rather than
+    `GetAsyncKeyState(VK_SHIFT)` — which is why the old dialog-focus gate is
+    gone, since `GetKeyState` is already scoped to our message pump — plus
+    `GetSaveFileNameW` for Ctrl+Close instead of a folder browse with
+    auto-numbering, and the real timer id and label strings.
+  - Four pages prescribed `XWF_AddToReportTable` without naming `XWF_Label`.
+    Historical and empirical records deliberately keep the old name: rewriting
+    the symbol in a measurement table would falsify what was tested.
+  - `docs/conventions/wrapper-anatomy.md` returned `0x01 | 0x04` under the
+    comment "XT_ProcessItem + XT_ProcessItemEx" — the exact misconception
+    `item-collection.md` forbids by name, and one a behaviour eval tests for.
+    The RVS diagram in `xtension-invocation.md` implied the same association.
+
+- **`wrapper-anatomy.md` misdescribed the template it quotes.** Found while
+  verifying the above: the work runs in `XT_Finalize` on X-Ways' thread rather
+  than in the per-item callback, `XT_ProcessItemEx` is a deliberate no-op stub
+  so the 2N double-count cannot happen, and `XT_Prepare` returns `0x01` alone.
 
 - **The `cpp` template only resolved the pre-rename report-table call.** It
   declared and called `XWF_AddToReportTable` and never mentioned `XWF_Label`, so
