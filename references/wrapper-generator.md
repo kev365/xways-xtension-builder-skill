@@ -136,8 +136,9 @@ When a dialog is warranted (cfg > ~6 keys or interactive pickers needed; see
   (`GetSelfDirectory`, `ResolveDefaultTool`, `RunCommand`, etc.) — reuse them
   rather than re-deriving.
 - The Ctrl-to-save gesture is already wired in the **wrapper** template
-  (symbols: `g_runCtrlDown`, `kCtrlPollTimerId`, `WM_DRAWITEM` IDOK,
-  IDOK/IDCANCEL Ctrl branches). Convention page:
+  (symbols: `g_runCtrlDown`, `kCtrlPollTimerId`, the `WM_DRAWITEM` handler for
+  `IDC_BTN_RUN`, and the `IDC_BTN_RUN` / `IDCANCEL` Ctrl branches — the
+  template's Run button is `IDC_BTN_RUN`, not `IDOK`). Convention page:
   `docs/conventions/ctrl-to-save.md`.
 
 For items-to-disk extraction, ID embedding, and tool output mapping back to

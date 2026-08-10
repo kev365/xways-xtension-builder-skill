@@ -36,7 +36,10 @@ $stopWords = @(
     'declaration comment', 'function body'
 )
 
-$sourceLine = [regex]'(?i)\*\*Source of truth:\*\*(.*)'
+# Both forms promise "this code is real and you can copy it".
+#   **Source of truth:** the `wrapper` template (`path`) -> `A`, `B`
+#   Extracted from the `wrapper` template (`path`) -> `A`, `B`
+$sourceLine = [regex]'(?i)(?:\*\*Source of truth:\*\*|Extracted from)(.*)'
 $backticked = [regex]'`([^`]+)`'
 # A cited token is a path when it carries a known extension, or is a dotfile
 # such as `.gitignore` (cited as a file to read, not as a symbol to find).
@@ -61,7 +64,11 @@ foreach ($rel in $mdFiles) {
         # The claim may wrap onto following lines; consume to the blank line.
         $text = $m.Groups[1].Value
         for ($j = $i + 1; $j -lt $lines.Count; $j++) {
-            if ($lines[$j].Trim() -eq '' -or $lines[$j] -match '^#{1,6}\s') { break }
+            # Stop at a blank line, a heading, or the opening fence of the
+            # code block the claim introduces -- the block's own contents are
+            # not part of the claim.
+            if ($lines[$j].Trim() -eq '' -or $lines[$j] -match '^#{1,6}\s' -or
+                $lines[$j] -match '^[ \t]*(`{3,}|~{3,})') { break }
             $text += ' ' + $lines[$j]
         }
 

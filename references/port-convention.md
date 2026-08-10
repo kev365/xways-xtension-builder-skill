@@ -85,11 +85,15 @@ See the Needles section of `docs/conventions/helper-exe-verification.md`.
 **Convention page:** `docs/conventions/ctrl-to-save.md`
 
 **Symbols (in the wrapper template):**
-`g_runCtrlDown`, `kCtrlPollTimerId`,
+`g_runCtrlDown`, `g_closeCtrlDown`, `kCtrlPollTimerId`,
+`g_runRestLabel` / `g_closeRestLabel` (resting labels captured from the `.rc`),
 `WM_TIMER` label-swap block,
-`WM_DRAWITEM` IDOK blue-tint block,
-IDOK Ctrl branch (save-to-sidecar, skip run-only validation),
-IDCANCEL Ctrl branch (GetSaveFileNameW picker, export).
+`WM_DRAWITEM` blue-tint block,
+the Run-button Ctrl branch (save-to-sidecar, skip run-only validation),
+`IDCANCEL` Ctrl branch (`GetSaveFileNameW` picker, export).
+
+The template's Run button is `IDC_BTN_RUN`. Your X-Tension may use `IDOK`
+instead — that is fine; substitute your own control ID throughout.
 
 **Pending-rollout targets:** track these in your own project's CLAUDE.md. Any
 wrapper with a settings dialog + cfg sidecar is a candidate; a wrapper that

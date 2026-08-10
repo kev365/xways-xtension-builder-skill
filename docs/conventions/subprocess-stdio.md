@@ -32,24 +32,32 @@ sa.bInheritHandle = TRUE;
 HANDLE hNul = CreateFileW(L"NUL", GENERIC_READ | GENERIC_WRITE,
                           FILE_SHARE_READ | FILE_SHARE_WRITE,
                           &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-// Optional: a dedicated stderr file handle so the caller can read tracebacks;
-// falls back to hNul when not requested.
-HANDLE hStderr = (hErr != INVALID_HANDLE_VALUE) ? hErr : hNul;
 
-STARTUPINFOW si = {};
-si.cb         = sizeof(si);
-si.dwFlags    = STARTF_USESTDHANDLES;
-si.hStdInput  = hNul;
-si.hStdOutput = hNul;
-si.hStdError  = hStderr;
+STARTUPINFOW si = {}; si.cb = sizeof(si);
+BOOL inheritHandles = FALSE;
+if (hNul != INVALID_HANDLE_VALUE) {
+    si.dwFlags     = STARTF_USESTDHANDLES;
+    si.hStdInput   = hNul;
+    si.hStdOutput  = hNul;
+    si.hStdError   = hNul;
+    inheritHandles = TRUE;   // required for the child to receive them
+}
+
 PROCESS_INFORMATION pi = {};
-CreateProcessW(nullptr, mut.data(), nullptr, nullptr,
-               TRUE,                 // inherit handles so NUL/stderr reach the child
-               CREATE_NO_WINDOW, nullptr,
-               workingDir.empty() ? nullptr : workingDir.c_str(),
-               &si, &pi);
-// ... WaitForSingleObject + GetExitCodeProcess + CloseHandle(all) ...
+BOOL ok = CreateProcessW(nullptr, mut.data(), nullptr, nullptr, inheritHandles,
+                         CREATE_NO_WINDOW, nullptr,
+                         workingDir.empty() ? nullptr : workingDir.c_str(),
+                         &si, &pi);
+if (hNul != INVALID_HANDLE_VALUE) CloseHandle(hNul);
+// ... WaitForSingleObject + GetExitCodeProcess + CloseHandle(pi.*) ...
 ```
+
+Want the child's stderr in a file the analyst can read? Two ways, and the
+template uses the first: wrap the command in `cmd.exe /C "... > out 2> err"`
+(see `BuildToolCmd`), which leaves this function unchanged — `cmd` re-opens
+those files for the tool, and `cmd` itself still gets valid handles instead of
+NULL ones. Otherwise open the file yourself with the same inheritable
+`SECURITY_ATTRIBUTES` and put it in `si.hStdError` in place of `hNul`.
 
 ## Do / Don't
 
