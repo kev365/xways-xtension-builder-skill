@@ -21,7 +21,8 @@ Everything this skill needs is bundled with it — every path below is relative 
 
 ## Hard gates (never violate)
 
-- **Never edit [`templates/x-tensions/`](templates/x-tensions/) in place** — it is the pristine source. Scaffold a copy into `<project>/x-tensions/xways-<name>/` first (the script does this). A user-acquired SDK lives in a `references/api/` tree in *their* project: read-only, and **never** committed (copyright). That SDK tree — not this skill's [`references/`](references/) flow guides — is what "never edit `references/`" means. See [getting-the-sdk](docs/getting-the-sdk.md).
+- **Never edit [`templates/x-tensions/`](templates/x-tensions/) in place** — it is the pristine source. Scaffold a copy into `<project>/x-tensions/xways-<name>/` first (the script does this).
+- **Never edit or commit a user-acquired SDK tree.** It lives at `references/api/` in *their* project — read-only, and never committed (copyright). That tree, not this skill's own [`references/`](references/) flow guides, is what "never edit `references/`" means. See [getting-the-sdk](docs/getting-the-sdk.md).
 - **Never invent `XWF_` functions or flags.** Verify every call against, in order: (1) the distilled notes in [`docs/`](docs/INDEX.md); (2) the live `https://www.x-ways.net/forensics/x-tensions/XWF_functions.html`, which carries post-SDK additions; (3) a locally-downloaded SDK header, if present. Route API questions through [api-guardrail](references/api-guardrail.md).
 - **`x-tensions/` (hyphen) is the source tree; `xtensions\` (no hyphen) is the build-output / deploy folder.** The build scripts stage, verify, and mirror the no-hyphen path, so a wrong spelling breaks the tooling. It is a project convention, not an X-Ways discovery mechanism — how X-Ways actually finds a DLL is in [naming-deployment](docs/conventions/naming-deployment.md).
 - **Close X-Ways before building.** The DLL is locked while X-Ways is open; there is no hot reload.
