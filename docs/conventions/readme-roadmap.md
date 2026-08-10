@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-07-04
+last_updated: 2026-08-09
 author: project
 ---
 
@@ -44,5 +44,5 @@ Run and Roadmap as needed.
 The README is public. No `C:\Users\…` paths, no real case data, no creds. See
 `docs/conventions/repo-hygiene.md`.
 
-**Source of truth:** `.claude/skills/xways-xtension-authoring/assets/README.md.tmpl`
+**Source of truth:** `assets/README.md.tmpl`
 (the scaffold skeleton — section shape).

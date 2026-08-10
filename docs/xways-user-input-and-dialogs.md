@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XWF_functions.html (official) + the X-Ways SDK header (see getting-the-sdk.md)
 type: official-doc
 fetched: 2026-04-27
-last_updated: 2026-04-27
+last_updated: 2026-08-09
 author: X-Ways Software Technology AG; project synthesis
 ---
 
@@ -155,7 +155,7 @@ For settings that should persist across runs (helper-binary paths, default flags
 └── helper.exe
 ```
 
-Resolve the cfg path via `GetModuleFileNameW(g_hSelf)` (DLL's own directory, not the X-Ways executable's directory). The `wrapper` template (`templates/x-tensions/wrapper/`) ships the plain `key = value` cfg pattern in `LoadCfg` / `SaveCfg`; an X-Tension that handles credentials would store them DPAPI-encrypted in the same sidecar instead.
+Resolve the cfg path via `GetModuleFileNameW(g_hSelf)` (DLL's own directory, not the X-Ways executable's directory). The `wrapper` template (`templates/x-tensions/wrapper/`) ships the plain `key = value` cfg pattern in `LoadCfg` / `SaveSettingsToCfg`; an X-Tension that handles credentials would store them DPAPI-encrypted in the same sidecar instead.
 
 ### When to combine with `XWF_GetUserInput`
 

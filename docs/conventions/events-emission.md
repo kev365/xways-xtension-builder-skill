@@ -1,7 +1,7 @@
 ---
-source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+source: empirical testing (see events-viewer-empirical-findings.md) + working X-Tensions; no bundled template emits events
 type: convention
-last_updated: 2026-07-04
+last_updated: 2026-08-09
 author: project
 ---
 

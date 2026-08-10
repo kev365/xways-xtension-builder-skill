@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-07-04
+last_updated: 2026-08-09
 author: project
 ---
 
@@ -53,6 +53,5 @@ constant — sync the `.rc` and README by hand.
 - **Do** drop `-beta` exactly when the tool first goes public.
 - **Don't** let the `.cpp`, `.rc`, and README versions drift apart.
 
-**Source of truth:** the scaffold default in
-`.claude/skills/xways-xtension-authoring/scripts/new-xtension.ps1`
-(`-Version 0.1.0-beta`).
+**Source of truth:** the scaffold default in `scripts/new-xtension.ps1`
+(`$Version = '0.1.0-beta'`).

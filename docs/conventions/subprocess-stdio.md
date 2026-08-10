@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-07-04
+last_updated: 2026-08-09
 author: project
 ---
 
@@ -16,8 +16,8 @@ author: project
 
 **Source of truth:** the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) → `RunCommand`.
 (For a capturing variant — read the child's stdout — see the same file's
-`CreateCapturePipe` / `DrainPipe` / `RunHelper`, which use an inheritable pipe + a drain
-thread to avoid deadlock on chatty children.)
+`RunCaptureStdout`, which swaps the `NUL` handle for an inheritable pipe and
+reads it with a timeout so a chatty child cannot deadlock the caller.)
 
 ## Pattern
 

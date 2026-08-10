@@ -53,6 +53,14 @@ jobs:
         shell: pwsh
         run: .\tests\check-version-sync.ps1
 
+      - name: Cited paths exist
+        shell: pwsh
+        run: .\tests\check-cited-paths.ps1
+
+      - name: Cited symbols exist in the file they are cited from
+        shell: pwsh
+        run: .\tests\check-cited-symbols.ps1
+
   markdownlint:
     name: Markdown lint
     runs-on: ubuntu-latest

@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-07-04
+last_updated: 2026-08-09
 author: project
 ---
 
@@ -22,7 +22,7 @@ author: project
 Reject hard: empty the resolved path and log the reason verbatim.
 
 **Source of truth:** the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) →
-`VerifyHelperIdentity`, `PeIdentityContains`, `DetectHelperVersionFromFlag`.
+`VerifyHelperIdentity`, `PeIdentityContains`, `DetectToolVersion`.
 
 ## In-dialog rejection UI (no MessageBox)
 

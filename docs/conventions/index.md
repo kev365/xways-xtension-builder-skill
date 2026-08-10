@@ -21,7 +21,7 @@ example is extracted from the `wrapper` template and cites the exact symbol.
 - [Helper-exe verification](helper-exe-verification.md) — PE VERSIONINFO + `--version` gates, red-flash UI
 - [Ctrl-to-save gesture](ctrl-to-save.md)
 - [Wrapper anatomy](wrapper-anatomy.md) — the 6 elements
-- [Tool resolution](tool-resolution.md) — the 4-level `ResolveToolPath` order
+- [Tool resolution](tool-resolution.md) — `ResolveDefaultTool` in the template, plus the richer shared-tools-tree form
 - [Licensing](licensing.md) — MIT `LICENSE` + source header; third-party attribution for wrapped tools
 - [Versioning](versioning.md) — `0.Y.Z-beta` until the first public release
 - [README & roadmap](readme-roadmap.md) — README structure + inline `## Roadmap`

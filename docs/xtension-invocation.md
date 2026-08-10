@@ -2,7 +2,7 @@
 source: X-Ways SDK header (see getting-the-sdk.md) + https://www.x-ways.net/forensics/x-tensions/api.html + empirical
 type: official-doc + empirical-finding
 fetched: 2026-04-19
-last_updated: 2026-04-26
+last_updated: 2026-08-09
 author: X-Ways Software Technology AG; empirical research notes from testing + CLI-wrapper X-Tension runs
 ---
 
@@ -386,7 +386,7 @@ Bare filenames in cmdlines that get passed to `CreateProcessW` are resolved per 
 2. **Always full path.** Require absolute paths in the X-Tension's config. Simpler but less portable across analyst machines.
 3. **PATH-based.** Require the helper to be on the user's `PATH`. Simplest setup but requires extra configuration step on each analyst's machine.
 
-The `wrapper` template (`templates/x-tensions/wrapper/`) uses approach (1) — see the `ResolveHelperPath` / `ResolveToolPath` helper, which composes the cfg → bundled → PATH → user-prompt chain. A bare-filename helper resolves correctly wherever the analyst drops the per-tension subfolder, and if it doesn't, the X-Tension prompts once and remembers the choice in a sidecar cfg.
+The `wrapper` template (`templates/x-tensions/wrapper/`) uses approach (1) — see `ResolveDefaultTool`, with the cfg override applied by the caller and Browse... offered in the dialog (it does not search PATH). A bare-filename helper resolves correctly wherever the analyst drops the per-tension subfolder, and if it doesn't, the X-Tension prompts once and remembers the choice in a sidecar cfg.
 
 ### Recursive partner-binary lookup
 
@@ -404,7 +404,7 @@ static std::wstring FindSiblingFile(const std::wstring& root,
                                     int maxDirsVisited = 256);
 ```
 
-Use it AFTER the fixed-path probes so a deliberately-placed binary always wins over the scan. Reference implementation: the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) — the recursive-fallback branch of `ResolveToolPath`.
+Use it AFTER the fixed-path probes so a deliberately-placed binary always wins over the scan. Reference implementation: the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) — `FindSiblingFile`, the bounded-BFS fallback used by `ResolveDefaultTool`.
 
 ### Anchor `GetOpenFileNameW` to the X-Tension folder
 

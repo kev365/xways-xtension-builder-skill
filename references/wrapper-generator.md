@@ -46,16 +46,17 @@ are bundled in this repo).
 Every wrapper must implement the six elements documented in
 `docs/conventions/wrapper-anatomy.md`. Summary:
 
-1. **`RunSettings` struct** — sidecar config payload (fields map 1:1 to
+1. **`Settings` struct** — sidecar config payload (fields map 1:1 to
    `key = value` cfg lines).
-2. **`RunState` global** — per-run transient state: volume/evidence handles,
-   resolved exe path, temp dirs, counters.
-3. **`LoadCfg` (+ `SaveCfg`)** — tiny `key=value` parser/writer; reads the cfg
-   file next to the DLL; initialises `RunSettings` in-place. `SaveCfg` is
+2. **`RunCtx` / `Collected`** — per-run transient state: volume/evidence
+   handles, invocation mode, and the accumulated item list.
+3. **`LoadCfg` (+ `SaveSettingsToCfg`)** — tiny `key=value` parser/writer; reads
+   the cfg file next to the DLL; initialises `Settings` in-place. The writer is
    required if the X-Tension has a dialog (Ctrl-to-save writes through it).
-4. **`XT_Prepare`** — reset `RunState`, call `LoadCfg`, resolve the helper exe
-   via `ResolveToolPath`, create temp/output dirs, return `0x01` (not
-   `0x01 | 0x04` — `0x04` is `EXPECTMOREITEMS`).
+4. **`XT_Prepare`** — reset the accumulator, call `LoadCfg`, resolve the helper
+   exe via `ResolveDefaultTool` (unless the cfg override is set), create
+   temp/output dirs, return `0x01` (not `0x01 | 0x04` — `0x04` is
+   `EXPECTMOREITEMS`).
 5. **`XT_ProcessItem`** — collect item IDs only, so the list honours the active
    filter and the right-click selection. Export `XT_ProcessItemEx` as a no-op
    stub: under `0x01` both exported callbacks fire for every item.
@@ -64,7 +65,7 @@ Every wrapper must implement the six elements documented in
    `XWF_Label`, falling back to `XWF_AddToReportTable` on hosts predating the
    rename (which was backported to 21.4 SR-11 / 21.5 SR-13 / 21.6 SR-8 /
    21.7 SR-4 — it is **not** 21.8-only; see the renamed-calls table in
-   [api-guardrail](api-guardrail.md)) → log stats, clean up, reset `RunState`.
+   [api-guardrail](api-guardrail.md)) → log stats, clean up, reset the accumulator.
 
 See `docs/conventions/wrapper-anatomy.md` for vetted code examples, and the
 **wrapper** template (`templates/x-tensions/wrapper/`) for the full anatomy
@@ -72,21 +73,26 @@ already assembled.
 
 ## 3. Tool resolution
 
-Resolve the helper exe once in `XT_Prepare` via `ResolveToolPath`. The function
-searches a prioritised set of directories relative to the DLL's location:
+Resolve the helper exe once in `XT_Prepare`. The template ships
+`ResolveDefaultTool()` — no arguments — which probes three fixed locations
+under the DLL directory and then falls back to `FindSiblingFile`, a bounded BFS
+(depth 4, 256 directories). The name is matched exactly; the template has no
+glob support.
 
-1. `<dll-dir>\..\tools\<subdir>\<exe>` — shared tools tree, exact subdir
-2. `<dll-dir>\..\tools\<subdir>\<anysub>\<exe>` — shared + vendor-version subdir
-3. `<dll-dir>\tools\<subdir>\<exe>` — self-contained bundle
-4. `<dll-dir>\tools\<subdir>\<anysub>\<exe>` — self-contained + vendor-version
-5. Deep recursive fallback (depth 4) across the whole tools tree
+```text
+<dll-dir>\tools\<tool>\<tool>.exe
+<dll-dir>\tools\<tool>.exe
+<dll-dir>\<tool>.exe
+then FindSiblingFile(<dll-dir>, "<tool>.exe")
+```
 
-The `exe` argument is a `FindFirstFileW` glob — use `L"toolname*.exe"` to
-match version-suffixed release binaries. See `docs/conventions/tool-resolution.md`
-for the full reference and do/don't rules.
+A cfg override (`tool_exe = ...`) is applied by the caller first; if it is set
+and the file exists, `ResolveDefaultTool` is never called.
 
-A cfg-override path (`toolname_exe = ...`) is resolved by the caller before
-`ResolveToolPath` is invoked; if the override exists, skip `ResolveToolPath`.
+If you need one helper tree shared across several X-Tensions, there is a richer
+`ResolveToolPath(subdir, exeGlob)` form used by working X-Tensions — **it is not
+in the template**. See `docs/conventions/tool-resolution.md`, which documents
+both and the do/don't rules.
 
 ## 4. Identity verification (mandatory)
 
@@ -98,7 +104,7 @@ Full convention including the in-dialog flash UI (bold-red Version slot, 250 ms
 toggle for ~2 s, Run disabled): `docs/conventions/helper-exe-verification.md`.
 
 Symbols already wired in the **wrapper** template (`templates/x-tensions/wrapper/`):
-`VerifyHelperIdentity`, `PeIdentityContains`, `DetectHelperVersionFromFlag`,
+`VerifyHelperIdentity`, `PeIdentityContains`, `DetectToolVersion`,
 `ShowHelperRejection`, `ClearHelperRejection`, `WM_CTLCOLORSTATIC` handler,
 `WM_TIMER` flash counter.
 
@@ -114,7 +120,8 @@ hard-crashes any child that touches stdio. See `docs/conventions/subprocess-stdi
 
 Source of truth: the **wrapper** template (`templates/x-tensions/wrapper/`) →
 `RunCommand`. For the capturing variant (read stdout), the same template
-provides the pipe helpers (`CreateCapturePipe` / `DrainPipe` / `RunHelper`).
+provides `RunCaptureStdout`, which swaps the `NUL` handle for an inheritable
+pipe and reads it with a timeout.
 
 ## 6. UI convention for settings dialogs
 
@@ -126,7 +133,7 @@ When a dialog is warranted (cfg > ~6 keys or interactive pickers needed; see
   `<tool>_extra_args` cfg key) for any flag not worth a dedicated control. Do
   NOT model every CLI flag individually.
 - The **wrapper** template already provides the shared helpers
-  (`GetSelfDirectory`, `ResolveToolPath`, `RunCommand`, etc.) — reuse them
+  (`GetSelfDirectory`, `ResolveDefaultTool`, `RunCommand`, etc.) — reuse them
   rather than re-deriving.
 - The Ctrl-to-save gesture is already wired in the **wrapper** template
   (symbols: `g_runCtrlDown`, `kCtrlPollTimerId`, `WM_DRAWITEM` IDOK,

@@ -532,12 +532,37 @@ static bool RunCommand(const std::wstring& cmdline, const std::wstring& workingD
                        DWORD& exitCodeOut) {
     std::vector<wchar_t> mut(cmdline.begin(), cmdline.end());
     mut.push_back(L'\0');
+
+    // X-Ways is a GUI-subsystem process with no console attached, so a child
+    // spawned from here inherits NULL std handles and hard-crashes the moment
+    // it touches stdout/stderr (anything using rich / colorama /
+    // prompt_toolkit, and plenty besides). Hand it the NUL device explicitly.
+    // Callers that wrap the command in `cmd.exe /C ... > out 2> err` are still
+    // fine: cmd re-opens those files for the tool, and cmd itself gets valid
+    // handles instead of NULL ones. See docs/conventions/subprocess-stdio.md.
+    SECURITY_ATTRIBUTES sa = {};
+    sa.nLength        = sizeof(sa);
+    sa.bInheritHandle = TRUE;
+    HANDLE hNul = CreateFileW(L"NUL", GENERIC_READ | GENERIC_WRITE,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE,
+                              &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+
     STARTUPINFOW si = {}; si.cb = sizeof(si);
+    BOOL inheritHandles = FALSE;
+    if (hNul != INVALID_HANDLE_VALUE) {
+        si.dwFlags     = STARTF_USESTDHANDLES;
+        si.hStdInput   = hNul;
+        si.hStdOutput  = hNul;
+        si.hStdError   = hNul;
+        inheritHandles = TRUE;   // required for the child to receive them
+    }
+
     PROCESS_INFORMATION pi = {};
-    BOOL ok = CreateProcessW(nullptr, mut.data(), nullptr, nullptr, FALSE,
+    BOOL ok = CreateProcessW(nullptr, mut.data(), nullptr, nullptr, inheritHandles,
                              CREATE_NO_WINDOW, nullptr,
                              workingDir.empty() ? nullptr : workingDir.c_str(),
                              &si, &pi);
+    if (hNul != INVALID_HANDLE_VALUE) CloseHandle(hNul);
     if (!ok) { exitCodeOut = (DWORD)-1; return false; }
     WaitForSingleObject(pi.hProcess, INFINITE);
     GetExitCodeProcess(pi.hProcess, &exitCodeOut);

@@ -54,7 +54,7 @@ are additional read-and-port references — none are bundled in this repo.)
 **Convention page:** `docs/conventions/helper-exe-verification.md`
 
 **Symbols (in the wrapper template):**
-`VerifyHelperIdentity`, `PeIdentityContains`, `DetectHelperVersionFromFlag`,
+`VerifyHelperIdentity`, `PeIdentityContains`, `DetectToolVersion`,
 `ShowHelperRejection`, `ClearHelperRejection`,
 plus the `WM_CTLCOLORSTATIC` handler (recolour Version label while rejected)
 and the `WM_TIMER` flash counter (`helperFlashTicks`, `kHelperFlashTimerId`).

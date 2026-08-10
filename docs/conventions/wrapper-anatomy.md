@@ -18,12 +18,12 @@ anatomy. The canonical implementation is the `wrapper` template (`templates/x-te
 
 ## The six elements
 
-1. **`RunSettings` struct** — sidecar config payload (fields map 1:1 to `key = value` cfg lines).
-2. **`RunState` global** — holds per-run transient state: volume/evidence handles, resolved exe path, temp dirs, counters.
-3. **`LoadCfg` (+ `SaveCfg`)** — tiny `key=value` parser/writer; reads the cfg file next to the DLL; initialises a `RunSettings` in-place.
-4. **`XT_Prepare`** — reset `RunState`, log, call `LoadCfg`, resolve the helper exe via `ResolveToolPath`, create temp/output dirs, return `0x01` to request per-item callbacks.
+1. **`Settings` struct** — sidecar config payload (fields map 1:1 to `key = value` cfg lines).
+2. **`RunCtx` / `Collected`** — per-run transient state: volume/evidence handles, invocation mode, and the accumulated item list.
+3. **`LoadCfg` (+ `SaveSettingsToCfg`)** — tiny `key=value` parser/writer; reads the cfg file next to the DLL; initialises a `Settings` in-place.
+4. **`XT_Prepare`** — reset state, log, call `LoadCfg`, resolve the helper exe (`ResolveDefaultTool`, unless the cfg override is set), create temp/output dirs, return `0x01` to request per-item callbacks.
 5. **`XT_ProcessItem`** — **collect only.** Push each `nItemID` onto the accumulator so the list honours the active filter and the right-click selection; poll `XWF_ShouldStop` every 1024 items. Export `XT_ProcessItemEx` as a **no-op stub** — see the note below.
-6. **`XT_Finalize`** — the actual run: MZ/size gate → extract item bytes to a temp file → spawn the subprocess → parse output → tag items via `XWF_Label` → log stats, clean up temp dirs, reset `RunState`.
+6. **`XT_Finalize`** — the actual run: MZ/size gate → extract item bytes to a temp file → spawn the subprocess → parse output → tag items via `XWF_Label` → log stats, clean up temp dirs, reset state.
 
 Three things about elements 4–6 are easy to get wrong:
 
@@ -41,46 +41,48 @@ Three things about elements 4–6 are easy to get wrong:
 
 ## Pattern
 
-Extracted from the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) — `RunStats`, `RunState`,
-the `LoadCfg` call in `XT_Prepare`, and the `XT_Finalize` stats log; and the
-`RunSettings` struct in the same file:
+Extracted from the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) — the
+`Settings` and `Collected` structs, `XT_Prepare`, the per-item callbacks, and
+`XT_Finalize`:
 
 ```cpp
-// Element 1: RunSettings — sidecar config payload
-struct RunSettings {
-    std::wstring tool_exe;                          // override for tools\mytool\mytool.exe
-    std::wstring tool_extra_args;                   // free-form extra args ("-r ./rules" etc.)
-    bool         tag_per_capability    = true;
-    bool         tag_scanned_no_match  = false;
-    INT64        min_pe_size_bytes     = 1024;
-    INT64        max_pe_size_bytes     = 256LL * 1024 * 1024;
+// Element 1: Settings — sidecar config payload, one field per cfg key
+struct Settings {
+    std::wstring toolExe;              // resolved absolute path to <yourtool>.exe
+    std::wstring toolVersion;          // detected version banner (display-only)
+    std::wstring outputBase;           // base dir; runDir = outputBase\run-...
+    INT64        minSizeBytes = 1;     // scope filters, applied before we hand
+    INT64        maxSizeMiB   = 256;   // any bytes to the tool
+    std::wstring extraArgs;            // free-form pass-through
+    bool         addToReportTable = true;
+    bool         addComment       = true;
+    int          tagThreshold     = 1;
+    bool         verbose          = true;   // toggles Log vs LogVerbose
 };
 
-// Element 2: RunState — per-run transient state
-struct RunStats {
-    size_t pe_seen = 0; size_t pe_scanned = 0; size_t pe_matched = 0;
-    size_t pe_skipped_size = 0; size_t tool_failures = 0; size_t tags_added = 0;
+// Element 2: Collected — the item accumulator, filled by XT_ProcessItem and
+// consumed in XT_Finalize. RunCtx carries the same handles into the dialog.
+struct Collected {
+    bool              ready = false;
+    bool              aborted = false;   // analyst hit Stop/Esc during enumeration
+    HANDLE            hVolume = nullptr;
+    HANDLE            hEvidence = nullptr;
+    InvocationMode    invocationMode = InvocationMode::Run;
+    std::vector<LONG> items;
 };
-struct RunState {
-    HANDLE       hVolume = nullptr; HANDLE hEvidence = nullptr;
-    DWORD        nOpType = 0;
-    RunSettings  settings;
-    std::wstring runDir; std::wstring inDir; std::wstring outDir;
-    std::wstring toolExe;   // resolved once in XT_Prepare
-    RunStats     stats;
-};
-static RunState g_run;
+static Collected g_collected;
 
 // Element 4: XT_Prepare — init, load cfg, resolve exe, create dirs
 LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void*) {
-    g_run = RunState{};
-    g_run.hVolume = hVolume; g_run.hEvidence = hEvidence; g_run.nOpType = nOpType;
+    g_collected = Collected{};
+    g_collected.ready     = true;
+    g_collected.hVolume   = hVolume;
+    g_collected.hEvidence = hEvidence;
     std::wstring cfgPath = GetSelfDirectory() + L"\\my_xtension.cfg";
-    LoadCfg(cfgPath, g_run.settings);                          // Element 3
-    g_run.toolExe = g_run.settings.tool_exe.empty()
-                  ? ResolveToolPath(L"mytool", L"mytool.exe")  // resolve helper exe (see Tool resolution)
-                  : g_run.settings.tool_exe;
-    // ... create run/in/out dirs, return callback flags ...
+    LoadCfg(cfgPath, g_settings);                   // Element 3
+    if (g_settings.toolExe.empty() || !FileExists(g_settings.toolExe))
+        g_settings.toolExe = ResolveDefaultTool();  // see Tool resolution
+    // ... create run/in/out dirs ...
     return 0x01;  // CALLPI — request per-item callbacks. NOT 0x01|0x04.
 }
 
@@ -106,22 +108,23 @@ else if (XWF_AddToReportTable) XWF_AddToReportTable(nItemID, tableName, 0);
 // This is where the extract/spawn/parse/tag work happens, on X-Ways' thread.
 LONG __stdcall XT_Finalize(HANDLE, HANDLE, DWORD, void*) {
     if (g_collected.ready && !g_collected.aborted) ShowDialogAndRun(g_collected);
-    Log(FormatW(L"mytool summary: pe_seen=%zu scanned=%zu matched=%zu "
-                L"skipped_size=%zu failures=%zu tags=%zu",
-                g_run.stats.pe_seen, g_run.stats.pe_scanned, g_run.stats.pe_matched,
-                g_run.stats.pe_skipped_size, g_run.stats.tool_failures, g_run.stats.tags_added));
-    Log(L"done. outputs: " + g_run.runDir);
-    g_run = RunState{};
+    Log(FormatW(L"summary: seen=%zu scanned=%zu matched=%zu tags=%zu",
+                stats.seen, stats.scanned, stats.matched, stats.tagsAdded));
+    g_collected = Collected{};
     return 0;
 }
 ```
 
-**Source of truth:** the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) → `RunSettings`, `RunStats`, `RunState`, `Collected`, `XT_Prepare`, `XT_ProcessItem`, `XT_ProcessItemEx`, `XT_Finalize`
+The template keeps its run counters on the worker context (`WorkerCtx`) rather
+than in a standalone stats struct, since the worker writes them and the dialog
+reads them on completion.
+
+**Source of truth:** the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) → `Settings`, `RunCtx`, `Collected`, `LoadCfg`, `SaveSettingsToCfg`, `ResolveDefaultTool`, `XT_Prepare`, `XT_ProcessItem`, `XT_ProcessItemEx`, `XT_Finalize`
 
 ## Do / Don't
 
-- **Do** reset `RunState` to a default-constructed value at the top of `XT_Prepare` (`g_run = RunState{};`) so stale state from a previous run never leaks.
-- **Do** resolve the helper exe once in `XT_Prepare` and store it in `RunState` — do not re-resolve per item.
+- **Do** reset the accumulator to a default-constructed value at the top of `XT_Prepare` (`g_collected = Collected{};`) so stale state from a previous run never leaks.
+- **Do** resolve the helper exe once in `XT_Prepare` and store it in `Settings.toolExe` — do not re-resolve per item.
 - **Do** create all temp/output dirs in `XT_Prepare`; bail early and return 0 if any creation fails (no dirs → no items processed).
 - **Do** log a one-line summary (counts) in `XT_Finalize`; it's the only feedback the analyst sees after a headless RVS run.
 - **Do** prefer `XWF_Label` for tagging and keep `XWF_AddToReportTable` only as an explicit older-host fallback — resolve `XWF_Label` with `GetProcAddress` *without* counting it as a missing import, since pre-rename hosts legitimately lack it.
@@ -130,4 +133,4 @@ LONG __stdcall XT_Finalize(HANDLE, HANDLE, DWORD, void*) {
 - **Don't** do file I/O or subprocess spawning inside `XT_Init` — that runs before the volume is open.
 - **Don't** leave temp extraction dirs on disk after `XT_Finalize` for successful runs — clean up to avoid filling the analyst's drive.
 
-See also: [Tool resolution](tool-resolution.md) for how `ResolveToolPath` works.
+See also: [Tool resolution](tool-resolution.md) for how `ResolveDefaultTool` works, and for the richer shared-tools-tree variant that is *not* in the template.
