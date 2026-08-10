@@ -59,7 +59,7 @@ BEGIN
     PUSHBUTTON      "&Open output folder",                    IDC_BTN_OPEN_OUTPUT,      63, 208,  90,  14
     PUSHBUTTON      "Open &cfg",                              IDC_BTN_OPEN_CFG,        159, 208,  60,  14
     DEFPUSHBUTTON   "&Run",                                   IDC_BTN_RUN,             303, 208,  50,  14
-    PUSHBUTTON      "Cancel",                                 IDCANCEL,                359, 208,  50,  14
+    PUSHBUTTON      "Close",                                  IDCANCEL,                359, 208,  50,  14
 END
 
 // =============================================================================

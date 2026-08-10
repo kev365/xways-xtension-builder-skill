@@ -113,7 +113,7 @@ CreateProcessW(nullptr, cmdline.data(), nullptr, nullptr, FALSE,
 WaitForSingleObject(pi.hProcess, INFINITE);
 ```
 
-Pros: zero plumbing, analyst sees real-time tool output in a console window. Cons: extra window, no in-DLL cancel (analyst has to kill the console or the process).
+Pros: zero plumbing, analyst sees real-time tool output in a console window. Cons: extra window, no in-DLL cancel (analyst has to kill the console or the process) — and it is the wrong choice for anything that runs headless under RVS, where a console popping up per item is unusable. Do not reach for it as a way to avoid handing the child real std handles; see [subprocess-stdio.md](conventions/subprocess-stdio.md).
 
 ### b) `CREATE_NO_WINDOW` + redirect stderr to a log file
 

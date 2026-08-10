@@ -865,14 +865,42 @@ case WM_COMMAND:
     }
 ```
 
-**Round-trip the exact `.rc` label.** The flip writes the resting label back
-with `SetDlgItemTextW`, so whatever string you write on release is what the
-button keeps for the rest of the dialog's life — the `.rc` text is only the
-initial value. If the `.rc` says `"&Run"` and the timer restores `L"Run"`, the
-Alt+R accelerator is silently lost the first time the analyst taps Ctrl. Keep
-the two in sync, and give `IDCANCEL` its resting label (`Close`) in the `.rc`
-too, so the dialog doesn't open reading `Cancel` and switch to `Close` after the
-first Ctrl tap.
+**Capture the resting label; never hardcode the restore string.** The flip
+writes the resting label back with `SetDlgItemTextW`, so whatever literal you
+write on release is what the button keeps for the rest of the dialog's life.
+Hardcoding it silently drops anything the `.rc` carries that the literal does
+not — write `L"Run"` against an `.rc` that says `"&Run"` and the Alt+R
+accelerator is gone. Read the label out at `WM_INITDIALOG` instead, and the two
+cannot disagree:
+
+```cpp
+static wchar_t g_runRestLabel[64]   = L"Run";
+static wchar_t g_closeRestLabel[64] = L"Close";
+
+// WM_INITDIALOG:
+GetDlgItemTextW(hDlg, IDC_BTN_RUN, g_runRestLabel,   _countof(g_runRestLabel));
+GetDlgItemTextW(hDlg, IDCANCEL,    g_closeRestLabel, _countof(g_closeRestLabel));
+
+// WM_TIMER: swap in the transient label, restore the captured one.
+SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : g_runRestLabel);
+```
+
+The transient labels (`Save`, `Save as...`) deliberately carry no `&` mnemonic:
+an accelerator that exists only while a modifier is held is worse than none.
+
+Give `IDCANCEL` its **resting** label in the `.rc` — `Close`, not `Cancel`. It
+reads `Cancel` only while a worker is running, where it performs a cooperative
+abort, so `SetDialogBusy` owns that swap and the timer's restore is
+busy-aware:
+
+```cpp
+SetDlgItemTextW(hDlg, IDCANCEL, closeSaveMode ? L"Save as..."
+                                : (g_workerThread ? L"Cancel" : g_closeRestLabel));
+```
+
+Owner-draw does not interfere: `WM_DRAWITEM` renders with `DrawTextW` and no
+`DT_NOPREFIX`, so `&` still underlines and the dialog manager still routes the
+Alt key by the button's window text.
 
 Tooltip the Run button so analysts discover the modifier without reading the README. See the `IDC_BTN_RUN` tooltip in the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) for the canonical text.
 

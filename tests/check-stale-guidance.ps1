@@ -72,11 +72,44 @@ $rules = @(
         Why     = '0x04 is EXPECTMOREITEMS, not "also call the Ex variant". Only an item-creating X-Tension returns it.'
         AllowIfNegated = $true
         AlsoAllowIf    = 'EXPECTMOREITEMS|creat'
+    },
+    @{
+        # Found by hand after the first three rules went in: a reference page
+        # called XWF_Label "the 21.8+ name". Someone targeting 21.7 reads that
+        # and correctly concludes they must use the old call -- so a wrong
+        # version claim reintroduces the deprecated-call habit by a side door.
+        Name    = 'Report-table rename dated 21.8-only'
+        Pattern = 'XWF_Label|XWF_GetLabels'
+        Canon   = 'docs/xways-api-recency-research.md'
+        Why     = 'The rename was backported to 21.4 SR-11 / 21.5 SR-13 / 21.6 SR-8 / 21.7 SR-4. Only label *removal* (nFlags 0x80000000) is 21.8+. A line tying the rename itself to 21.8 must say "backport" or name an SR.'
+        # Both must be present: the version *and* a claim about the naming.
+        # "Audit my old X-Tension for 21.8" is a target version, not a claim
+        # about when the rename shipped, and must not trip this.
+        # \bnames?\b deliberately does not match lpLabelName / lpReportTableName.
+        RequiresAllOf  = @('21\.8', '\bnames?\b')
+        AllowIfNegated = $false
+        AlsoAllowIf    = 'backport|SR-|removal|remove'
+    },
+    @{
+        # The xtmgr template and every manager hook were removed in 0.5.0
+        # because xways-xt-manager is not public. A rule is cheaper than
+        # rediscovering a half-reintroduced contract in a later audit.
+        Name    = 'Removed xt-manager support'
+        Pattern = 'cpp-xtmgr-compatible|XwaysManagerPluginEntry|manager-plugin\.h|check-manager-sync|-Template\s+xtmgr'
+        Canon   = 'CHANGELOG.md (0.5.0, Removed)'
+        Why     = 'Manager-compatible scaffolding was removed; xways-xt-manager is not public. Do not reintroduce it in the skill.'
+        AllowIfNegated = $false
     }
 )
 
-$mdFiles = & git -C $Root ls-files '*.md'
+# Prose and code both. The starter templates are the strongest lever on what
+# generated X-Tensions look like -- the cpp template teaching only the
+# pre-rename call is what kept producing outdated report-table code, and no
+# markdown check would ever have seen it.
+$mdFiles = & git -C $Root ls-files '*.md' '*.cpp' '*.h' '*.py' '*.rc' '*.ps1'
 if ($LASTEXITCODE -ne 0) { Write-Host 'ERROR: git ls-files failed' -ForegroundColor Red; exit 1 }
+# This checker names the patterns it hunts for, so it would flag itself.
+$mdFiles = $mdFiles | Where-Object { $_ -ne 'tests/check-stale-guidance.ps1' }
 
 foreach ($rel in $mdFiles) {
     if ($excludedPaths -contains $rel) { continue }
@@ -93,6 +126,16 @@ foreach ($rel in $mdFiles) {
 
         foreach ($rule in $rules) {
             if ($line -notmatch $rule.Pattern) { continue }
+            # Some rules fire only on a co-occurrence (a symbol *and* a wrong
+            # version claim), not on the symbol alone. Every listed pattern
+            # must be present on the line.
+            if ($rule.RequiresAllOf) {
+                $allPresent = $true
+                foreach ($req in @($rule.RequiresAllOf)) {
+                    if ($line -notmatch $req) { $allPresent = $false; break }
+                }
+                if (-not $allPresent) { continue }
+            }
             if ($rule.AllowIfNegated -and $line -imatch $negationCue) { continue }
             # Look at the neighbourhood, not just the line: a fallback branch
             # names the modern call one line up.

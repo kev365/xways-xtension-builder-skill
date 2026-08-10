@@ -54,11 +54,11 @@ jobs:
         run: .\tests\check-version-sync.ps1
 
   markdownlint:
-    name: Markdown lint (advisory)
+    name: Markdown lint
     runs-on: ubuntu-latest
-    # Advisory: surfaces style issues without blocking. Flip to a hard gate once
-    # the docs are lint-clean.
-    continue-on-error: true
+    # Was advisory until the docs were lint-clean; all 62 markdown files now
+    # pass, so this is a hard gate. Keeping it advisory from here would only
+    # let the count drift back up.
     steps:
       - uses: actions/checkout@v4
       - uses: DavidAnson/markdownlint-cli2-action@v16

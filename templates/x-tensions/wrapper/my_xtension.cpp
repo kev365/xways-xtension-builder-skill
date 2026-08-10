@@ -981,6 +981,15 @@ struct WorkerCtx {
 };
 static WorkerCtx*   g_worker      = nullptr;
 static HANDLE       g_workerThread = nullptr;
+
+// Resting button labels, captured from the .rc at WM_INITDIALOG rather than
+// hardcoded here. The Ctrl gesture swaps these for "Save" / "Save as..." and
+// must put back exactly what the .rc declared -- a hardcoded restore string
+// silently drops anything the .rc carries that the literal does not, which is
+// how the "&Run" mnemonic went missing. Capturing makes the two impossible to
+// disagree.
+static wchar_t      g_runRestLabel[64]   = L"Run";
+static wchar_t      g_closeRestLabel[64] = L"Close";
 static std::wstring g_lastRunDir;  // set on DONE, used by "Open output folder" button
 // True only when the async version probe has confirmed the configured exe
 // actually identifies as the tool. Gates the Run button.
@@ -1400,6 +1409,10 @@ static void SetDialogBusy(HWND hDlg, bool busy) {
         SendMessageW(hProg, PBM_SETPOS, 0, 0);
         EnableWindow(GetDlgItem(hDlg, IDCANCEL), TRUE);
     }
+    // IDCANCEL means "abort the run" while busy and "close the dialog"
+    // otherwise; ctrl-to-save.md specifies the label follows that.
+    SetDlgItemTextW(hDlg, IDCANCEL, busy ? L"Cancel" : g_closeRestLabel);
+    InvalidateRect(GetDlgItem(hDlg, IDCANCEL), nullptr, TRUE);
     for (int id : kInputCtlIds) {
         HWND h = GetDlgItem(hDlg, id);
         if (h && id != IDCANCEL) EnableWindow(h, busy ? FALSE : TRUE);
@@ -1674,8 +1687,9 @@ static INT_PTR CALLBACK SettingsDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM l
         // Ctrl-to-save: DM_SETDEFID so Enter still triggers Run even with
         // BS_OWNERDRAW (which suppresses the DEFPUSHBUTTON ring).
         SendMessageW(hDlg, DM_SETDEFID, IDC_BTN_RUN, 0);
-        SetDlgItemTextW(hDlg, IDC_BTN_RUN, L"Run");
-        SetDlgItemTextW(hDlg, IDCANCEL, L"Close");
+        // Capture the .rc labels; these are what the Ctrl gesture restores.
+        GetDlgItemTextW(hDlg, IDC_BTN_RUN, g_runRestLabel,   _countof(g_runRestLabel));
+        GetDlgItemTextW(hDlg, IDCANCEL,    g_closeRestLabel, _countof(g_closeRestLabel));
         for (int id : { IDC_BTN_RUN, (int)IDCANCEL, IDC_BTN_OPEN_OUTPUT,
                         IDC_BTN_ABOUT, IDC_BTN_OPEN_CFG }) {
             HWND h = GetDlgItem(hDlg, id);
@@ -1757,15 +1771,21 @@ static INT_PTR CALLBACK SettingsDlgProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM l
             bool ctrlDown = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
             if (ctrlDown != g_runCtrlDown) {
                 g_runCtrlDown = ctrlDown;
-                SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : L"Run");
+                // "Save" carries no mnemonic on purpose: an accelerator that
+                // exists only while Ctrl is held is worse than none.
+                SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : g_runRestLabel);
                 InvalidateRect(GetDlgItem(hDlg, IDC_BTN_RUN), nullptr, TRUE);
             }
             // Close flips to "Save as..." only when Ctrl held AND no worker.
             bool closeSaveMode = ctrlDown && (g_workerThread == nullptr);
             if (closeSaveMode != g_closeCtrlDown) {
                 g_closeCtrlDown = closeSaveMode;
+                // While a worker runs, IDCANCEL is a cooperative abort, so it
+                // reads "Cancel" rather than the resting label.
                 SetDlgItemTextW(hDlg, IDCANCEL,
-                                closeSaveMode ? L"Save as..." : L"Close");
+                                closeSaveMode ? L"Save as..."
+                                              : (g_workerThread ? L"Cancel"
+                                                                : g_closeRestLabel));
                 InvalidateRect(GetDlgItem(hDlg, IDCANCEL), nullptr, TRUE);
             }
             return TRUE;

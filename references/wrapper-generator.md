@@ -54,12 +54,17 @@ Every wrapper must implement the six elements documented in
    file next to the DLL; initialises `RunSettings` in-place. `SaveCfg` is
    required if the X-Tension has a dialog (Ctrl-to-save writes through it).
 4. **`XT_Prepare`** — reset `RunState`, call `LoadCfg`, resolve the helper exe
-   via `ResolveToolPath`, create temp/output dirs, return item-callback flags.
-5. **`XT_ProcessItem(Ex)`** — MZ/size gate → extract item bytes to temp file →
-   spawn subprocess with `\NUL` stdio → parse output → tag via
-   `XWF_Label` (the 21.8+ name; `XWF_AddToReportTable` is its deprecated
-   pre-21.8 name — see the api-guardrail deprecated-calls table).
-6. **`XT_Finalize`** — log per-item stats, clean up temp dirs, reset `RunState`.
+   via `ResolveToolPath`, create temp/output dirs, return `0x01` (not
+   `0x01 | 0x04` — `0x04` is `EXPECTMOREITEMS`).
+5. **`XT_ProcessItem`** — collect item IDs only, so the list honours the active
+   filter and the right-click selection. Export `XT_ProcessItemEx` as a no-op
+   stub: under `0x01` both exported callbacks fire for every item.
+6. **`XT_Finalize`** — the run itself: MZ/size gate → extract item bytes to a
+   temp file → spawn the subprocess with `\NUL` stdio → parse output → tag via
+   `XWF_Label`, falling back to `XWF_AddToReportTable` on hosts predating the
+   rename (which was backported to 21.4 SR-11 / 21.5 SR-13 / 21.6 SR-8 /
+   21.7 SR-4 — it is **not** 21.8-only; see the renamed-calls table in
+   [api-guardrail](api-guardrail.md)) → log stats, clean up, reset `RunState`.
 
 See `docs/conventions/wrapper-anatomy.md` for vetted code examples, and the
 **wrapper** template (`templates/x-tensions/wrapper/`) for the full anatomy
