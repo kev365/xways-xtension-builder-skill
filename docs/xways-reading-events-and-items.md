@@ -12,6 +12,14 @@ How to consume the data already present in an X-Ways case from inside an X-Tensi
 
 The short answer: **yes, both surfaces are readable from C++**, via stable APIs in the SDK header. The Events viewer enumerates through `XWF_GetEvent`; the Directory Browser is read via the per-item APIs (`XWF_GetItemCount`, `XWF_GetItemName`, `XWF_GetItemSize`, etc.) plus `XWF_OpenItem` + `XWF_Read` for file content. There is no API to read the live grid's column state, filters, or selection-as-rendered — you read from the underlying snapshot, which is the source of truth.
 
+## Contents
+
+- Reading existing events (`XWF_GetEvent`)
+- Reading the Directory Browser (volume snapshot items)
+- Combining: events × items × content
+- What you cannot read
+- See also
+
 ## Reading existing events (`XWF_GetEvent`)
 
 Available since **v18.1**. Full reference in [xways-events-api.md](xways-events-api.md); the analyzer-specific shape:

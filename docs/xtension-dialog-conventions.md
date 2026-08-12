@@ -2,7 +2,7 @@
 source: synthesized from CLI-wrapper dialog implementations (see exemplars.md and the wrapper template)
 type: convention / template-companion
 fetched: 2026-05-14
-last_updated: 2026-05-14
+last_updated: 2026-08-09
 ---
 
 # X-Tension dialog conventions
@@ -25,6 +25,38 @@ Reference implementations:
   X-Tension whose configuration is short and analyst-stable (e.g. a Neo4j URL or
   a target-query path); promote to a real dialog once user-facing toggles
   multiply.
+
+## Contents
+
+- When to use which pattern
+- File layout (.rc dialogs)
+- Identifier numbering convention
+- Standard section layout
+- Title bar
+- Font hierarchy
+- Settings round-trip (LPARAM convention)
+- Context-aware defaults
+- Hint text for disabled controls
+- One-time detection caching
+- Browse buttons
+- Status-text coloring (optional polish)
+- Programmatic children inside a GROUPBOX (padTop must clear the title)
+- Auto-fit shrink-to-content (advanced)
+- Common control IDs (recommended)
+- Sidecar cfg ↔ dialog state
+- Cancel safety
+- Validation
+- Don't
+- Cue-banner placeholders (every edit gets one)
+- Tooltip popups (every non-obvious control)
+- Progress + task status pattern (worker-driven)
+- Default output base = case directory
+- Button label conventions
+- Modifier-key state on action buttons
+- Folder pickers: prefer `IFileOpenDialog` over `SHBrowseForFolderW`
+- Sidecar cfg: one source of truth + Ctrl-to-save
+- Filter-aware item collection (always-collect path)
+- Template integration
 
 ## When to use which pattern
 
@@ -608,9 +640,13 @@ would dump artifacts side-by-side in the case root.
 
 ## Modifier-key state on action buttons
 
-When a button has a "primary + modifier" variant (e.g. Run + Shift-to-save, Copy + Shift-for-with-attachments), make the modifier state **visible** while held. Two complementary signals:
+When a button has a "primary + modifier" variant, make the modifier state
+**visible** while held. The canonical gesture is
+[Ctrl-to-save](conventions/ctrl-to-save.md) — Ctrl+Run saves the cfg, Ctrl+Close
+saves a copy elsewhere — and the same two signals apply to any other
+primary + modifier pairing you add:
 
-1. **Label flip** — change the button text in the WM_TIMER tick that polls the modifier key. See the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) (`&Run` ↔ `&Save`).
+1. **Label flip** — change the button text in the WM_TIMER tick that polls the modifier key. See the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) (`Run` ↔ `Save`).
 2. **Color flip** — paint the button face in the Windows accent blue (`RGB(0, 120, 215)` / pressed `RGB(0, 90, 168)`) with white text so the analyst gets a strong visual cue that "clicking now does something different." Requires switching the button to `BS_OWNERDRAW` style at `WM_INITDIALOG` and handling `WM_DRAWITEM` to paint the alternate state. Force a `InvalidateRect` on the button each time the timer flips the label, so the new paint kicks in even when the mouse isn't over it.
 
 Owner-draw skeleton (drop into your X-Tension):
@@ -624,13 +660,13 @@ for (int id : { IDC_BTN_RUN, (int)IDCANCEL }) {
 }
 
 // WM_TIMER (label-flip path):
-SetDlgItemTextW(hDlg, IDC_BTN_RUN, shiftDown ? L"&Save" : L"&Run");
+SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : L"Run");
 InvalidateRect(GetDlgItem(hDlg, IDC_BTN_RUN), nullptr, TRUE);
-// Cancel button only flips when no worker is running, so the analyst
+// Close button only flips when no worker is running, so the analyst
 // doesn't get a confusing "Cancel or save?" affordance mid-scan.
-bool cancelSaveMode = shiftDown && (g_workerThread == nullptr);
+bool closeSaveMode = ctrlDown && (g_workerThread == nullptr);
 SetDlgItemTextW(hDlg, IDCANCEL,
-                cancelSaveMode ? L"Save copy to..." : L"Cancel");
+                closeSaveMode ? L"Save as..." : L"Close");
 InvalidateRect(GetDlgItem(hDlg, IDCANCEL), nullptr, TRUE);
 
 // WM_DRAWITEM (one handler for BOTH buttons):
@@ -638,7 +674,7 @@ DRAWITEMSTRUCT* dis = (DRAWITEMSTRUCT*)lp;
 bool isRunBtn    = (dis->CtlID == IDC_BTN_RUN);
 bool isCancelBtn = (dis->CtlID == IDCANCEL);
 if (!isRunBtn && !isCancelBtn) break;
-bool altMode = (isRunBtn && s_shiftLabelOn) || (isCancelBtn && s_cancelLabelOn);
+bool altMode = (isRunBtn && g_runCtrlDown) || (isCancelBtn && g_closeCtrlDown);
 bool isPressed = (dis->itemState & ODS_SELECTED) != 0;
 COLORREF bg = altMode ? (isPressed ? RGB(0,90,168) : RGB(0,120,215))
                       : GetSysColor(COLOR_BTNFACE);
@@ -646,32 +682,50 @@ COLORREF fg = altMode ? RGB(255,255,255) : GetSysColor(COLOR_BTNTEXT);
 // Fill, frame, focus rect, text via the dialog's WM_GETFONT.
 ```
 
-### Shift+Cancel = "Save copy to..." (sister of Shift+Run)
+### Ctrl+Close = "Save as..." (sister of Ctrl+Run)
 
-When the dialog owns a sidecar cfg, the Cancel button gains a second affordance under Shift: open a folder picker, write a COPY of the cfg there with an auto-numbered filename if a file with the base name already exists. Useful for snapshotting a working configuration before experimenting, or for shipping a cfg to another analyst.
+When the dialog owns a sidecar cfg, the Close button gains a second affordance
+under Ctrl: open a **save-file picker** and write the current settings to the
+chosen path. Useful for snapshotting a working configuration before
+experimenting, or for shipping a cfg to another analyst. The file written is an
+export — on next launch the X-Tension still auto-loads only the standard sidecar
+next to its DLL.
 
 ```cpp
-if (LOWORD(wp) == IDCANCEL) {
-    bool shiftHeld = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-    if (shiftHeld && g_workerThread == nullptr) {
+if (id == IDCANCEL) {
+    bool ctrlHeld = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+    if (ctrlHeld && !g_workerThread && s && ctx) {
         if (!ReadDialogToSettings(hDlg, *s)) return TRUE;
-        std::wstring folder = BrowseForFolder(hDlg, L"",
-            L"Save a copy of <xtension>.cfg to...");
-        if (!folder.empty()) {
-            std::wstring target = folder + L"\\<xtension>.cfg";
-            int n = 1;
-            while (FileExists(target)) {
-                target = folder + L"\\<xtension>-" + std::to_wstring(++n) + L".cfg";
-            }
-            SaveSettingsToCfg(target, *s);
-        }
+        wchar_t fileBuf[MAX_PATH];
+        swprintf_s(fileBuf, L"%s.cfg", NAME);
+        OPENFILENAMEW ofn = {};
+        ofn.lStructSize  = sizeof(ofn);
+        ofn.hwndOwner    = hDlg;
+        ofn.lpstrFilter  = L"Config Files (*.cfg)\0*.cfg\0All files (*.*)\0*.*\0";
+        ofn.nFilterIndex = 1;
+        ofn.lpstrFile    = fileBuf;      // doubles as the default filename
+        ofn.nMaxFile     = MAX_PATH;
+        ofn.lpstrTitle   = L"Save settings to...";
+        ofn.Flags        = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+        ofn.lpstrDefExt  = L"cfg";
+        if (!GetSaveFileNameW(&ofn)) return TRUE;   // user cancelled
+        if (SaveSettingsToCfg(fileBuf, *s)) EndDialog(hDlg, IDCANCEL);
         return TRUE;
     }
     // ... existing cancel-worker-or-close logic
 }
 ```
 
-Gate on `g_workerThread == nullptr` — disabling save-copy during an active scan is the right call (the cfg is in a meaningful state and the analyst shouldn't be context-switching mid-run).
+`OFN_OVERWRITEPROMPT` is what makes an auto-numbered filename unnecessary — the
+common dialog asks before clobbering. `OFN_NOCHANGEDIR` matters more than it
+looks: without it the picker mutates the host process's current directory, and
+X-Ways keeps running long after your dialog closes.
+
+Gate on `g_workerThread == nullptr` — disabling save-as during an active scan is
+the right call (the cfg is in a meaningful state and the analyst shouldn't be
+context-switching mid-run). If the X-Tension wraps a helper exe, also refuse
+while a helper-identity rejection is outstanding, so a rejected path can't be
+persisted into an exported cfg.
 
 ## Folder pickers: prefer `IFileOpenDialog` over `SHBrowseForFolderW`
 
@@ -726,7 +780,7 @@ static std::wstring BrowseForFolder(HWND parent, const std::wstring& current,
 
 Required link libs (already in the template `build.bat`): `ole32.lib`, `shell32.lib`. No additional headers beyond `<shobjidl.h>` (pulled in by `<shlobj.h>` which the template already includes).
 
-## Sidecar cfg: one source of truth + Shift-to-save
+## Sidecar cfg: one source of truth + Ctrl-to-save
 
 For any X-Tension that owns a sidecar `.cfg` file (most dialog X-Tensions do), keep ONE serializer that turns the `Settings` struct into cfg text, and use it for both:
 
@@ -744,38 +798,51 @@ static bool         EnsureCfgExists   (const std::wstring& path) {
 }
 ```
 
-### Shift+Run = save without scanning
+### Ctrl+Run = save without scanning
 
-Holding **Shift** while clicking the Run button saves the cfg and **skips** the worker. Useful for tuning defaults that the analyst wants to bake in once without immediately running a scan. The button label live-flips between `&Run` and `&Save` while Shift is held, gated on dialog focus so typing Shift+letter in another window doesn't flicker the label.
+Holding **Ctrl** while clicking the Run button saves the cfg and **skips** the
+worker. Useful for tuning defaults the analyst wants to bake in once without
+immediately running a scan. The button label live-flips between `Run` and
+`Save` while Ctrl is held. Full convention, including the blue owner-draw tint
+and the `DM_SETDEFID` caveat: [ctrl-to-save.md](conventions/ctrl-to-save.md).
 
 Implementation skeleton (usable verbatim in your X-Tension):
 
 ```cpp
 // In SettingsDlgProc:
-static bool s_shiftLabelOn = false;
-constexpr UINT_PTR kShiftTimerId = 0xC001;
-constexpr UINT     kShiftPollMs  = 100;
+static bool g_runCtrlDown   = false;
+static bool g_closeCtrlDown = false;
+constexpr UINT_PTR kCtrlPollTimerId = 0xAB10;
+constexpr UINT     kCtrlPollMs      = 100;
 
 case WM_INITDIALOG:
     // ... existing setup ...
-    s_shiftLabelOn = false;
-    SetTimer(hDlg, kShiftTimerId, kShiftPollMs, nullptr);
+    g_runCtrlDown = g_closeCtrlDown = false;
+    SetTimer(hDlg, kCtrlPollTimerId, kCtrlPollMs, nullptr);
     return FALSE;
 
 case WM_DESTROY:
-    KillTimer(hDlg, kShiftTimerId);
+    KillTimer(hDlg, kCtrlPollTimerId);
     // ... existing cleanup ...
     return FALSE;
 
 case WM_TIMER:
-    if (wp == kShiftTimerId) {
-        HWND hFocus = GetFocus();
-        HWND hRoot  = hFocus ? GetAncestor(hFocus, GA_ROOT) : nullptr;
-        bool inFocus   = (hRoot == hDlg);
-        bool shiftDown = inFocus && ((GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0);
-        if (shiftDown != s_shiftLabelOn) {
-            s_shiftLabelOn = shiftDown;
-            SetDlgItemTextW(hDlg, IDC_BTN_RUN, shiftDown ? L"&Save" : L"&Run");
+    if (wp == kCtrlPollTimerId) {
+        // GetKeyState (not GetAsyncKeyState) reports the key state as of the
+        // message this thread is processing, so it is already scoped to our
+        // own message pump -- no GetFocus()/GA_ROOT gate needed to stop the
+        // label flickering while the analyst types Ctrl+key in another window.
+        bool ctrlDown = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+        if (ctrlDown != g_runCtrlDown) {
+            g_runCtrlDown = ctrlDown;
+            SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : L"Run");
+            InvalidateRect(GetDlgItem(hDlg, IDC_BTN_RUN), nullptr, TRUE);
+        }
+        bool closeSaveMode = ctrlDown && (g_workerThread == nullptr);
+        if (closeSaveMode != g_closeCtrlDown) {
+            g_closeCtrlDown = closeSaveMode;
+            SetDlgItemTextW(hDlg, IDCANCEL, closeSaveMode ? L"Save as..." : L"Close");
+            InvalidateRect(GetDlgItem(hDlg, IDCANCEL), nullptr, TRUE);
         }
         return TRUE;
     }
@@ -786,17 +853,54 @@ case WM_COMMAND:
         if (!ReadDialogToSettings(hDlg, *s)) return TRUE;
         SaveSettingsToCfg(cfgPath, *s);
 
-        // GetAsyncKeyState at click time -- not s_shiftLabelOn -- is the
-        // source of truth (the timer is just a UI hint).
-        if ((GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0) {
-            // Shift+Run: saved, skip worker.
+        // GetKeyState at click time -- not the cached g_runCtrlDown -- is the
+        // source of truth (the timer state is just a UI hint).
+        if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
+            // Ctrl+Run: saved, skip worker.
             SetDlgItemTextW(hDlg, IDC_LABEL_PROGRESS_STATUS,
-                            L"Settings saved. (Shift+Run: scan NOT started.)");
+                            L"Settings saved to cfg. (Ctrl+Run: scan NOT started.)");
             return TRUE;
         }
         // ... spawn worker ...
     }
 ```
+
+**Capture the resting label; never hardcode the restore string.** The flip
+writes the resting label back with `SetDlgItemTextW`, so whatever literal you
+write on release is what the button keeps for the rest of the dialog's life.
+Hardcoding it silently drops anything the `.rc` carries that the literal does
+not — write `L"Run"` against an `.rc` that says `"&Run"` and the Alt+R
+accelerator is gone. Read the label out at `WM_INITDIALOG` instead, and the two
+cannot disagree:
+
+```cpp
+static wchar_t g_runRestLabel[64]   = L"Run";
+static wchar_t g_closeRestLabel[64] = L"Close";
+
+// WM_INITDIALOG:
+GetDlgItemTextW(hDlg, IDC_BTN_RUN, g_runRestLabel,   _countof(g_runRestLabel));
+GetDlgItemTextW(hDlg, IDCANCEL,    g_closeRestLabel, _countof(g_closeRestLabel));
+
+// WM_TIMER: swap in the transient label, restore the captured one.
+SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : g_runRestLabel);
+```
+
+The transient labels (`Save`, `Save as...`) deliberately carry no `&` mnemonic:
+an accelerator that exists only while a modifier is held is worse than none.
+
+Give `IDCANCEL` its **resting** label in the `.rc` — `Close`, not `Cancel`. It
+reads `Cancel` only while a worker is running, where it performs a cooperative
+abort, so `SetDialogBusy` owns that swap and the timer's restore is
+busy-aware:
+
+```cpp
+SetDlgItemTextW(hDlg, IDCANCEL, closeSaveMode ? L"Save as..."
+                                : (g_workerThread ? L"Cancel" : g_closeRestLabel));
+```
+
+Owner-draw does not interfere: `WM_DRAWITEM` renders with `DrawTextW` and no
+`DT_NOPREFIX`, so `&` still underlines and the dialog manager still routes the
+Alt key by the button's window text.
 
 Tooltip the Run button so analysts discover the modifier without reading the README. See the `IDC_BTN_RUN` tooltip in the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) for the canonical text.
 
@@ -838,8 +942,8 @@ right-clicked selection. Same code path either way.
 The cpp template at [templates/x-tensions/cpp/](../templates/x-tensions/cpp/)
 ships a minimal `XT_Prepare` with no dialog. Promote to a dialog by:
 
-1. Add `xways-<name>.rc` + `resource.h` (copy from the `cpp-xtmgr-compatible`
-   template — `templates/x-tensions/cpp-xtmgr-compatible/` — and strip; keep
+1. Add `xways-<name>.rc` + `resource.h` (copy from the `wrapper` template —
+   `templates/x-tensions/wrapper/` — and strip; keep
    only `IDD_SETTINGS` + one GROUPBOX).
 2. Update `build.bat`:
    - Add `rc /nologo /fo xways-<name>.res xways-<name>.rc || goto :fail`
@@ -849,4 +953,4 @@ ships a minimal `XT_Prepare` with no dialog. Promote to a dialog by:
 4. Call `ShowSettingsDialog(g_hMainWnd, settings)` from `XT_Prepare` after
    loading the cfg, before setting up `runDir`.
 
-Scaffold from the `cpp-xtmgr-compatible` template for a fresh example.
+Scaffold from the `wrapper` template for a fresh example.

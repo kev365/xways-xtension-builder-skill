@@ -1,6 +1,6 @@
 {
   "name": "xways-xtension-authoring",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Author and maintain X-Ways Forensics X-Tensions — scaffold from templates, wrap CLI tools, port conventions, and audit for API correctness, backed by a distilled X-Tension API knowledge base.",
   "author": {
     "name": "Kevin Stokes",
@@ -9,8 +9,7 @@
   "homepage": "https://github.com/kev365/xways-xtension-builder-skill",
   "repository": "https://github.com/kev365/xways-xtension-builder-skill",
   "license": "MIT",
-  "skills": "./.claude/skills/",
-  "commands": ["./.claude/commands/xtension.md"],
+  "commands": ["./commands/xtension.md"],
   "keywords": [
     "x-ways",
     "x-ways-forensics",

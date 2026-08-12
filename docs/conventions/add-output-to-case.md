@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-08-09
+author: project
+---
+
 # Add output back to the case
 
 An X-Tension that produces analyst-facing artifacts — an export tree, a report, a
@@ -24,6 +31,15 @@ and they add output at different levels:
     `XT_Init`), and null-check at the call site. When it is absent, log-skip the
     add-back — the output is still on disk. `XWF_CreateFile` is a core export and
     does not need this treatment.
+
+## Contents
+
+- Which one applies
+- Signatures (header-confirmed)
+- Pattern — new evidence object (`XWF_CreateEvObj`)
+- Pattern — items in the existing snapshot (`XWF_CreateFile`)
+- Do / Don't
+- See also
 
 ## Which one applies
 

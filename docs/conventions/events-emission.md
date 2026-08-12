@@ -1,3 +1,10 @@
+---
+source: empirical testing (see events-viewer-empirical-findings.md) + working X-Tensions; no bundled template emits events
+type: convention
+last_updated: 2026-08-09
+author: project
+---
+
 # Events emission (`XWF_AddEvent` / `XWF_GetEvent`)
 
 !!! warning "Cross-run dedup must bucket the timestamp — `XWF_GetEvent` drifts the FILETIME"

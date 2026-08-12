@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Pre-publish hygiene scan (HIGH-severity gate)
         shell: pwsh
-        run: .\.claude\skills\xways-xtension-authoring\scripts\prepublish-scan.ps1
+        run: .\scripts\prepublish-scan.ps1
       - name: Validate plugin + marketplace JSON
         shell: pwsh
         run: |
@@ -25,12 +25,48 @@ jobs:
           Get-Content .claude-plugin/marketplace.json -Raw | ConvertFrom-Json | Out-Null
           Write-Host "plugin.json + marketplace.json parse OK"
 
+      - name: Scaffold rename regression test
+        shell: pwsh
+        run: .\tests\test-scaffold-rename.ps1
+
+      - name: Scaffold identity regression test
+        shell: pwsh
+        run: .\tests\test-scaffold-identity.ps1
+
+      - name: SKILL.md spec conformance
+        shell: pwsh
+        run: .\tests\check-skill-spec.ps1
+
+      - name: Relative markdown links resolve
+        shell: pwsh
+        run: .\tests\check-links.ps1
+
+      - name: No superseded guidance in the knowledge base
+        shell: pwsh
+        run: .\tests\check-stale-guidance.ps1
+
+      - name: Long pages carry an accurate table of contents
+        shell: pwsh
+        run: .\tests\check-toc.ps1
+
+      - name: Version and name agree across manifests
+        shell: pwsh
+        run: .\tests\check-version-sync.ps1
+
+      - name: Cited paths exist
+        shell: pwsh
+        run: .\tests\check-cited-paths.ps1
+
+      - name: Cited symbols exist in the file they are cited from
+        shell: pwsh
+        run: .\tests\check-cited-symbols.ps1
+
   markdownlint:
-    name: Markdown lint (advisory)
+    name: Markdown lint
     runs-on: ubuntu-latest
-    # Advisory: surfaces style issues without blocking. Flip to a hard gate once
-    # the docs are lint-clean.
-    continue-on-error: true
+    # Was advisory until the docs were lint-clean; all 62 markdown files now
+    # pass, so this is a hard gate. Keeping it advisory from here would only
+    # let the count drift back up.
     steps:
       - uses: actions/checkout@v4
       - uses: DavidAnson/markdownlint-cli2-action@v16
@@ -51,3 +87,28 @@ jobs:
         run: |
           npm install -g @anthropic-ai/claude-code || { echo "CLI install unavailable in CI"; exit 0; }
           claude plugin validate . || echo "plugin validate reported issues (or needs auth) — review locally"
+
+  skills-ref:
+    name: skills-ref validate (advisory)
+    runs-on: ubuntu-latest
+    # Advisory only, deliberately. skills-ref is the reference validator from
+    # agentskills/agentskills, but it has no PyPI release (it installs from a
+    # source checkout) and its authors state it is "intended for demonstration
+    # purposes only" and "not meant to be used in production". A second opinion
+    # is useful; a hard dependency on it is not. tests/check-skill-spec.ps1 is
+    # the actual gate and runs in the hygiene job above.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install skills-ref from source and validate
+        run: |
+          git clone --depth 1 https://github.com/agentskills/agentskills.git /tmp/agentskills \
+            || { echo "clone unavailable — skipping"; exit 0; }
+          pip install -e /tmp/agentskills/skills-ref \
+            || { echo "skills-ref install failed — skipping"; exit 0; }
+          # Absolute path, not '.': skills-ref derives the skill name from the
+          # directory name, and '.' makes it report an empty one.
+          skills-ref validate "$PWD" || echo "skills-ref reported issues — review against tests/check-skill-spec.ps1"

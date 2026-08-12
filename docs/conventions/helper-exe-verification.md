@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-08-09
+author: project
+---
+
 # Helper-exe identity verification
 
 !!! warning "Required for any X-Tension that wraps an external CLI tool"
@@ -15,7 +22,7 @@
 Reject hard: empty the resolved path and log the reason verbatim.
 
 **Source of truth:** the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) →
-`VerifyHelperIdentity`, `PeIdentityContains`, `DetectHelperVersionFromFlag`.
+`VerifyHelperIdentity`, `PeIdentityContains`, `DetectToolVersion`.
 
 ## In-dialog rejection UI (no MessageBox)
 

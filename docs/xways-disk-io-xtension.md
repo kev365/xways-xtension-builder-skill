@@ -17,6 +17,15 @@ Distinct from:
 
 A Disk I/O X-Tension is still an X-Tension (loads via `xtensions\` auto-discovery and exports `XT_Init` / `XT_About` / `XT_Prepare`), but it adds four extra exports that let X-Ways delegate raw reads.
 
+## Contents
+
+- The four extra exports
+- Lifecycle
+- The `XT_FileIO` contract
+- Pairing with `XWF_SectorIO`
+- What this enables
+- See also
+
 ## The four extra exports
 
 Verified in the DHFS4.1 X-Tension's `dhfs4_1.def`:

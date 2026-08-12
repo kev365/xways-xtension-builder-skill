@@ -65,4 +65,4 @@ include path in your scaffolded X-Tension). The header is only needed at
 
 > The API guardrail's source priority is: the distilled notes in `docs/` → the
 > live HTML API page → (optional) your locally-downloaded `X-Tension.h`. See
-> [api-guardrail.md](../.claude/skills/xways-xtension-authoring/references/api-guardrail.md).
+> [api-guardrail.md](../references/api-guardrail.md).

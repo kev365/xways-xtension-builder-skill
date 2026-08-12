@@ -10,7 +10,7 @@ Browser).
 
 It gives Claude the X-Ways-specific *how*: pick a template, scaffold + rename +
 set identity, wire in the project conventions (helper-exe verification,
-Ctrl-to-save, output directory, subprocess stdio, manager compatibility), and
+Ctrl-to-save, output directory, subprocess stdio), and
 verify every `XWF_*` API call against distilled, citable reference notes so
 generated code never invents API.
 
@@ -21,11 +21,19 @@ generated code never invents API.
 
 ## What's inside
 
+**The repository root *is* the skill root** — `SKILL.md` sits at the top and every
+path it references resolves beneath it. That makes the skill self-contained: it
+works identically as a plugin, as a clone, as a junction into `~/.claude/skills/`,
+or zipped for upload.
+
 | Path | What's there |
 | --- | --- |
-| [`.claude/skills/xways-xtension-authoring/`](.claude/skills/xways-xtension-authoring/) | The skill — `SKILL.md` flow router, reference guides, and PowerShell scaffold/build/hygiene scripts |
-| `.claude/commands/xtension.md` | The `/xtension` slash command |
-| [`templates/x-tensions/`](templates/x-tensions/) | Starter templates: `cpp`, `cpp-xtmgr-compatible`, `python`, and a rich CLI-wrapper `wrapper` template |
+| [`SKILL.md`](SKILL.md) | The skill — flow router, hard gates, convention index |
+| [`references/`](references/) | Per-flow guides (new / wrap / port / audit / guardrail / docs-loop) |
+| [`scripts/`](scripts/) | PowerShell scaffold / build / hygiene / backfill tooling |
+| [`assets/`](assets/) | `LICENSE` / `README` / `CLAUDE.md.example` file templates |
+| [`commands/xtension.md`](commands/xtension.md) | The `/xtension` slash command |
+| [`templates/x-tensions/`](templates/x-tensions/) | Starter templates: `cpp`, `python`, and a rich CLI-wrapper `wrapper` template |
 | [`docs/`](docs/INDEX.md) | Distilled X-Tension API reference notes + the [convention library](docs/conventions/index.md) |
 | [`CHANGELOG.md`](CHANGELOG.md) | Release history + known issues queued for the next release |
 
@@ -39,16 +47,53 @@ generated code never invents API.
 Then ask Claude to "scaffold a new X-Tension", "wrap `<tool>` in an X-Tension",
 or run `/xtension new <name>`. The skill also auto-triggers on those phrases.
 
-**Two ways to use it:**
+**Three ways to use it** — all read from one copy of this repo, so nothing can
+drift out of sync:
 
-- **Installed as a plugin** (above) — you get the skill's *guidance* and the
-  `/xtension` command in any project. Best for "wrap this tool" / "audit my
-  X-Tension" conversations.
-- **Cloned and opened in Claude Code** — the skill auto-loads from
-  `.claude/skills/`, and the **scaffold/build scripts run against the cloned
-  working copy** (they create `x-tensions/<name>/` in the clone and build there).
-  This is the path for actually *authoring* an X-Tension with the bundled scripts
-  and templates.
+- **Installed as a plugin** (above) — the skill and the `/xtension` command in
+  any project. Claude Code copies marketplace plugins into
+  `~/.claude/plugins/cache`, so this is a snapshot: run `/plugin update` to pick
+  up new releases. **This is the path for using the skill.**
+- **Junctioned into your personal skills directory** — the skill is live in
+  *every* project, and because the junction points at your clone, any edit you
+  make while authoring an X-Tension is an edit to the repo working tree that you
+  then commit. **This is the path for improving the skill as you go.** From an
+  ordinary (non-elevated) Command Prompt:
+
+  ```bat
+  mklink /J "%USERPROFILE%\.claude\skills\xways-xtension-authoring" "C:\path\to\xways-xtension-builder-skill"
+  ```
+
+  A directory junction needs no special privileges. To also get the `/xtension`
+  slash command, link the one command file — this needs Windows Developer Mode
+  (Settings → System → For developers) or an elevated prompt, because *file*
+  symlinks are privileged where junctions are not:
+
+  ```powershell
+  New-Item -ItemType SymbolicLink `
+    -Path   "$env:USERPROFILE\.claude\commands\xtension.md" `
+    -Target "C:\path\to\xways-xtension-builder-skill\commands\xtension.md"
+  ```
+
+  If that is refused, skip it — the skill still auto-triggers, and you can invoke
+  it directly as `/xways-xtension-authoring`. Prefer that over copying the file:
+  a copy is the drift this layout exists to prevent.
+
+  To undo either link, remove the link itself — never the target:
+
+  ```bat
+  rmdir "%USERPROFILE%\.claude\skills\xways-xtension-authoring"
+  del   "%USERPROFILE%\.claude\commands\xtension.md"
+  ```
+
+- **Cloned and opened in Claude Code** — the skill auto-loads from the repo root,
+  and the scaffold/build scripts run against the clone (they create
+  `x-tensions/<name>/` there). Also `claude --plugin-dir .` from the clone to
+  exercise the plugin packaging itself for one session.
+
+In every case the scripts write scaffold/build output under the **current
+directory** (or `-DestRoot <project>`), never into the skill install — they
+refuse to write into a plugin cache.
 
 ## Quickstart
 
@@ -61,12 +106,12 @@ drive the scripts directly:
 
   ```powershell
   # Scaffold from the CLI-wrapper template (dry-run first to preview the plan)
-  .claude/skills/xways-xtension-authoring/scripts/new-xtension.ps1 -Name myscanner -Template wrapper -DryRun
-  .claude/skills/xways-xtension-authoring/scripts/new-xtension.ps1 -Name myscanner -Template wrapper
+  scripts/new-xtension.ps1 -Name myscanner -Template wrapper -DryRun
+  scripts/new-xtension.ps1 -Name myscanner -Template wrapper
 
   # Fill in your tool's command + result parsing (see the // TODO markers in
   # x-tensions/xways-myscanner/), then build + deploy into your X-Ways install:
-  .claude/skills/xways-xtension-authoring/scripts/build-xtension.ps1 -Name xways-myscanner -DeployRoot "<your X-Ways install>"
+  scripts/build-xtension.ps1 -Name xways-myscanner -DeployRoot "<your X-Ways install>"
   ```
 
 See [Prerequisites](#prerequisites) for the build toolchain and SDK.
@@ -84,15 +129,15 @@ See [Prerequisites](#prerequisites) for the build toolchain and SDK.
 
 ```powershell
 # Scaffold (dry-run first to review the planned copies / renames / edits)
-.claude/skills/xways-xtension-authoring/scripts/new-xtension.ps1 -Name <name> -Template wrapper -DryRun
+scripts/new-xtension.ps1 -Name <name> -Template wrapper -DryRun
 
 # Build (close X-Ways first — the DLL is locked while it runs; no hot reload)
-.claude/skills/xways-xtension-authoring/scripts/build-xtension.ps1 -Name xways-<name>
+scripts/build-xtension.ps1 -Name xways-<name>
 ```
 
 See the [knowledge base](docs/INDEX.md), the
 [convention library](docs/conventions/index.md), and the
-[API guardrail](.claude/skills/xways-xtension-authoring/references/api-guardrail.md).
+[API guardrail](references/api-guardrail.md).
 
 ## Contributing, sharing & feedback
 

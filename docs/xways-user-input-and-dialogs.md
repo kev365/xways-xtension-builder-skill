@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XWF_functions.html (official) + the X-Ways SDK header (see getting-the-sdk.md)
 type: official-doc
 fetched: 2026-04-27
-last_updated: 2026-04-27
+last_updated: 2026-08-09
 author: X-Ways Software Technology AG; project synthesis
 ---
 
@@ -15,6 +15,15 @@ How to ask the analyst for input or surface a dialog from inside an X-Tension. T
 3. **Sidecar config file** — persisted, analyst-edited config loaded next to the DLL; usually the cleanest UX for runs that should not re-prompt every time.
 
 These compose: load defaults from a sidecar, prompt with `XWF_GetUserInput` for the one value that varies per run, fall back to a Win32 dialog if the input is too rich for a single field.
+
+## Contents
+
+- `XWF_GetUserInput`
+- Win32 dialog parented to `hMainWnd`
+- Sidecar config file
+- `XWF_OutputMessage` for status / errors
+- Caveats
+- See also
 
 ## `XWF_GetUserInput`
 
@@ -146,7 +155,7 @@ For settings that should persist across runs (helper-binary paths, default flags
 └── helper.exe
 ```
 
-Resolve the cfg path via `GetModuleFileNameW(g_hSelf)` (DLL's own directory, not the X-Ways executable's directory). The `wrapper` template (`templates/x-tensions/wrapper/`) ships the plain `key = value` cfg pattern in `LoadCfg` / `SaveCfg`; an X-Tension that handles credentials would store them DPAPI-encrypted in the same sidecar instead.
+Resolve the cfg path via `GetModuleFileNameW(g_hSelf)` (DLL's own directory, not the X-Ways executable's directory). The `wrapper` template (`templates/x-tensions/wrapper/`) ships the plain `key = value` cfg pattern in `LoadCfg` / `SaveSettingsToCfg`; an X-Tension that handles credentials would store them DPAPI-encrypted in the same sidecar instead.
 
 ### When to combine with `XWF_GetUserInput`
 

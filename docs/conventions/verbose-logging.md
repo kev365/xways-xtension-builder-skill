@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-07-04
+author: project
+---
+
 # VERBOSE logging
 
 Every X-Tension exposes a single `VERBOSE` constant near the top of its main

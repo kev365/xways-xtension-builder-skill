@@ -13,8 +13,14 @@ wrapper) and use these as references to read and port patterns from (with
 attribution), not as copy-targets.
 
 Before porting from an older X-Tension, sanity-check that its `XWF_*` calls still
-exist on X-Ways 21+ — see [api-guardrail](../.claude/skills/xways-xtension-authoring/references/api-guardrail.md)
+exist on X-Ways 21+ — see [api-guardrail](../references/api-guardrail.md)
 and [xways-api-recency-research.md](xways-api-recency-research.md).
+
+## Contents
+
+- Reference X-Tensions by the skill's maintainer
+- Community X-Tensions
+- Related tooling & research (not X-Tensions)
 
 ## Reference X-Tensions by the skill's maintainer
 

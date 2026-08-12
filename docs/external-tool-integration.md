@@ -12,6 +12,16 @@ Pattern guide for X-Tensions that wrap a third-party command-line tool (e.g. `ya
 
 Reference implementation: the `wrapper` template (`templates/x-tensions/wrapper/`) — subprocess spawn + Win32 settings dialog + report-table tagging, with the CLI-wrapper anatomy already wired in. See [Wrapper anatomy](conventions/wrapper-anatomy.md).
 
+## Contents
+
+- 1\. Getting bytes to the tool — extraction is required
+- 2\. Tool binary deployment
+- 3\. Subprocess invocation
+- 4\. Output integration
+- 5\. Default conventions for new wrappers
+- 6\. When NOT to use this pattern
+- See also
+
 ## 1. Getting bytes to the tool — extraction is required
 
 **The fundamental constraint:** X-Tension APIs and external CLI tools live in separate worlds and don't share file handles.
@@ -54,7 +64,8 @@ Once you've extracted N items into a temp dir, the tool's output references the 
 
 1. **Embed the item ID in the temp filename.** Convention used by bulk_extractor: `xwitem_<itemID>_<sanitized_leaf>.bin`. Pick a token unlikely to collide with real content (`xwitem_` is good).
 2. **Walk the tool's output.** Search every output line for the token, parse the digits after it, look up in a `unordered_map<LONG, ...>` you built at export time.
-3. **Tag matched items** via `XWF_AddToReportTable(itemID, table_name, 0)`.
+3. **Tag matched items** via `XWF_Label(itemID, table_name, 0)` — falling back to
+   the pre-rename `XWF_AddToReportTable` when the host does not export it.
 
 A wrapper around a tool with structured output can do the equivalent with a `source_file` column lookup in the tool's SQLite/CSV output. bulk_extractor does it with text-grep through `*.txt` feature files.
 
@@ -102,7 +113,7 @@ CreateProcessW(nullptr, cmdline.data(), nullptr, nullptr, FALSE,
 WaitForSingleObject(pi.hProcess, INFINITE);
 ```
 
-Pros: zero plumbing, analyst sees real-time tool output in a console window. Cons: extra window, no in-DLL cancel (analyst has to kill the console or the process).
+Pros: zero plumbing, analyst sees real-time tool output in a console window. Cons: extra window, no in-DLL cancel (analyst has to kill the console or the process) — and it is the wrong choice for anything that runs headless under RVS, where a console popping up per item is unusable. Do not reach for it as a way to avoid handing the child real std handles; see [subprocess-stdio.md](conventions/subprocess-stdio.md).
 
 ### b) `CREATE_NO_WINDOW` + redirect stderr to a log file
 
@@ -152,7 +163,7 @@ Trivial. Useful when the tool produces files that aren't worth indexing (binarie
 
 Two flavors:
 
-- **"Scanned" tag** — apply at export time to every item successfully fed to the tool. Audit trail of what was run. Free (one `XWF_AddToReportTable` call per export).
+- **"Scanned" tag** — apply at export time to every item successfully fed to the tool. Audit trail of what was run. Free (one `XWF_Label` call per export, or `XWF_AddToReportTable` on a pre-rename host).
 - **"Hits" tag** — applied post-run, only to items the tool found something in. Walk output files for the embedded `xwitem_<itemID>_` tokens, dedupe IDs, tag. The actionable subset.
 
 bulk_extractor does both as separate report tables (`bulk_extractor scanned`, `bulk_extractor hits`). A wrapper around a tool that always produces output for valid input might only do "scanned" — there's no "hit" / "miss" distinction.
@@ -173,7 +184,7 @@ Recommended defaults for every new wrapper — start with all of them and adjust
 | Path resolution chain (dialog > cfg > bundled) | helper | Drop-in deployment with per-shop overrides |
 | Item ID embedding in temp filenames | helper | Maps tool output back to X-Ways items |
 | Programmatic checkbox creation in `WM_INITDIALOG` for variable-length lists | dialog proc | Avoids 35-line `.rc` bloat; trivial to add/remove items |
-| `XWF_AddToReportTable(id, table_name, 0)` for tagging | post-processing | Standard X-Ways UI affordance for marking findings |
+| `XWF_Label(id, table_name, 0)` for tagging (fall back to `XWF_AddToReportTable`) | post-processing | Standard X-Ways UI affordance for marking findings |
 | `XWF_CreateEvObj(3, 0, dir, nullptr)` to add output as directory | post-processing | Lets X-Ways index tool output |
 | `.gitignore` un-ignore for the X-Tension's `xtensions/` bundle dir | repo root | Bundle is committed by convention; `*.dll` is gitignored globally |
 

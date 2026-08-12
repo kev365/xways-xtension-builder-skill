@@ -1,0 +1,6 @@
+{
+  // Rule configuration stays in .markdownlint.json; this file exists only to
+  // keep generated behaviour-eval transcripts out of the lint. They are
+  // machine-written, git-ignored, and not authored content.
+  "ignores": ["evals/runs/**"]
+}

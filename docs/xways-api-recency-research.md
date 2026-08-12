@@ -12,6 +12,16 @@ State-of-the-world snapshot for the X-Tension API surface. Captures (a) whether 
 
 For the distilled behavior notes driving the 21.7/21.8 rows, see [forum-xtensions-distilled.md](forum-xtensions-distilled.md).
 
+## Contents
+
+- TL;DR
+- SDK status
+- Forum announcements 21.5 → 21.9 — net new API surface
+- Community RE — `ThomasVogl/xwf-api-rs` is the gold mine
+- No public Ghidra/IDA export dump
+- Open verification ideas
+- See also
+
 ## TL;DR
 
 **No newer C++ SDK zip has shipped, but the git repo HEAD is newer.** [SourceForge xwf-api files](https://sourceforge.net/projects/xwf-api/files/) still lists `XWF_API-source-2024-05-31.zip` as the latest packaged release. **However, the project's git repo at [sourceforge.net/p/xwf-api/code](https://sourceforge.net/p/xwf-api/code/) has 10 commits past that zip, through commit `c46a1bd2` (2024-07-26)** (fetched 2026-05-18; see [getting-the-sdk.md](getting-the-sdk.md) for how to obtain the SDK).

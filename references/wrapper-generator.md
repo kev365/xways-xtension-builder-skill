@@ -1,0 +1,172 @@
+# wrapper-generator — CLI-tool wrapper flow
+
+Use this reference when the flow router in `SKILL.md` routes to **wrap**.
+
+## Contents
+
+- 1\. Scaffold from the wrapper template
+- 2\. The six-element anatomy
+- 3\. Tool resolution
+- 4\. Identity verification (mandatory)
+- 5\. Subprocess stdio (mandatory)
+- 6\. UI convention for settings dialogs
+- 7\. Output directory
+- 8\. Build gate
+- Cross-references
+
+## 1. Scaffold from the wrapper template
+
+The CLI-tool wrapper use-case is covered by the **wrapper** template
+(`templates/x-tensions/wrapper/`) — a CLI-wrapper that already wires helper-exe
+verification, Ctrl-to-save, output-dir, and subprocess stdio. It is the rich
+scaffold path for wrapping an external command-line tool:
+the full dialog + cfg-sidecar lifecycle is in place, so you adapt rather than
+build from scratch.
+
+Scaffold via `new-xtension.ps1`:
+
+```powershell
+scripts/new-xtension.ps1 -Name xways-<name> -Template wrapper -DryRun
+scripts/new-xtension.ps1 -Name xways-<name> -Template wrapper
+```
+
+Then follow the post-copy checklist in `references/scaffold-new.md` §4.
+
+If the target tool has few settings and sidecar-only config suffices (no
+analyst dialog), you can instead start from the bare `cpp` template and add only
+the wrapper anatomy below — but the `wrapper` template is the default starting
+point.
+
+For prior-art patterns beyond what the template wires, `docs/exemplars.md`
+registers **community** wrappers to read and port-from with attribution (none
+are bundled in this repo).
+
+## 2. The six-element anatomy
+
+Every wrapper must implement the six elements documented in
+`docs/conventions/wrapper-anatomy.md`. Summary:
+
+1. **`Settings` struct** — sidecar config payload (fields map 1:1 to
+   `key = value` cfg lines).
+2. **`RunCtx` / `Collected`** — per-run transient state: volume/evidence
+   handles, invocation mode, and the accumulated item list.
+3. **`LoadCfg` (+ `SaveSettingsToCfg`)** — tiny `key=value` parser/writer; reads
+   the cfg file next to the DLL; initialises `Settings` in-place. The writer is
+   required if the X-Tension has a dialog (Ctrl-to-save writes through it).
+4. **`XT_Prepare`** — reset the accumulator, call `LoadCfg`, resolve the helper
+   exe via `ResolveDefaultTool` (unless the cfg override is set), create
+   temp/output dirs, return `0x01` (not `0x01 | 0x04` — `0x04` is
+   `EXPECTMOREITEMS`).
+5. **`XT_ProcessItem`** — collect item IDs only, so the list honours the active
+   filter and the right-click selection. Export `XT_ProcessItemEx` as a no-op
+   stub: under `0x01` both exported callbacks fire for every item.
+6. **`XT_Finalize`** — the run itself: MZ/size gate → extract item bytes to a
+   temp file → spawn the subprocess with `\NUL` stdio → parse output → tag via
+   `XWF_Label`, falling back to `XWF_AddToReportTable` on hosts predating the
+   rename (which was backported to 21.4 SR-11 / 21.5 SR-13 / 21.6 SR-8 /
+   21.7 SR-4 — it is **not** 21.8-only; see the renamed-calls table in
+   [api-guardrail](api-guardrail.md)) → log stats, clean up, reset the accumulator.
+
+See `docs/conventions/wrapper-anatomy.md` for vetted code examples, and the
+**wrapper** template (`templates/x-tensions/wrapper/`) for the full anatomy
+already assembled.
+
+## 3. Tool resolution
+
+Resolve the helper exe once in `XT_Prepare`. The template ships
+`ResolveDefaultTool()` — no arguments — which probes three fixed locations
+under the DLL directory and then falls back to `FindSiblingFile`, a bounded BFS
+(depth 4, 256 directories). The name is matched exactly; the template has no
+glob support.
+
+```text
+<dll-dir>\tools\<tool>\<tool>.exe
+<dll-dir>\tools\<tool>.exe
+<dll-dir>\<tool>.exe
+then FindSiblingFile(<dll-dir>, "<tool>.exe")
+```
+
+A cfg override (`tool_exe = ...`) is applied by the caller first; if it is set
+and the file exists, `ResolveDefaultTool` is never called.
+
+If you need one helper tree shared across several X-Tensions, there is a richer
+`ResolveToolPath(subdir, exeGlob)` form used by working X-Tensions — **it is not
+in the template**. See `docs/conventions/tool-resolution.md`, which documents
+both and the do/don't rules.
+
+## 4. Identity verification (mandatory)
+
+After resolving the path, verify it before spawning. Accept on an OR of two
+gates: PE VERSIONINFO substring match, or `--version` banner substring match.
+Reject hard (empty the path, log the reason verbatim) on failure.
+
+Full convention including the in-dialog flash UI (bold-red Version slot, 250 ms
+toggle for ~2 s, Run disabled): `docs/conventions/helper-exe-verification.md`.
+
+Symbols already wired in the **wrapper** template (`templates/x-tensions/wrapper/`):
+`VerifyHelperIdentity`, `PeIdentityContains`, `DetectToolVersion`,
+`ShowHelperRejection`, `ClearHelperRejection`, `WM_CTLCOLORSTATIC` handler,
+`WM_TIMER` flash counter.
+
+The needle string is the tool's own identifier (e.g. `L"yourtool"`,
+`L"bulk_extractor"`).
+
+## 5. Subprocess stdio (mandatory)
+
+X-Ways is a GUI process with no console. Open `\NUL` with inheritable
+`SECURITY_ATTRIBUTES` and pass all three handles (`hStdInput`, `hStdOutput`,
+`hStdError`) via `STARTUPINFOW` with `STARTF_USESTDHANDLES`. Omitting this
+hard-crashes any child that touches stdio. See `docs/conventions/subprocess-stdio.md`.
+
+Source of truth: the **wrapper** template (`templates/x-tensions/wrapper/`) →
+`RunCommand`. For the capturing variant (read stdout), the same template
+provides `RunCaptureStdout`, which swaps the `NUL` handle for an inheritable
+pipe and reads it with a timeout.
+
+## 6. UI convention for settings dialogs
+
+When a dialog is warranted (cfg > ~6 keys or interactive pickers needed; see
+`docs/xtension-dialog-conventions.md` for the promotion threshold):
+
+- Model common parameters as labelled checkboxes and controls.
+- Provide a single **"Additional arguments"** passthrough text field (e.g. a
+  `<tool>_extra_args` cfg key) for any flag not worth a dedicated control. Do
+  NOT model every CLI flag individually.
+- The **wrapper** template already provides the shared helpers
+  (`GetSelfDirectory`, `ResolveDefaultTool`, `RunCommand`, etc.) — reuse them
+  rather than re-deriving.
+- The Ctrl-to-save gesture is already wired in the **wrapper** template
+  (symbols: `g_runCtrlDown`, `kCtrlPollTimerId`, the `WM_DRAWITEM` handler for
+  `IDC_BTN_RUN`, and the `IDC_BTN_RUN` / `IDCANCEL` Ctrl branches — the
+  template's Run button is `IDC_BTN_RUN`, not `IDOK`). Convention page:
+  `docs/conventions/ctrl-to-save.md`.
+
+For items-to-disk extraction, ID embedding, and tool output mapping back to
+item IDs, see `docs/external-tool-integration.md`. That doc also covers the
+`XWF_Mount` / `XWF_Unmount` alternative when the tool accepts a single path.
+
+## 7. Output directory
+
+Default `output_dir` to `<caseRoot>\xways-<name>\` via `DefaultOutputDir`.
+Never persist `output_dir` in the cfg sidecar. Convention page:
+`docs/conventions/output-dir.md`.
+
+## 8. Build gate
+
+```powershell
+scripts/build-xtension.ps1 -Name xways-<name>
+```
+
+## Cross-references
+
+- Scaffold mechanics → `references/scaffold-new.md`
+- Porting individual conventions → `references/port-convention.md`
+- API correctness → `references/api-guardrail.md`
+- Wrapper anatomy detail → `docs/conventions/wrapper-anatomy.md`
+- Tool resolution detail → `docs/conventions/tool-resolution.md`
+- Helper-exe verification detail → `docs/conventions/helper-exe-verification.md`
+- Subprocess stdio detail → `docs/conventions/subprocess-stdio.md`
+- Ctrl-to-save detail → `docs/conventions/ctrl-to-save.md`
+- External tool integration (extraction, mount, ID mapping) →
+  `docs/external-tool-integration.md`
+- Dialog promotion thresholds → `docs/xtension-dialog-conventions.md`

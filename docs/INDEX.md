@@ -15,6 +15,15 @@ to these pages so generated code never invents `XWF_*` calls.
 > content (copyright X-Ways AG). To build, acquire the SDK yourself —
 > [getting-the-sdk.md](getting-the-sdk.md).
 
+## Contents
+
+- Getting started
+- API reference
+- Empirical findings & API recency
+- Command line
+- Conventions
+- Patterns & integration
+
 ## Getting started
 
 - [getting-the-sdk.md](getting-the-sdk.md) — where to download the X-Ways
@@ -113,9 +122,6 @@ symbol. See the [convention library index](conventions/index.md). Key pages:
   X-Tension (resolve → verify → stage → run → map results).
 - [tool-resolution.md](conventions/tool-resolution.md) — helper-exe path
   precedence (cfg / bundled / PATH / Browse).
-- [manager-compatibility.md](conventions/manager-compatibility.md) —
-  `xways-xt-manager` tab support (`XwaysManagerPluginEntry`, ABI 1,
-  `manager-plugin.h`).
 - [licensing.md](conventions/licensing.md) — MIT `LICENSE` + source-header block;
   third-party attribution for wrapped tools.
 - [versioning.md](conventions/versioning.md) — `0.Y.Z-beta` until first public

@@ -10,6 +10,15 @@ author: project empirical sweep
 
 The X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)) declares these three function pointers but does **not** document the semantics of their flag/parameter bits. An empirical sweep enumerated their behavior on a clean NTFS partition snapshot; the decoded semantics are captured here so X-Tensions don't have to re-discover them.
 
+## Contents
+
+- `XWF_GetItemInformation` — full live `nInfoType` map (empirical 2026-05-03)
+- `XWF_GetItemType` — `nBufferLenAndFlags` is `len | flag_bits`
+- `XWF_GetMetadata` — undocumented export, likely deprecated
+- `XWF_GetMetadataEx` — flag bits mostly do nothing
+- `XWF_GetText` — `nFlags=0x02` triggers OCR / viewer-component invocation
+- See also
+
 ## `XWF_GetItemInformation` — full live `nInfoType` map (empirical 2026-05-03)
 
 Empirical results from sweeping `nInfoType` 0..255 across 19 items spanning 14 distinct X-Ways "Type category" values (Pictures, Audio, Source Code, Spreadsheet, Programs, Archives/Backup, Cryptography, Fonts, Database, Misc Documents, etc.) on build 1422138.89:

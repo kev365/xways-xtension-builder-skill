@@ -1,6 +1,6 @@
 # `wrapper` — CLI-tool-wrapper X-Tension template
 
-A generic, **manager-compatible** starting point for an X-Tension that wraps an
+A generic starting point for an X-Tension that wraps an
 external command-line tool. For each file in the active volume snapshot (or a
 right-click Directory-Browser selection) it:
 
@@ -21,7 +21,6 @@ It self-declares the `XWF_*` function-pointer typedefs and resolves them via
 | **Ctrl-to-save / Ctrl-to-save-as** | `g_runCtrlDown` + `kCtrlPollTimerId` poll `VK_CONTROL`; owner-draw Run/Cancel buttons (`WM_DRAWITEM`) turn blue and relabel to **Save** / **Save as…**. Ctrl+Run saves the cfg without running; Ctrl+Close opens a `GetSaveFileNameW` picker. |
 | **Per-X-Tension output folder** | `GetCaseRootDir` + `DefaultOutputDir` default output to `<caseRoot>\<NAME>`; re-resolved per dialog open so it follows the active case. |
 | **Subprocess stdio** | `RunCommand` (redirect via `cmd.exe /C … > out 2> err`, wait) and `RunCaptureStdout` (pipe + `STARTF_USESTDHANDLES`, used for the `--version` probe). |
-| **xways-xt-manager compatibility** | `XwaysManagerPluginEntry` export + `Wrapper*` `On*` callbacks; the scan runs synchronously in `WrapperOnFinalize` with `hDlg=NULL`. ABI from `manager-plugin.h` (copied verbatim — do not edit). The manager host is a separate project, not yet publicly released. |
 | **Verbose logging toggle** | `g_verbose` + `Log` / `LogVerbose`; Verbose checkbox in the dialog and `xtension_verbose` cfg key. |
 | **cfg lifecycle** | `Settings` ↔ `SerializeSettings` / `LoadCfg` / `SaveSettingsToCfg` / `EnsureCfgExists`. The serializer is the single source of truth for the auto-created cfg. |
 
@@ -49,10 +48,9 @@ template compiles and runs end-to-end (finding nothing) out of the box:
 | File | Purpose |
 | --- | --- |
 | `my_xtension.cpp` | The wrapper implementation (compiles as-is). |
-| `my_xtension.def` | `LIBRARY` + the `EXPORTS` list (incl. `XwaysManagerPluginEntry`). |
+| `my_xtension.def` | `LIBRARY` + the `EXPORTS` list. |
 | `my_xtension.rc` / `resource.h` | DIALOGEX: Tool binary / Input source / Output handling + Status + Run/Close, plus an About box. |
 | `build.bat` | Auto-bootstraps MSVC 2019/2022 vcvars, compiles, deploys to a project-local `xtensions\my_xtension\`. Links `version.lib` for the PE identity check. |
-| `manager-plugin.h` | xways-xt-manager plugin ABI — **copy verbatim, do not edit**. |
 | `my_xtension.cfg.example` | Documented minimal cfg sample. |
 
 ## Build

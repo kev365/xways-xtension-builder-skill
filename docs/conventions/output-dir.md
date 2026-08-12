@@ -1,9 +1,17 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-08-09
+author: project
+---
+
 # Output directory
 
 Every X-Tension that writes analyst-facing files defaults its output folder to
 `<caseRoot>\<NAME>\`, where `caseRoot` comes from `XWF_GetCaseProp` with
-property type 6 (`XWF_CASEPROP_DIR`). The folder is created on demand via
-`SHCreateDirectoryExW` when the analyst hits Run.
+property type 6 (`XWF_CASEPROP_DIR`). The folder is created on demand when the
+analyst hits Run — the template uses `EnsureDirectoryExists`, a thin
+`CreateDirectoryW` wrapper that treats `ERROR_ALREADY_EXISTS` as success.
 
 `output_dir` is **never persisted in the cfg sidecar**. Re-deriving it per case
 prevents stale paths from leaking across cases.
@@ -34,7 +42,7 @@ static std::wstring DefaultOutputDir(const std::wstring& caseRoot) {
 }
 ```
 
-The cfg loader skips `output_dir` on load (from the same file, `LoadSettings`):
+The cfg loader skips `output_dir` on load (from the same file, `LoadCfg`):
 
 ```cpp
 // output_dir intentionally not loaded — it's always derived from
@@ -47,7 +55,7 @@ The cfg loader skips `output_dir` on load (from the same file, `LoadSettings`):
 ## Do / Don't
 
 - **Do** call `GetCaseRootDir()` at the start of `XT_Prepare` (or `WM_INITDIALOG`) and pass the result to `DefaultOutputDir(caseRoot)` to seed the output-path field.
-- **Do** create the folder with `SHCreateDirectoryExW` just before writing — lazy creation avoids empty folders when the user aborts.
+- **Do** create the folder just before writing (`EnsureDirectoryExists`) — lazy creation avoids empty folders when the user aborts. If you reach for a shell API such as `SHCreateDirectoryExW` instead, strip the `\\?\` prefix first: property 6 returns an extended-length path that the shell APIs reject (see [xways-getprop-reference.md](../xways-getprop-reference.md)).
 - **Do** use `<NAME>` (the DLL stem constant) as the subfolder name so artifacts are easy to find and archive.
 - **Don't** save `output_dir` to the cfg sidecar — re-derive it each time from the live case root.
 - **Don't** hardcode a fallback path outside the case root; return empty and let the caller decide (log and bail, or prompt the analyst).

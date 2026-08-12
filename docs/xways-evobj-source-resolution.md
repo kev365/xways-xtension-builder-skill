@@ -10,6 +10,14 @@ author: empirical research notes
 
 How to recover the on-disk path (or other input source) X-Ways used to acquire/load an evidence object, when an X-Tension needs to feed external tools (bulk_extractor, yara, …) the underlying bytes.
 
+## Contents
+
+- "EO added as File" vs "EO added as Disk" — the only distinction that matters
+- What individual properties actually return
+- Detecting a leaked pointer return
+- API note (see "right API" section above for what to actually do)
+- See also
+
 ## "EO added as File" vs "EO added as Disk" — the only distinction that matters
 
 Empirically derived from runs across four contexts on a 21.7 build (1422138.89). The image **format** (E01, DD, XWFIM, …) is not the variable. The variable is **how the analyst added it to the case**:

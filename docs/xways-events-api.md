@@ -12,6 +12,27 @@ Reference for adding rows to X-Ways' **Events** viewer and enumerating existing 
 
 Authoritative SDK declarations: the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)). Empirical methodology and per-channel writeups: [events-viewer-empirical-findings.md](events-viewer-empirical-findings.md).
 
+## Contents
+
+- The `EventInfo` struct
+- `XWF_AddEvent`
+- `XWF_GetEvent`
+- `nEvtType` — full lookup map (empirical)
+- `nFlags` — empirical semantics
+- `lpDescr` — 254-byte display ceiling
+- Item linkage (`nItemID`, `nOfs`)
+- Writable channels adjacent to events
+- `XWF_SetItemType` and `nTypeStatus`
+- Color rendering and Conditional Coloring
+- Default timezone behavior
+- Relationship to `Event Log Events.txt`
+- Modifying existing events
+- Python exposure
+- Threading
+- Practical usage shape (C++)
+- Caveats
+- See also
+
 ## The `EventInfo` struct
 
 ```c
@@ -271,7 +292,7 @@ When events are anchored to an item via `nItemID`, several other XWF_ APIs surfa
 | --- | --- | --- | --- |
 | `XWF_AddComment(item, str, how)` | **Comments column** of the directory browser + Details pane (also visible next to anchored events) | wide string | ✓ |
 | `XWF_AddExtractedMetadata(item, str, how)` | **Metadata column** + Details pane | wide string | ✓ |
-| `XWF_AddToReportTable(item, name, 0)` | **Labels column** (formerly "Categorization"); same surface as Report Tables | wide string | ✓ in UI; ✗ in HTML report |
+| `XWF_Label(item, name, 0)` (pre-rename: `XWF_AddToReportTable`) | **Labels column** (formerly "Categorization"); same surface as Report Tables | wide string | ✓ in UI; ✗ in HTML report |
 | `XWF_AddSearchTerm(name, 0)` | **Search Terms** list (case-level, not per-item) | wide string | ✓ |
 | `XWF_SetItemType(item, label, status)` | **Type** column conditionally; **Type status** column always | wide string | renders with fallback glyph for SMP chars |
 

@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-08-09
+author: project
+---
+
 # Ctrl-to-save gesture
 
 X-Tensions with a settings dialog and cfg sidecar expose a uniform keyboard
@@ -10,7 +17,9 @@ it swaps two button labels and repaints.
   **"Save"** and fills blue.
 - **Ctrl+Close** — opens `GetSaveFileNameW`, saves to the chosen path, closes.
   The Close button label swaps to **"Save as..."**.
-- **`DM_SETDEFID`** keeps Enter triggering Run even with `BS_OWNERDRAW` on IDOK.
+- **`DM_SETDEFID`** keeps Enter triggering Run even with `BS_OWNERDRAW` on the
+  Run button. In the template that button is `IDC_BTN_RUN`, not `IDOK` — the
+  settings dialog has no `IDOK` control.
 - Both gestures are **inert while a worker is active** — Close stays "Cancel".
 
 ## Pattern
@@ -22,52 +31,66 @@ timer setup, the `kCtrlPollTimerId` / `g_runCtrlDown` declarations, the
 ```cpp
 // Ctrl-to-save / Save-as: WM_TIMER polls Ctrl every 100 ms while the dialog
 // is up. On a transition we swap two button labels and repaint:
-//   - Run   : "Run"   <-> "Save"         (BS_OWNERDRAW + WM_DRAWITEM = blue)
-//   - Close : "Close" <-> "Save as..."   (label-only swap; standard button)
-static constexpr UINT_PTR kCtrlPollTimerId = 0xAB10;
-static bool               g_runCtrlDown   = false;
+//   - Run   : "<rc label>" <-> "Save"        (BS_OWNERDRAW + WM_DRAWITEM = blue)
+//   - Close : "<rc label>" <-> "Save as..."  (only when no worker is running)
+// Declared as statics inside SettingsDlgProc.
+static bool      g_runCtrlDown   = false;
+static bool      g_closeCtrlDown = false;
+constexpr UINT_PTR kCtrlPollTimerId = 0xAB10;
+constexpr UINT     kCtrlPollMs      = 100;
 
-// WM_INITDIALOG — set up owner-draw Run + timer
-SendMessageW(hDlg, DM_SETDEFID, IDOK, 0);
-g_runCtrlDown = false;
-SetDlgItemTextW(hDlg, IDOK,     L"Run");
-SetDlgItemTextW(hDlg, IDCANCEL, L"Close");
-SetTimer(hDlg, kCtrlPollTimerId, 100, nullptr);
+// Resting labels are read back from the .rc rather than hardcoded, so the
+// restore cannot silently drop an "&" mnemonic the .rc declared.
+static wchar_t g_runRestLabel[64]   = L"Run";
+static wchar_t g_closeRestLabel[64] = L"Close";
+
+// WM_INITDIALOG — DM_SETDEFID keeps Enter on Run despite BS_OWNERDRAW
+SendMessageW(hDlg, DM_SETDEFID, IDC_BTN_RUN, 0);
+GetDlgItemTextW(hDlg, IDC_BTN_RUN, g_runRestLabel,   _countof(g_runRestLabel));
+GetDlgItemTextW(hDlg, IDCANCEL,    g_closeRestLabel, _countof(g_closeRestLabel));
+SetTimer(hDlg, kCtrlPollTimerId, kCtrlPollMs, nullptr);
 
 // WM_TIMER — swap labels when Ctrl state changes
-if (wParam == kCtrlPollTimerId) {
-    bool nowDown = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
-    if (nowDown != g_runCtrlDown) {
-        g_runCtrlDown = nowDown;
-        HWND hRun = GetDlgItem(hDlg, IDOK);
-        if (hRun) {
-            SetWindowTextW(hRun, nowDown ? L"Save" : L"Run");
-            InvalidateRect(hRun, nullptr, TRUE);
-        }
+if (wp == kCtrlPollTimerId) {
+    bool ctrlDown = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+    if (ctrlDown != g_runCtrlDown) {
+        g_runCtrlDown = ctrlDown;
+        SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : g_runRestLabel);
+        InvalidateRect(GetDlgItem(hDlg, IDC_BTN_RUN), nullptr, TRUE);
     }
+    // Close only offers Save-as when no worker is running.
+    bool closeSaveMode = ctrlDown && (g_workerThread == nullptr);
+    if (closeSaveMode != g_closeCtrlDown) {
+        g_closeCtrlDown = closeSaveMode;
+        SetDlgItemTextW(hDlg, IDCANCEL,
+                        closeSaveMode ? L"Save as..."
+                                      : (g_workerThread ? L"Cancel"
+                                                        : g_closeRestLabel));
+        InvalidateRect(GetDlgItem(hDlg, IDCANCEL), nullptr, TRUE);
+    }
+    return TRUE;
 }
 
-// WM_DRAWITEM — blue fill when Ctrl held, standard 3D otherwise
-DRAWITEMSTRUCT* dis = (DRAWITEMSTRUCT*)lParam;
-if (!dis || dis->CtlType != ODT_BUTTON || dis->CtlID != IDOK)
-    return FALSE;
-bool ctrl    = g_runCtrlDown;
-bool pressed = (dis->itemState & ODS_SELECTED) != 0;
-COLORREF bg;
-if      (dis->itemState & ODS_DISABLED) bg = GetSysColor(COLOR_BTNFACE);
-else if (ctrl)  bg = pressed ? RGB(0, 90, 170) : RGB(0, 120, 215);
-else            bg = pressed ? GetSysColor(COLOR_BTNSHADOW)
-                             : GetSysColor(COLOR_BTNFACE);
+// WM_DRAWITEM — blue fill in the Ctrl "alternate action" state
+DRAWITEMSTRUCT* dis = (DRAWITEMSTRUCT*)lp;
+const bool isRunBtn    = (dis->CtlID == IDC_BTN_RUN);
+const bool isCancelBtn = (dis->CtlID == IDCANCEL);
+bool altMode   = (isRunBtn && g_runCtrlDown) || (isCancelBtn && g_closeCtrlDown);
+bool isPressed = (dis->itemState & ODS_SELECTED) != 0;
+COLORREF bg = altMode ? (isPressed ? RGB(0, 90, 168) : RGB(0, 120, 215))
+                      : GetSysColor(COLOR_BTNFACE);
 HBRUSH hbr = CreateSolidBrush(bg);
 FillRect(dis->hDC, &dis->rcItem, hbr);
 DeleteObject(hbr);
 ```
 
-**Source of truth:** the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) → `kCtrlPollTimerId`, `g_runCtrlDown`, `WM_TIMER` handler, `WM_DRAWITEM` handler
+**Source of truth:** the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) → `kCtrlPollTimerId`, `g_runCtrlDown`, `g_closeCtrlDown`, `g_runRestLabel`, `g_closeRestLabel`, `WM_TIMER` handler, `WM_DRAWITEM` handler
 
 ## Do / Don't
 
-- **Do** use `BS_OWNERDRAW` on IDOK and pair it with `DM_SETDEFID` so Enter still triggers Run.
+- **Do** use `BS_OWNERDRAW` on the Run button and pair it with `DM_SETDEFID` so Enter still triggers Run.
+- **Do** capture the resting labels from the `.rc` at `WM_INITDIALOG` and restore *those*; a hardcoded `L"Run"` against an `.rc` that says `"&Run"` silently kills the Alt+R accelerator.
+- **Do** give `IDCANCEL` its resting label (`Close`) in the `.rc`; it reads `Cancel` only while a worker runs.
 - **Do** kill the timer in `WM_DESTROY` (`KillTimer(hDlg, kCtrlPollTimerId)`) and reset `g_runCtrlDown = false`.
 - **Do** skip both Ctrl branches while a worker is active — the Close button must remain a cancel during a run.
 - **Don't** use `MessageBox` for the "Save" confirmation — the silent write is the convention.

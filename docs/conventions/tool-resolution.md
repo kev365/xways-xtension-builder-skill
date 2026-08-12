@@ -1,20 +1,69 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-08-09
+author: project
+---
+
 # Tool resolution
 
-Every CLI-wrapper X-Tension resolves its helper exe via `ResolveToolPath`
-before spawning. The function searches a prioritised set of directories
-relative to the DLL's own location, so helpers are found whether the analyst
-uses the shared `xtensions\tools\` layout or a self-contained per-X-Tension
-bundle.
+A CLI-wrapper X-Tension resolves its helper exe from the DLL's own directory
+before spawning, so the helper is found wherever the analyst dropped the
+per-X-Tension bundle. There are two forms of this, and they are not the same
+function — check which one you have before citing it.
 
-!!! example "The `exe` argument is a glob"
-    `exe` is a `FindFirstFileW` pattern — callers can write
+## Contents
+
+- What the `wrapper` template ships
+- The richer form — a shared `tools\` tree
+- Resolution order summary (richer form)
+- Do / Don't
+
+## What the `wrapper` template ships
+
+`ResolveDefaultTool()` — no arguments, probes three fixed locations under the
+DLL directory, then falls back to a bounded breadth-first search:
+
+```cpp
+static std::wstring ResolveDefaultTool() {
+    std::wstring dllDir = GetSelfDirectory();
+    if (dllDir.empty()) return {};
+    for (const wchar_t* sub : {
+            L"\\tools\\yourtool\\yourtool.exe",
+            L"\\tools\\yourtool.exe",
+            L"\\yourtool.exe",
+         }) {
+        std::wstring guess = dllDir + sub;
+        if (FileExists(guess)) return guess;
+    }
+    return FindSiblingFile(dllDir, L"yourtool.exe");
+}
+```
+
+`FindSiblingFile(root, targetName, maxDepth = 4, maxDirsVisited = 256)` is the
+bounded BFS — the visit cap matters, because a helper dropped next to a large
+evidence tree would otherwise walk it. The name is matched **exactly**; the
+template has no glob support.
+
+The cfg override (`tool_exe = ...`) is applied by the caller in `XT_Prepare`:
+if the override is set and the file exists, `ResolveDefaultTool` is never
+called.
+
+**Source of truth:** the `wrapper` template
+(`templates/x-tensions/wrapper/my_xtension.cpp`) → `ResolveDefaultTool`,
+`FindSiblingFile`.
+
+## The richer form — a shared `tools\` tree
+
+Working X-Tensions that share one helper tree across several X-Tensions use a
+wider search with a `subdir` hint and glob matching. **This is not in the
+template** — adopt it deliberately when a shared tree is what you want, and
+port `FindExeInDir` / `FindExeRecursive` along with it.
+
+!!! example "Here the `exe` argument is a glob"
+    `exe` is a `FindFirstFileW` pattern, so a caller can write
     `L"hayabusa*.exe"` to match version-suffixed release binaries like
     `hayabusa-3.8.1-win-x64.exe` without hardcoding the version.
-
-## Pattern
-
-Extracted from the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) → `ResolveToolPath`
-(declaration comment + function body):
 
 ```cpp
 // Resolve a tool binary path. `exe` is a filename glob (FindFirstFileW pattern
@@ -54,9 +103,7 @@ std::wstring ResolveToolPath(const std::wstring& subdir, const std::wstring& exe
 }
 ```
 
-**Source of truth:** the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) → `ResolveToolPath`
-
-## Resolution order summary
+## Resolution order summary (richer form)
 
 | Priority | Path searched | Rationale |
 |---|---|---|
@@ -67,17 +114,17 @@ std::wstring ResolveToolPath(const std::wstring& subdir, const std::wstring& exe
 | 5 | `<dll-dir>\..\tools\**\<exe>` (depth 4) | Deep search — handles analyst-chosen paths |
 | 6 | `<dll-dir>\tools\**\<exe>` (depth 4) | Back-compat deep search |
 
-The cfg-override path (`tool_exe = ...`) is resolved by the **caller** before
-`ResolveToolPath` is even invoked; if the override is set and the file exists,
-`ResolveToolPath` is skipped entirely.
+As with the template's simpler form, the cfg override is resolved by the
+**caller** before the search runs.
 
 ## Do / Don't
 
-- **Do** resolve the exe path once in `XT_Prepare` and store it in `RunState`; do not call `ResolveToolPath` per item.
+- **Do** resolve the exe path once in `XT_Prepare` and store it in `Settings.toolExe`; do not re-resolve per item.
 - **Do** pass `subdir` as the canonical tool name (e.g. `L"hayabusa"`, `L"yourtool"`) — this is the recommended directory name under `xtensions\tools\`.
 - **Do** use a glob for `exe` when the release filename includes a version number (e.g. `L"hayabusa*.exe"`).
 - **Do** check that the resolved path exists (`GetFileAttributesW != INVALID_FILE_ATTRIBUTES`) and log a human-readable download URL if not found.
 - **Don't** search `PATH` or the X-Ways executable directory — tools must be explicit (cfg or bundled).
-- **Don't** call `ResolveToolPath` with an empty `subdir` — the recursive fallback will still work, but you lose the cheap hint-path fast-path.
+- **Don't** pass an empty `subdir` to the richer form — the recursive fallback still works, but you lose the cheap hint-path fast-path.
+- **Don't** cite `ResolveToolPath` as if the template shipped it. The template's function is `ResolveDefaultTool`, and it takes no arguments.
 
-See also: [Wrapper anatomy](wrapper-anatomy.md) for where `ResolveToolPath` fits in `XT_Prepare`.
+See also: [Wrapper anatomy](wrapper-anatomy.md) for where resolution fits in `XT_Prepare`.

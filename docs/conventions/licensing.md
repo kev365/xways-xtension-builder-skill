@@ -1,3 +1,10 @@
+---
+source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
+type: convention
+last_updated: 2026-08-09
+author: project
+---
+
 # Licensing
 
 License every X-Tension **MIT**. Consistent licensing across the
@@ -9,7 +16,7 @@ freely.
 1. **A standalone `LICENSE` file** at the X-Tension root — the verbatim MIT
    text with `Copyright (c) <year> <NAME>`. The scaffold
    (`scripts/new-xtension.ps1`) writes this from
-   `.claude/skills/xways-xtension-authoring/assets/LICENSE.tmpl`.
+   `assets/LICENSE.tmpl`.
 2. **A descriptive header banner** at the top of the main source file — the
    `// ====` block that summarises what the tool does (see the header banner in
    the `wrapper` template `templates/x-tensions/wrapper/my_xtension.cpp` for the
@@ -59,6 +66,6 @@ or revises terms.
 - **Don't** put credentials, contact details, or names beyond the copyright
   holder into source headers.
 
-**Source of truth:** `.claude/skills/xways-xtension-authoring/assets/LICENSE.tmpl`
+**Source of truth:** `assets/LICENSE.tmpl`
 (MIT text) + the header banner in the `wrapper` template
 (`templates/x-tensions/wrapper/my_xtension.cpp`).

@@ -11,7 +11,7 @@ Minimal, self-contained C++ starting point for an X-Ways Forensics 21.7+ X-Tensi
 ## Use this template
 
 Scaffold a copy with the skill's
-[`new-xtension.ps1`](../../../.claude/skills/xways-xtension-authoring/scripts/new-xtension.ps1)
+[`new-xtension.ps1`](../../../scripts/new-xtension.ps1)
 (`-Template cpp`) — it copies the folder, renames the `my_xtension.*` files, and sets
 the identity constants. To do it by hand:
 
@@ -30,7 +30,7 @@ Only the exports actually used by the template are declared at the top of the `.
 2. Add a matching `pfn_` typedef + `static` pointer near the top of your `.cpp`.
 3. Add one more `Resolve<…>(h, "XWF_…", missing)` line inside `RetrieveFunctionPointers`.
 
-Don't invent signatures — `X-Tension.h` is authoritative and tracks real changes as the API evolves. Route every `XWF_*` question through the skill's [API guardrail](../../../.claude/skills/xways-xtension-authoring/references/api-guardrail.md).
+Don't invent signatures — `X-Tension.h` is authoritative and tracks real changes as the API evolves. Route every `XWF_*` question through the skill's [API guardrail](../../../references/api-guardrail.md).
 
 ## Per-X-Tension output folder
 
@@ -66,7 +66,6 @@ This template ships with **no settings dialog** — `XT_Prepare` runs straight f
 - **Ctrl-to-save / Save-as gesture** (Ctrl+Run saves the cfg sidecar; Ctrl+Close exports a copy) → [docs/conventions/ctrl-to-save.md](../../../docs/conventions/ctrl-to-save.md).
 - **Subprocess stdio** (see the caveat below) → [docs/conventions/subprocess-stdio.md](../../../docs/conventions/subprocess-stdio.md).
 - **Dialog layout / UX** (filter-aware item collection, bold group titles, cue banners, tooltips, progress bar, worker thread, one cfg serializer, folder pickers) → [docs/xtension-dialog-conventions.md](../../../docs/xtension-dialog-conventions.md).
-- **Manager (`xways-xt-manager`) compatibility** → the [`cpp-xtmgr-compatible/`](../cpp-xtmgr-compatible/) template + [docs/conventions/manager-compatibility.md](../../../docs/conventions/manager-compatibility.md).
 
 Real-world implementations to study: [xways-trufflehog](https://github.com/kev365/xways-trufflehog) (the canonical tool-wrap) and [xways-ual-timeliner](https://github.com/kev365/xways-ual-timeliner) (dialog + Ctrl-to-save + helper-exe verification).
 
