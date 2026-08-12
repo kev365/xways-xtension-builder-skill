@@ -5,7 +5,7 @@ Two eval sets, measuring different things.
 | File | Measures | Automated? |
 | --- | --- | --- |
 | [`trigger-eval.json`](trigger-eval.json) | whether the `description` gets the skill **consulted** | yes — [`run-trigger-eval.ps1`](run-trigger-eval.ps1) |
-| [`behavior-eval.json`](behavior-eval.json) | whether the skill produces the **right answer** once consulted | no — rubric for review |
+| [`behavior-eval.json`](behavior-eval.json) | whether the skill produces the **right answer** once consulted | generation yes — [`run-behavior-eval.ps1`](run-behavior-eval.ps1); grading no, on purpose |
 
 A skill can trigger perfectly and still give bad guidance, so the two are worth
 keeping apart.
@@ -79,10 +79,39 @@ the easy one:
 | `scaffold-dryrun-and-build-gate` | `-DryRun` first; no completion claim without build output |
 | `wrap-picks-wrapper-template` | wrapper template chosen over bare cpp; helper-exe verification raised |
 
-There is no automated judge. Run a scenario's `query` against the skill and
-check the response against its `expected_behavior` list — by reading it, or by
-handing both to a model as a rubric. `probes` records why the case exists, so a
-future edit does not weaken it by accident.
+```powershell
+pwsh -File evals/run-behavior-eval.ps1
+
+# Smoke-test the harness on one scenario before paying for all six
+pwsh -File evals/run-behavior-eval.ps1 -Filter subprocess
+```
+
+Each scenario runs to completion in its own empty scratch project — separate
+because the scaffold scenario writes files, and scenarios must not see each
+other's output. Per scenario you get the raw `.jsonl` transcript, plus a
+readable `.md` carrying the query, the tool-call trace, the final answer, and
+the `expected_behavior` list as an **unticked** checklist.
+
+**Generation is automated; grading deliberately is not.** Whoever wrote the
+skill changes and the `expected_behavior` lists is the worst person to grade
+the result, so the objective half — did the skill fire, which references were
+read, what was finally said — is captured mechanically, and the judgement is
+left where it can be made honestly. Read the `.md` files, or hand them to
+someone (or something) that has not seen the changes under test.
+
+The tool-call trace earns its place: several assertions are about *which*
+reference got consulted ("Points at `docs/conventions/subprocess-stdio.md`"),
+which shows up in the trace rather than in the prose. Note that a run's own
+account of its tool access is not reliable — transcripts from 2026-08-12 claim
+reads were blocked while the trace shows the same files being read
+successfully. Trust the trace.
+
+Run output lands in `evals/runs/<timestamp>/` and is git-ignored: it is bulky
+and full of absolute local paths that the hygiene scan rejects. The durable
+record is [`behavior-baseline.md`](behavior-baseline.md).
+
+`probes` records why each case exists, so a future edit does not weaken it by
+accident.
 
 Several are deliberately adversarial: `item-callback-double-count` asserts a
 false premise the answer must correct, and `threading-refuses-worker-xwf-calls`
@@ -95,3 +124,8 @@ the failure.
 which description version, method, and result. Update it whenever the
 description changes — and record the method used, because a number without one
 cannot be compared against the next.
+
+[`behavior-baseline.md`](behavior-baseline.md) does the same for behaviour, and
+additionally records which assertions missed and why. Update it after any change
+that moves the guidance the scenarios probe — the SKILL.md gates, the convention
+pages, or the templates.

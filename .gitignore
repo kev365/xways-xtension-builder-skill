@@ -49,3 +49,8 @@
 *.user
 Thumbs.db
 .DS_Store
+
+# Behaviour-eval run output: raw transcripts + per-run scratch projects.
+# Transient, bulky, and full of absolute local paths that the hygiene scan
+# rejects. The durable record is evals/behavior-baseline.md.
+/evals/runs/
