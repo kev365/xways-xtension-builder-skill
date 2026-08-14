@@ -2,7 +2,7 @@
 source: empirical notes from building X-Tensions with cl/link/rc on Windows and iterating against a live X-Ways install
 type: project-pattern
 fetched: 2026-05-02
-last_updated: 2026-05-02
+last_updated: 2026-08-12
 author: project notes
 ---
 
@@ -48,7 +48,14 @@ Known pitfalls. Each entry: symptom → root cause → fix.
 
 **Symptom:** `LINK : fatal error LNK1104: cannot open file 'my_xtension.dll'` mid-iteration. The DLL exists but can't be overwritten.
 
-**Root cause:** Once X-Ways loads an X-Tension via the picker (or via `XT_INIT_QUICKCHECK`), the DLL is mapped into the X-Ways process and Windows holds a write lock until the process exits. There is **no documented X-Tension unload mechanism** — closing the dialog doesn't unload the DLL.
+**Root cause:** the DLL is mapped into the X-Ways process and Windows holds a write lock while it stays mapped. X-Ways **does** try to unload it — per X-Ways on the X-Tension board (2018-03-19), it calls `FreeLibrary` shortly after your `XT_Done` returns, and you can watch it do so by breakpointing the end of `XT_Done` and stepping back into the caller.
+
+Two things stop that from helping:
+
+- **An exception in `XT_Done` cancels the unload outright.** X-Ways states the unload happens *"unless an exception error occurs in the XT_Done function"*. So a throwing or faulting `XT_Done` costs you the unload — and hands you a locked DLL for the rest of the session. Keep `XT_Done` trivial and exception-free; it is the worst possible place to do real work.
+- **`FreeLibrary` succeeding does not guarantee the module is gone.** X-Ways reproduced exactly this in 2018: `FreeLibrary` first failed with "Access is denied", then reported success while the DLL stayed loaded. They shipped a workaround in v19.6 SR-2 (re-fetch the handle with `GetModuleHandleW`, then call `FreeLibrary` twice) which fixed it on their machine and **not** on the reporter's. Anything the runtime pins — a .NET assembly, a thread you left running, a static with a non-trivial destructor — can hold the module open regardless of what X-Ways does.
+
+Treat "X-Ways releases my DLL" as a bonus, never as the workflow.
 
 **Workaround:** Close X-Ways before rebuilding. If you only need to verify code compiles (not link), the cl + rc steps don't touch the DLL — you can run those without closing X-Ways:
 
@@ -146,6 +153,8 @@ If your X-Tension doesn't iterate items, omit `XT_ProcessItem`. If it doesn't ne
 - **`XWF_AddEvent` from a multi-threaded `XT_ProcessItem(Ex)` callback under RVS** — undocumented thread safety, easy to corrupt state. Pattern: do all event-emission in `XT_Prepare` or batch into `XT_Finalize`. See [events-viewer-empirical-findings.md](events-viewer-empirical-findings.md).
 - **Returning a negative value from `XT_ProcessItem(Ex)`** — aborts the iteration. Make sure the normal path returns `0`, not `-1`.
 - **Calling `XWF_GetUserInput` from a worker thread** — modal dialog from the wrong thread. Prompt only in `XT_Prepare`.
+- **Passing an item *handle* where an item *ID* is expected.** `XWF_OpenItem` returns a `HANDLE`; `XWF_CopyToContainer` takes that handle, but `XWF_Label` / `XWF_AddToReportTable`, `XWF_SetItemInformation` and the rest of the per-item API take the **`LONG nItemID`**. Both are integral, so passing the wrong one **compiles and half-works**: a developer hit exactly this in 2021 — the report table was created and showed a nonsense count (6 instead of ~1000), and filtering by it listed nothing. Symptom to watch for: the label/table exists but the membership is wrong or empty.
+- **Text extraction returning `0` is often correct, not an error.** `XWF_OpenItem(..., 0x400)` fails for files that genuinely have no extractable text — a `.docx` whose visible content is a scanned image is the classic case, and it looks like text in the viewer. Check the return and move on rather than treating it as a failure. (On hosts before v20.0 Beta 5b the same call could abruptly terminate instead of returning `0`, and it was not catchable with structured exception handling.)
 - **Forgetting `XT_INIT_QUICKCHECK`** — return `1` on `nFlags & 0x20` without doing real work, otherwise X-Ways may incorrectly conclude the X-Tension is incompatible.
 - **`XWF_GetWindow` is bounded on both axes.** Empirical (observed 2026-05-03):
   - **`nWndIndex` ≤ 11.** Indices 0, 1, 2, 10, 11 return live HWNDs (`WHXWin` data window, `HexWin` hex pane, `ListView` directory browser, `CollWin` column header, `BtnWnd` button strip respectively); 3..9 safely return `NULL`; 12+ triggers a "page protection fault, high or unknown impact" inside X-Ways' own code — the function reads off the end of an internal sub-handle table.

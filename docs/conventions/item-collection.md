@@ -43,6 +43,8 @@ you'll add items). Empirically verified.
 ## Contents
 
 - Pattern
+- RVS and DBC do not deliver the same items
+- Reporting progress during the `XT_Finalize` run
 - Detecting that the analyst cancelled the run
 - Remembering what you already processed, across runs
 - Do / Don't
@@ -73,6 +75,55 @@ LONG __stdcall XT_ProcessItemEx(LONG id, HANDLE, void*) { CollectItem(id); retur
 
 If instead you do the work **inline** per item (carver/classifier — no collection), still synchronise
 any shared counters/output because RVS is multi-threaded, and put the work in `XT_ProcessItemEx`.
+
+## RVS and DBC do not deliver the same items
+
+This is the one that produces "where are the other 50 files?" questions from a
+legal team, so it is worth knowing before you ship.
+
+Under **volume snapshot refinement**, previously-existing files whose first
+cluster is overwritten or unknown are **not** delivered to your per-item
+callback, no matter which `XT_PREPARE_TARGET*` flags you return. A developer
+quantified it on the standard NTFS training image (2019-03-08): **608 items in
+the snapshot, 598 delivered.** The ten missing were all
+*"prev. existing, 1st cluster not available"*, plus one encrypted file.
+
+Under the **directory browser context menu**, recursively selecting everything
+and running the X-Tension from the right-click menu **does** deliver them — the
+same developer confirmed it "does it for every item as intended".
+
+So the three options, in increasing order of control:
+
+| You want | Do this |
+| --- | --- |
+| Whatever the analyst targeted | RVS, and say so in your output |
+| Every item the snapshot knows about | recursive select-all → right-click → Run X-Tension |
+| Full control regardless of either | ignore the callbacks; iterate the snapshot yourself in `XT_Prepare` / `XT_Finalize` |
+
+If your X-Tension produces a count that someone will cross-check against the
+directory browser, **state which mode it was run in** — the gap is real,
+by design, and not a bug you can flag-your-way out of.
+
+## Reporting progress during the `XT_Finalize` run
+
+`XWF_SetProgressPercentage` drives the host's progress indicator, which is what
+makes the collect-then-run shape usable on a large selection: you cannot know
+the total up front from inside a per-item callback, but once collection has
+finished the count is simply the size of your accumulator.
+
+```cpp
+const size_t total = g_collected.items.size();
+for (size_t i = 0; i < total; ++i) {
+    XWF_SetProgressPercentage(static_cast<DWORD>(i * 100 / total));
+    Process(g_collected.items[i]);
+}
+```
+
+This is the same structure the community converged on in 2021 for exactly this
+reason, before `XWF_GetItemCount` learned to report a selected-item count in
+**v20.3 SR-3**. On that function's parameter: it was `PVOID pReserved`,
+undefined and **always ignored**, so old code passing a volume handle there was
+harmless — values other than `NULL` and `(LPVOID)1` are still ignored.
 
 ## Detecting that the analyst cancelled the run
 

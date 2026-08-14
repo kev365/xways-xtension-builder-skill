@@ -69,6 +69,18 @@ honours the analyst's active filter and right-click selection; iterating the
 snapshot yourself sees every item but ignores what the analyst asked for. Pick
 deliberately — see [item-collection](conventions/item-collection.md).
 
+**Quantified on the standard NTFS training image (2019-03-08).** A developer
+counted **608 items in the snapshot and 598 delivered** under RVS with
+`CALLPI | TARGETZEROBYTEFILES | DONTOMIT`. Every missing item was
+*"prev. existing, 1st cluster not available"*, plus one encrypted file — no
+combination of `XT_PREPARE_TARGET*` flags reaches them.
+
+The same developer then confirmed the workaround: **recursively select
+everything in the directory browser and run the X-Tension from the right-click
+menu**, and every item is delivered. So RVS and DBC genuinely differ in
+coverage, and an X-Tension whose output will be counted against the directory
+browser should say which mode produced it.
+
 **Practical rules of thumb:**
 
 - If you want every item, register `XT_ProcessItem()` as well as `XT_ProcessItemEx()`. The zero-byte and unopenable cases get delivered there even on older builds, and the handle in `XT_ProcessItemEx()` would be useless for them anyway.
