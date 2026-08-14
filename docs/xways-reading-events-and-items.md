@@ -96,8 +96,8 @@ The directory browser is the rendered view of the **volume snapshot** — the li
 
 | API | Returns |
 | --- | --- |
-| `XWF_GetItemCount(NULL)` | Total number of items in the current snapshot. |
-| `XWF_GetItemName(nItemID)` | UTF-16 wide name (filename only, not path). |
+| `XWF_GetItemCount(NULL)` | Total number of items in the current snapshot. **Pass `(LPVOID)1` instead** to get the number of items *selected in the directory browser* (v20.3 and later) — the DBC case; see [item-collection](conventions/item-collection.md). |
+| `XWF_GetItemName(nItemID)` | UTF-16 wide name (filename only, not path). **OR the ID with `0x80000000` to get the item's *alternative* name** (v19.9+) — which of two available filenames counts as the alternative depends on the analyst's settings. `NULL` if unavailable. |
 | `XWF_GetItemSize(nItemID)` | Logical size in bytes. |
 | `XWF_GetItemOfs(nItemID, &defOfs, &startSector)` | File-system offset and starting sector. |
 | `XWF_GetItemParent(nItemID)` | Parent item ID, or `-1` for root. Walk recursively to build the full path. |

@@ -19,6 +19,7 @@ Synthesised reference for what `xwforensics64.exe` / `xwb64.exe` / `winhex64.exe
 
 - TL;DR — there is no `--help`
 - Documented parameters (21.6 manual § 3.10)
+- Unattended BitLocker — `Override:5` and `Passwords.txt`
 - End-to-end recipe (Polito blog)
 - Getting the version (no `--version`, but `GetLicID:` + msglog works)
 - Things to keep in mind
@@ -57,6 +58,50 @@ Synthesised reference for what `xwforensics64.exe` / `xwb64.exe` / `winhex64.exe
 | `\|e01\|<path>\|<desc>\|<name>` | (Second positional, paired with `:N` first) — automatic imaging recipe. Format = `e01` or `raw`. Two output copies allowed by separating paths with `/`: `\|e01\|Z:\First.e01/V:\Second.e01`. |
 | `GetLicID:[path]` | Print the license/dongle hash (`nLicID`) and exit. First 4 bytes returned as exit code; full 16 bytes + 8-byte FILETIME UTC written to the optional output path. Used by third-party tools that license against an X-Ways install. If first 4 bytes are `0x00`, install is unlocked or the file write failed. |
 | `auto` (positional, last) | Exit X-Ways automatically when finished. |
+
+## Unattended BitLocker — `Override:5` and `Passwords.txt`
+
+`Override:4` and `Override:5` consult an internal password collection. The file
+itself has requirements that are easy to get wrong and that fail *silently* —
+the run simply stalls or skips the volume. Distilled from the
+[XT_ExtractDocsMail](https://github.com/gaiacalamari/XT_ExtractDocsMail-) README
+(2026-08-13), which documents the automated path end to end:
+
+- **The file is `Passwords.txt`, and there are two collections.** A *general*
+  one, next to `xwforensics64.exe` or in the Windows user-profile folder, and a
+  *case-specific* one in the case directory (editable from Case Properties).
+- **For a single command that creates the case and adds the image**
+  (`NewCase:` + `AddImage:`), you must use the **general** collection — the
+  case-specific file does not exist yet at the moment the first `AddImage:` runs.
+- **The file must be UTF-16.** A UTF-8 or ANSI file may not be read at all. The
+  reliable way to create it is from the GUI once (Case Properties, or the
+  archive-processing options dialog), adding a single entry so X-Ways writes it
+  in the right place with the right encoding — then append the rest.
+- **One entry per line.** A BitLocker recovery password is 48 digits in 8
+  hyphen-separated groups of 6, with no spaces and no trailing space.
+
+X-Ways also tries keys from other already-unlocked BitLocker volumes in the same
+case first, and handles `.BEK` startup-key files found in the evidence. The key
+that worked is recorded in the evidence object's **Description** — reachable from
+an X-Tension as `XWF_GetEvObjProp` property 10.
+
+### Ordering: refinement must precede the X-Tension
+
+```bat
+set "XT_OUT=Y:\Export" && "C:\xwf21.7\xwforensics64.exe" "NewCase:W:\xways" "AddImage:Y:\Images\*.E01" Override:5 RVS:~ "XT:C:\xwf21.7\XTension\XT.dll" auto
+```
+
+The `RVS:~` before `XT:` is not cosmetic. Anything an X-Tension reads that is
+*produced by refinement* — file type, category, hashes, extracted metadata — is
+absent on an unrefined snapshot, and the X-Tension has no way to tell the
+difference between "no items match" and "nothing has been computed yet". The
+XT_ExtractDocsMail README names this as the most common cause of a run that
+"looks fine but produces no output".
+
+**Defensive shape for any X-Tension that depends on refinement output:** count
+how many items you skipped for missing input, and log that count. A run that
+reports *"exported 0, skipped 41,812 with no category"* diagnoses itself; one
+that reports *"exported 0"* does not.
 
 ## End-to-end recipe (Polito blog)
 

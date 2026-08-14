@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XWF_functions.html (live page) + empirical testing (2026-05-03)
 type: official-doc + empirical-finding
 fetched: 2026-04-26
-last_updated: 2026-05-03
+last_updated: 2026-08-13
 author: X-Ways Software Technology AG (official page); empirical sweep notes
 ---
 
@@ -18,6 +18,7 @@ The two property-getter functions in the X-Tension API expose case-level and evi
 - `XWF_GetVSProp` (volume snapshot properties)
 - `XWF_GetProp` (volume / item handle)
 - `XWF_GetEvObjProp`
+- Properties 30 / 31 — time-zone bias and daylight saving
 - Recommended pattern: temp base resolution
 - See also
 
@@ -50,16 +51,69 @@ Sweeps (2026-05-03) covering `nPropType` 0..127 on a typical case found no other
 INT64 XWF_GetVSProp(LONG nPropType, PVOID pBuffer);
 ```
 
-Header constants in the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)): `XWF_VSPROP_SPECIALITEMID = 10`, `_HASHTYPE1 = 20`, `_HASHTYPE2 = 21`, `_SET_HASHTYPE1 = 25`, `_SET_HASHTYPE2 = 26`. xwf-api-rs adds `SetHasChanged = 30` (v21.2 SR-5+) and the unnumbered `_RESET` (v21.4 Beta 3+). Empirically (observed 2026-05-03):
+Header constants in the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)): `XWF_VSPROP_SPECIALITEMID = 10`, `_HASHTYPE1 = 20`, `_HASHTYPE2 = 21`, `_SET_HASHTYPE1 = 25`, `_SET_HASHTYPE2 = 26`. The official page adds `_SET_HASCHANGED = 30` (v20.9 SR-12 / v21.0 SR-10 / v21.1 SR-9 / v21.2 SR-5 and later) and `_RESET = 90` (v21.4+). Empirically (observed 2026-05-03):
 
 | `nPropType` | Observed status |
 | ---: | --- |
 | 10 | `SPECIALITEMID` — header. Not observed live on this snapshot. |
 | 11 | **Live** — returns 2 zero bytes. Not in header or xwf-api-rs. Identity unknown. |
 | 20, 21 | `HASHTYPE1`, `HASHTYPE2` — live, return 7-byte buffers. |
-| 25, 26, 30 | **Write-only.** Don't call read-side — calling with a zeroed buffer can mutate snapshot state. A read-only sweep should blacklist these. |
-| 90 | **Live** — returns 1 zero byte. Not in header or xwf-api-rs. Identity unknown. Probably status flag. |
+| 25, 26 | **Write-only.** `pBuffer` must point at a byte holding the desired hash type. Returns `<0` on error, `0` if that type was already set, `1` if newly set. **Warning (official): hash values already computed under a different type are discarded by this call.** |
+| 30 | **Write-only** — `_SET_HASCHANGED`. `pBuffer` must point at a byte holding `0xFF`. Marks the snapshot dirty so it gets saved by the time its data window closes. Needed when you mutate a volume snapshot *other* than the one named in your `XT_Prepare` call, or mutate one outside RVS on v21.2 or earlier. |
+| 90 | **`XWF_VSPROP_RESET` — destructive.** See the warning below. |
 | Other 0..127 | Returned `-1` (unsupported). |
+
+!!! danger "`nPropType = 90` discards the volume snapshot — and our own sweep called it"
+    Property **90** is `XWF_VSPROP_RESET` (v21.4 and later). Per the official
+    page it **forces X-Ways to take a new volume snapshot and discard the
+    previous one, without the usual warning** that tags, search hits and
+    refinement results will be lost. Return value is `>0` on success.
+
+    The 2026-05-03 read-only sweep recorded it as *"live, returns 1 zero byte,
+    identity unknown, probably status flag"* — i.e. it was **called blind**, on a
+    live snapshot, before anyone knew what it did. The returned `0` suggests it
+    did not take effect on that build, but that is luck, not design.
+
+    This is the concrete cost of the opt-out sweep the rest of this page warns
+    about. **Sweep property numbers by whitelist, never by range** — and when a
+    number is unknown, find out what it is before calling it, not after. The same
+    reasoning retired the `XWF_GetEvObjProp(…, 100, …)` sweep (see
+    [build-and-iteration-gotchas.md](build-and-iteration-gotchas.md)).
+
+### Hash types and their sizes
+
+`HASHTYPE1` / `HASHTYPE2` return a **type code**, and every buffer that receives
+a hash value — `XWF_GetHashValue`, `XWF_GetEvObjProp` 21 and 41 — must be sized
+from it. The catalogue below is from `xwf-api-rs`
+(`XwfHashType` + `get_hash_size`), which is community reverse-engineering, not
+the official list:
+
+| Code | Algorithm | Bytes | Code | Algorithm | Bytes |
+| ---: | --- | ---: | ---: | --- | ---: |
+| 1 | CS8 | 1 | 11 | RIPEMD-160 | 20 |
+| 2 | CS16 | 2 | 12 | MD4 | 16 |
+| 3 | CS32 | 4 | 13 | ED2K | 16 |
+| 4 | CS64 | 8 | 14 | Adler32 | 4 |
+| 5 | CRC16 | 2 | 15 | Tiger Tree Hash | 24 |
+| 6 | CRC32 | 4 | 16 | Tiger128 | 16 |
+| 7 | MD5 | 16 | 17 | Tiger160 | 20 |
+| 8 | SHA-1 | 20 | 18 | Tiger192 | 24 |
+| 9 | SHA-256 | 32 | 19 | MD5 folded | 16 |
+| 10 | RIPEMD-128 | 16 | | | |
+
+Code **19 (MD5 folded)** exists only from **v20.9** in that binding's gating.
+
+!!! warning "Treat these numbers as provisional"
+    v21.5 Preview 3 **changed three hash-type IDs and deprecated six**, and the
+    announcement pointed at the `XWF_GetVSProp` documentation for the current
+    list rather than publishing the new numbers (see
+    [xways-api-recency-research.md](xways-api-recency-research.md)). The table
+    above predates that change in origin, so a code taken from it may name a
+    different algorithm on 21.5 and later.
+
+    **Use it to size a buffer, not to label a hash in a report.** If the
+    algorithm name reaches analyst-facing output or a report table, read the
+    current list off the official page for the host version you target.
 
 ## `XWF_GetProp` (volume / item handle)
 
@@ -108,18 +162,68 @@ Pass `hEvidence` from `XT_Prepare`. Buffer length is **MAX_PATH wchars** for the
 | 19 | `FileSystemID` | File-system identifier (matches `XWF_GetVolumeInformation` enum) | `INT64` | xwf-api-rs has it; **not observed in the sweep** — re-test or check whether NTFS reports here. |
 | 20 | `HashType` | Hash type | `DWORD` | |
 | 21 | `HashValue` | Hash value | `LPVOID` | Buffer size = hash type size; rv = hash size in bytes. |
-| 30 | (timezone-related) | (likely time-zone offset / DST flag) | (TBC) | **v21.2 Beta 6+** — announced as a new property type but number not stated; cross-referenced via [xways-api-history-19-to-21_4.md](xways-api-history-19-to-21_4.md). Re-test to confirm. |
-| 31 | (timezone-related) | (likely time-zone name / region string) | (TBC) | **v21.2 Beta 6+** — announced together with 30. Re-test to confirm. |
+| 30 | `ReferenceTimeZone` | **Reference time-zone bias, in minutes** | `INT16` + optional DST struct | **v21.2+** — see below. |
+| 31 | `ReferenceTimeZoneUser` | **Display time-zone bias chosen by the user**, in minutes | `INT16` + optional DST struct | **v21.2+** — per-evidence-object or case-wide. |
 | 32 | `CreationTime` | Time the EO was added to the case | `FILETIME` | |
 | 33 | `ModificationTime` | EO modification time | `FILETIME` | xwf-api-rs has it; not observed in the sweep. |
 | 40 | `HashType2` | Secondary hash type | `DWORD` | |
 | 41 | `HashValue2` | Secondary hash value | `LPVOID` | Same buffer convention as 21. |
 | 50 | `NumberOfDataWindow` | Data-window number that currently represents this EO | `WORD` | **v19.9 SR-7+** — `0` if EO is not open in any data window. |
-| 100 | (write-side) | Replaces the EO's image | (write op) | **v21.5 SR-5+** — write side documented in forum. Read side: needs testing. |
+| 100 | (write-side) | **Sets a new image path** for the EO | `BOOLE` rv, `LPWSTR` in | **v21.5 SR-5+.** Plain path, **not** in the square-bracket notation of property 9. Closes the EO's data window; dependent partitions are updated too ("Replace with new image"). Never call read-side — see [build-and-iteration-gotchas.md](build-and-iteration-gotchas.md). |
+
+## Properties 30 / 31 — time-zone bias and daylight saving
+
+Both return the bias **in minutes** in the **low 16 bits** of the return value
+(`0` = UTC, `+60` = UTC+1, `-60` = UTC-1), not accounting for daylight saving.
+Mask off everything above bit 15 — the official page says explicitly to ignore
+it. Three sentinel values are defined:
+
+| Value | Meaning |
+| ---: | --- |
+| `10000` | variable / defined per file (evidence file container, exFAT) |
+| `10001` | unknown or undefined (e.g. FAT32 with no reference zone set) |
+| `10002` | undefinable (partitioned storage device, unsupported file system) |
+
+`lpBuffer` is optional. Pass `NULL`, or pass a **zeroed** `DaylightSavingsDefinition`
+— zeroing before the call is required, not advisory:
+
+```c
+#pragma pack(2)
+struct DaylightSavingsDefinition {   // 8 bytes
+    WORD FlagsAndMore;               // highest bit: is DST observed at all?
+    BYTE DaylightSavingStartHour;
+    BYTE DaylightSavingStartDayAndWeek;  // high nibble = weekday (0 = Sunday)
+    BYTE DaylightSavingStartMonth;       // low nibble  = nth weekday (5 = last)
+    BYTE DaylightSavingEndHour;
+    BYTE DaylightSavingEndDayAndWeek;
+    BYTE DaylightSavingEndMonth;         // 1 = January … 12 = December
+};
+```
+
+If the top bit of `FlagsAndMore` is clear, **every remaining byte is meaningless** —
+check it first.
+
+The two are not interchangeable. **30 is a property of the data** (the zone the
+evidence object's timestamps are stored against); **31 is a property of the
+view** (what the analyst chose to display). Timestamp conversion wants 30;
+matching what the analyst sees on screen wants 31.
+
+!!! warning "The community Rust binding has 30 and 31 the wrong way round"
+    `xwf-api-rs`'s `get_reference_time_zone(display_timezone: bool)` maps
+    `true → 30` and `false → 31`, but 30 is the *reference* zone and 31 is the
+    *display* zone — so the parameter selects the opposite of what it names.
+    Verified against the official page 2026-08-13. A useful reminder that the
+    binding is reverse-engineering, not documentation: cross-check the numbers,
+    not the names.
+
+Note also that a missing reference time zone does not mean *no* timestamp in
+that evidence object is UTC — certain archive types carry UTC timestamps
+regardless. `XWF_GetItemInformation` with `XWF_ITEM_INFO_FLAGS` tells you
+per item; see [xways-itemtype-metadata-text.md](xways-itemtype-metadata-text.md).
 
 Sources:
 
-- **The named symbols above are taken from [xwf-api-rs](https://github.com/ThomasVogl/xwf-api-rs) (`xwf_api_rs/src/xwf_types/xwf_enums.rs::EvObjPropType`)** — Rust binding by Thomas Vogl, MIT-licensed. xwf-api-rs has reverse-engineered the full property catalog from observing the live binary, so it captures values the official C/C++ header omits.
+- **The named symbols above are taken from [xwf-api-rs](https://github.com/ThomasVogl/xwf-api-rs) (`xwf_api_rs/src/xwf_types/xwf_enums.rs::EvObjPropType`)** — Rust binding by Thomas Vogl, **LGPL-3.0**. xwf-api-rs has reverse-engineered the full property catalog from observing the live binary, so it captures values the official C/C++ header omits.
 - **Numeric examples + buffer hex** are from an empirical sweep (2026-05-03) on a partition EO in build 1422138.89.
 - **Authoritative cross-check:** the [live API HTML](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html) when the xwf-api-rs source disagrees with empirical observation.
 

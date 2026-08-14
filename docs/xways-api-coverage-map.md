@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XT_functions.html + XWF_functions.html (official), enumerated 2026-08-12
 type: coverage-map
 fetched: 2026-08-12
-last_updated: 2026-08-12
+last_updated: 2026-08-13
 author: project
 ---
 
@@ -16,8 +16,8 @@ The official reference documents **99 functions** across
 
 | | Count | Meaning |
 | --- | ---: | --- |
-| **Covered** | 67 | a page here explains it, not just names it |
-| **Named only** | 32 | appears, but do not expect a usable description |
+| **Covered** | 72 | a page here explains it, not just names it |
+| **Named only** | 27 | appears, but do not expect a usable description |
 | **Absent** | 0 | nothing is completely unmentioned any more |
 
 Regenerate with [`scripts/api-coverage.ps1`](../scripts/api-coverage.ps1)
@@ -72,20 +72,20 @@ reference depth rather than "here is how you use it":
 | **Progress** | [xways-user-input-and-dialogs.md](xways-user-input-and-dialogs.md) — the four calls plus the rule against using them in a per-item callback |
 | **Blocks, sector attribution, raster images, bulk label reads** | [xways-reading-events-and-items.md](xways-reading-events-and-items.md) |
 | **Viewer X-Tensions** | [xtension-invocation.md](xtension-invocation.md) — the class and the callbacks that do *not* fire in it |
+| **Evidence file containers** | [xways-evidence-containers.md](xways-evidence-containers.md) — the three calls, the `XWF_CTR_*` flags, and the one-container-at-a-time rule |
+| **Hash values** | [xways-snapshot-mutation.md](xways-snapshot-mutation.md) for the in/out buffer protocol, [xways-getprop-reference.md](xways-getprop-reference.md) for the type codes and sizes |
 
 What remains genuinely unexplored is **constants, not functions** — see below.
 
 ## Named only — check the live page before relying on these
 
-`XWF_AddSearchHit`, `XWF_AddSearchTerm`, `XWF_CloseContainer`,
-`XWF_CloseEvObj`, `XWF_CopyToContainer`, `XWF_CreateContainer`,
-`XWF_DeleteEvObj`, `XWF_GetColumnTitle`, `XWF_GetComment`, `XWF_GetFileCount`,
-`XWF_GetFirstEvObj`, `XWF_GetHashSetAssocs`, `XWF_GetHashValue`,
-`XWF_GetItemOfs`, `XWF_GetNextEvObj`, `XWF_GetRasterImage`,
-`XWF_GetReportTableInfo`, `XWF_GetSearchHit`, `XWF_GetSearchTerm`,
-`XWF_GetSectorContents`, `XWF_GetSize`, `XWF_GetVolumeInformation`,
-`XWF_HideProgress`, `XWF_ReleaseMem`, `XWF_SelectVolumeSnapshot`,
-`XWF_SetItemDataRuns`, `XWF_SetItemName`, `XWF_SetItemOfs`,
+`XWF_AddSearchHit`, `XWF_AddSearchTerm`, `XWF_CloseEvObj`, `XWF_DeleteEvObj`,
+`XWF_GetColumnTitle`, `XWF_GetComment`, `XWF_GetFileCount`,
+`XWF_GetFirstEvObj`, `XWF_GetHashSetAssocs`, `XWF_GetItemOfs`,
+`XWF_GetNextEvObj`, `XWF_GetRasterImage`, `XWF_GetReportTableInfo`,
+`XWF_GetSearchHit`, `XWF_GetSearchTerm`, `XWF_GetSectorContents`,
+`XWF_GetSize`, `XWF_GetVolumeInformation`, `XWF_HideProgress`,
+`XWF_ReleaseMem`, `XWF_SetItemDataRuns`, `XWF_SetItemName`, `XWF_SetItemOfs`,
 `XWF_SetItemParent`, `XWF_SetProgressDescription`, `XWF_SetSearchHit`,
 `XWF_Write`.
 
@@ -139,3 +139,11 @@ The counts moved twice *legitimately* on the day of writing —
 on to document the viewer entry points, then the search, progress, block,
 sector-attribution and raster-image surfaces. That is the map doing its job. It
 is also why the numbers are only trustworthy as of the frontmatter date.
+
+A third move, **67/32/0 → 72/27/0** on 2026-08-13, came from reviewing two
+community bindings rather than the official pages: the `v2-develop` branch of
+`xwf-api-rs` and the Pascal `XT_API.pas`. Five functions crossed into *covered*
+— the container trio, `XWF_GetHashValue` and `XWF_SelectVolumeSnapshot`. Worth
+noting **what moved them**: not new official documentation, but working code
+that showed how the calls are actually made. Community bindings are a different
+kind of source from the reference page, and they close different gaps.

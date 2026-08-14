@@ -1,8 +1,8 @@
 ---
-source: https://www.x-ways.net/forensics/x-tensions/XT_functions.html + XWF_functions.html (official), distilled 2026-08-12
+source: https://www.x-ways.net/forensics/x-tensions/XT_functions.html + XWF_functions.html (official), distilled 2026-08-12; XWF_SEARCH_* family from XT_API.pas (hmrc/XT_XWF-AutoCTR, Apache-2.0), 2026-08-13
 type: official-doc
 fetched: 2026-08-12
-last_updated: 2026-08-12
+last_updated: 2026-08-13
 author: X-Ways Software Technology AG (distilled); project notes
 ---
 
@@ -28,6 +28,7 @@ separate modes, not two halves of one pipeline.
 - Injecting search terms — `XT_PrepareSearch`
 - Receiving hits — `XT_ProcessSearchHit`
 - Running your own search — `XWF_Search`
+- The `XWF_SEARCH_*` flag family
 - Search terms — read and create
 - Not implemented — do not build on these
 
@@ -151,6 +152,57 @@ evidence object if the analyst applies the X-Tension that way — so a search yo
 think you are running once may run once per evidence object.
 
 And again: hits from this search do **not** reach your `XT_ProcessSearchHit`.
+
+## The `XWF_SEARCH_*` flag family
+
+`nFlags` on `SearchInfo` — and the subset that `XT_PrepareSearch` reports back to
+you. These are transcribed from **`XT_API.pas`**, the Pascal binding in
+[hmrc/XT_XWF-AutoCTR](https://github.com/hmrc/XT_XWF-AutoCTR) (Apache-2.0):
+
+| Bit | Constant | Meaning |
+| --- | --- | --- |
+| `0x00000001` | `XWF_SEARCH_LOGICAL` | logical search (rather than physical) |
+| `0x00000004` | `XWF_SEARCH_TAGGEDOBJ` | tagged objects only |
+| `0x00000010` | `XWF_SEARCH_MATCHCASE` | match case |
+| `0x00000020` | `XWF_SEARCH_WHOLEWORDS` | whole words only |
+| `0x00000040` | `XWF_SEARCH_GREP` | GREP syntax |
+| `0x00000080` | `XWF_SEARCH_OVERLAPPED` | allow overlapping hits |
+| `0x00000100` | `XWF_SEARCH_COVERSLACK` | cover slack space |
+| `0x00000200` | `XWF_SEARCH_COVERSLACKEX` | cover slack, extended |
+| `0x00000400` | `XWF_SEARCH_DECODETEXT` | decode text |
+| `0x00000800` | `XWF_SEARCH_DECODETEXTEX` | decode text, extended — **binding comments say "not yet supported"** |
+| `0x00001000` | `XWF_SEARCH_1HITPERFILE` | stop at the first hit in each file |
+| `0x00002000` | `XWF_SEARCH_COVERSLACK2` | a third slack-coverage variant |
+| `0x00004000` | `XWF_SEARCH_WHOLEWORDS2` | whole words for specially marked terms only |
+| `0x00008000` | `XWF_SEARCH_GREP2` | GREP for terms prefixed `grep:` only |
+| `0x00010000` | `XWF_SEARCH_OMITIRRELEVANT` | skip items categorised irrelevant |
+| `0x00020000` | `XWF_SEARCH_OMITHIDDEN` | skip hidden items |
+| `0x00040000` | `XWF_SEARCH_OMITFILTERED` | skip filtered-out items |
+| `0x00080000` | `XWF_SEARCH_DATAREDUCTION` | apply data reduction |
+| `0x00100000` | `XWF_SEARCH_OMITDIRS` | skip directories |
+| `0x01000000` | `XWF_SEARCH_CALLPSH` | **call `XT_ProcessSearchHit` for each hit** |
+| `0x02000000` | `XWF_SEARCH_IGNORECODEPAGES` | ignore the code-page list |
+| `0x04000000` | `XWF_SEARCH_DISPLAYHITS` | show the hits in the GUI |
+
+The five flags in the `XT_PrepareSearch` table above (`0x10`, `0x20`, `0x40`,
+`0x4000`, `0x8000`) are the same bits, and they agree — a useful cross-check on
+the rest of the list.
+
+!!! warning "Provenance: an old binding, unverified above the five confirmed bits"
+    `XT_API.pas` is a **v18-era snapshot**. It predates `XT_ACTION_EVT` (6),
+    `XT_PREPARE_TARGETZEROBYTEFILES` (`0x20`) and the 21.x additions, its
+    `SearchInfo` lacks the two alphabet pointers current X-Ways declares, and
+    its `XWF_GetReportTableInfo` signature takes `nOptional` **by value** where
+    the current API takes a `PLONG` — calling that one as declared would be a
+    bug. Treat the table above as a **strong lead, not a citation**: verify a
+    bit against the official page or empirically before shipping behaviour that
+    depends on it.
+
+    `XWF_SEARCH_CALLPSH` (`0x01000000`) is the one to be most careful with,
+    because it appears to contradict the rule stated at the top of this page —
+    that `XT_ProcessSearchHit` is not called for a search you started yourself.
+    Either the flag is what lifts that restriction, or it is a leftover. **Test
+    it before designing around either reading.**
 
 ## Search terms — read and create
 

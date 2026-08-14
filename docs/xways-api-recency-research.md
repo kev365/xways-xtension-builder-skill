@@ -1,8 +1,8 @@
 ---
-source: SourceForge SDK page, X-Ways 21.5–21.9 release notes / changelog, live API HTML (checked 2026-08-12), github.com/ThomasVogl/xwf-api-rs, the 21.8 + 21.9 announcement threads, 21.7 / 21.8 X-Tension behaviour notes (2026-05-13)
+source: SourceForge SDK page (xwf-api-rs v2-develop reviewed 2026-08-13), X-Ways 21.5–21.9 release notes / changelog, live API HTML (checked 2026-08-12), github.com/ThomasVogl/xwf-api-rs, the 21.8 + 21.9 announcement threads, 21.7 / 21.8 X-Tension behaviour notes (2026-05-13)
 type: research-summary
 fetched: 2026-05-03
-last_updated: 2026-08-12
+last_updated: 2026-08-13
 author: empirical research notes
 ---
 
@@ -57,7 +57,7 @@ Pulled from the X-Ways 21.5–21.9 release notes / changelog. None of these are 
 | Version | Addition | Source |
 | --- | --- | --- |
 | 21.4 Beta (2025-02) | **Regression, since fixed:** `XWF_CreateEvObj(1, 0, <path-to-.ctr>, NULL)` access-violated when adding a container that had just been created with `XWF_CreateContainer` / `XWF_CloseContainer`. Worked in 21.3, fixed in later 21.4 releases. Only relevant if you support that build range. | X-Tension board thread 5499 |
-| 21.5 Preview 3 (2025-03-07) | **Hash-type IDs changed.** 3 rarely-used hash IDs changed value and 6 were marked deprecated; the announcement points at the `XWF_GetVSProp()` documentation for the updated list. Relevant to the open `nParam` question in [xways-snapshot-mutation.md](xways-snapshot-mutation.md) — a hard-coded hash-type number from before 21.5 may now name a different algorithm. The updated list has **not** yet been transcribed here. | 21.5 announcement thread ([messages/1/5501](https://www.x-ways.net/winhex/forum/messages/1/5501.html)) |
+| 21.5 Preview 3 (2025-03-07) | **Hash-type IDs changed.** 3 rarely-used hash IDs changed value and 6 were marked deprecated; the announcement points at the `XWF_GetVSProp()` documentation for the updated list. A hard-coded hash-type number from before 21.5 may now name a different algorithm — see the provisional code table in [xways-getprop-reference.md](xways-getprop-reference.md), which is community-sourced and predates this change. (This was previously cited as the lead on the `nParam` puzzle in [xways-snapshot-mutation.md](xways-snapshot-mutation.md); that puzzle turned out to be unrelated and is now closed.) The updated list has **not** yet been transcribed here. | 21.5 announcement thread ([messages/1/5501](https://www.x-ways.net/winhex/forum/messages/1/5501.html)) |
 | 21.5 Preview 6 | `XWF_GetItemInformation` / `XWF_SetItemInformation` read/write the **Relevance** column. xwf-api-rs already names this `XWF_ITEM_INFO_RELEVANCE` — find the integer there. Empirically pinned to `nInfoType = 10` — see [xways-itemtype-metadata-text.md](xways-itemtype-metadata-text.md). | X-Ways 21.5 release notes |
 | 21.5 Beta 4 | `XT_Init` receives **dongle / BYOD license ID** — **confirmed (2026-05-18)**: delivered via the new `LicenseInfo*` fourth parameter (formerly `void* lpReserved`); see the git HEAD X-Ways SDK header ([getting-the-sdk.md](getting-the-sdk.md)). Not in `nFlags` after all. | X-Ways 21.5 release notes + git HEAD |
 | 21.5 Beta 5 (2025-05-19) | **X-Ways prompts before executing / loading an X-Tension** — including when the run is triggered from the **command line**. Plan for it in any unattended/scripted invocation; see [xways-command-line.md](xways-command-line.md). | 21.5 announcement thread ([messages/1/5501](https://www.x-ways.net/winhex/forum/messages/1/5501.html)) |
@@ -93,17 +93,66 @@ Also worth re-confirming (older but referenced in threads):
 
 ## Community RE — `ThomasVogl/xwf-api-rs` is the gold mine
 
-[github.com/ThomasVogl/xwf-api-rs](https://github.com/ThomasVogl/xwf-api-rs) — Rust binding, **v1.0.1 released 2025-05-17**, last commit 2025-07-21, branches `main`/`develop`/`v2-develop`. The function inventory matches the official SDK exports (no extra entry points), but the **enum / bitflag definitions include reverse-engineered values the SDK header does not document**:
+[github.com/ThomasVogl/xwf-api-rs](https://github.com/ThomasVogl/xwf-api-rs) — Rust binding, **LGPL-3.0**. `main` carries v1.0.1 (released 2025-05-17); active development has moved to **`v2-develop`**, version `2.0.0-dev`, last commit **2026-07-14** (reviewed at `4f14ef9` on 2026-08-13). The function inventory still matches the official SDK exports (no extra entry points), but the **enum / bitflag definitions include reverse-engineered values the SDK header does not document**:
 
 | RE constant | Value | Where used |
 | --- | --- | --- |
-| `ReportTableFlags::NotDocumented1` | `0x0100` | `XWF_AddToReportTable` `nFlags` — observed live, not in docs |
-| `ReportTableFlags::NotDocumented2` | `0x1000` | `XWF_AddToReportTable` `nFlags` — observed live, not in docs |
 | `EvObjPropType` enum | 0..50 named | Cross-check against the property-number sweep in [xways-getprop-reference.md](xways-getprop-reference.md) |
 | `XwfItemInfoTypes` `*_DISPLAY_OFS` family | 48..53 | Six properties added in 21.2 — check the SDK header carries all six |
 | `VsPropType::SetHasChanged` | `30` | A VS property the SDK header doesn't list |
+| `XwfHashType` + `get_hash_size` | 1..19 | Hash algorithm codes and their byte lengths — transcribed into [xways-getprop-reference.md](xways-getprop-reference.md) |
+| `ItemInfoFlags` above bit 31 | `0x1_0000_0000`+ | Three modern flags a `DWORD` would silently drop |
 
 The community xwf-api-rs binding is a useful local cross-reference (with its license attribution preserved); it is not redistributed in this repo.
+
+### What the v2 branch resolved (reviewed 2026-08-13)
+
+Two entries that sat on this page as open questions are now closed, and one has
+been superseded:
+
+- **`ReportTableFlags::NotDocumented1/2` are documented after all.** `0x0100` and
+  `0x1000` are `GuiApplyToSelectedItem` and `GuiApplyToDuplicates`, part of a
+  five-flag block (`0x0100`–`0x1000`) that controls what a label defaults to
+  being applied to in the GUI: selected item, parent, direct children, recursive
+  children, known duplicates. They appear in both the crate's `ReportTableFlags`
+  and its `AddReportTableFlags`. The proposed **flag-bit sweep is therefore
+  unnecessary** — and it would have mutated report-table state to learn
+  something already written down.
+- **`EvObjPropType` 30 / 31 are the reference and display time zones**, not
+  "likely timezone-related" — see
+  [xways-getprop-reference.md](xways-getprop-reference.md) for the full
+  semantics, including the `DaylightSavingsDefinition` struct and the three
+  sentinel bias values. Note the crate has the two the wrong way round.
+
+The branch also adds **compile-time API-level gating**: cargo features
+`api_20_1` … `api_21_6`, each implying the one below, with a runtime check in
+`XT_Init` that compares the host's version against the level the X-Tension was
+built for. That feature ladder is itself a version-availability map — where the
+crate marks a symbol `#[cfg(feature = "api_20_9")]`, it is asserting the symbol
+arrived in 20.9. Useful as corroboration, not as a citation:
+
+| Gated at | Symbol | Cross-check |
+| --- | --- | --- |
+| `api_20_3` | `XWF_GetItemCount((LPVOID)1)` — selected-item count | matches the 20.3 SR-3 announcement in [xways-api-history-19-to-21_4.md](xways-api-history-19-to-21_4.md) |
+| `api_20_5` | `FileFormatConsistency` splits `2 = corrupt or irregular` into `2 = corrupt`, `3 = irregular` | confirmed on the official `XWF_GetItemType` page |
+| `api_20_6` | `XWF_OutputMessage` flag `0x08` (Output window) | matches [xways-user-input-and-dialogs.md](xways-user-input-and-dialogs.md) |
+| `api_20_9` | `XWF_SelectVolumeSnapshot` gains a return value (the item count); `XwfHashType::MD5Folded` | **not yet cross-checked** |
+| `api_21_2` | `*_DISPLAY_OFS` (48–53); `EvObjProp` 30/31; `XT_PREPARE_TARGETFILESWITHUNKNOWNDATA` (`0x40`) | 30/31 confirmed official; the rest already recorded here |
+
+The `XWF_SelectVolumeSnapshot` change is the one worth knowing: on **v20.9 and
+later it returns the item count**, where previously it returned nothing and you
+had to follow it with `XWF_GetItemCount`. Both call shapes remain valid, so this
+is an efficiency note rather than a compatibility break.
+
+**A caution on reading the crate as documentation.** Three defects surfaced in a
+single pass through v2: the inverted 30/31 mapping, a `FileTypeCategory` string
+map that sends `"fonts"` to `UnixLinux`, and a `MIN_VERSION` `cfg` ladder whose
+top four arms lack `not(...)` guards — since `api_21_6` implies `api_21_5`
+implies `api_21_4` implies `api_21_3`, selecting a 21.3+ level appears to leave
+several arms simultaneously active. (Read, not compiled — verify before
+reporting it upstream.) None of this makes the binding less useful as a lead
+generator; all of it argues for confirming a value against the official page
+before it lands in these notes as fact.
 
 ## No public Ghidra/IDA export dump
 
@@ -115,10 +164,11 @@ Research leads that would extend or confirm the findings above:
 
 - A `XWF_GetEvObjProp` sweep over `nPropType` 0..127 covers the `100` added in 21.5 SR-5 (see [xways-getprop-reference.md](xways-getprop-reference.md)).
 - A runtime export-table enumeration catches anything new in the binary that the SDK header doesn't declare.
-- `XWF_AddToReportTable` flag-bit sweep including `0x0100` and `0x1000` from xwf-api-rs. Caveat: this **mutates** report-table state, so it would only be appropriate as an opt-in step, not a default sweep.
+- ~~`XWF_AddToReportTable` flag-bit sweep including `0x0100` and `0x1000`~~ — **closed 2026-08-13.** Both bits are named on the official page and in the v2 branch (`GuiApplyToSelectedItem`, `GuiApplyToDuplicates`); no mutating sweep needed.
 - Cross-check [Donovoi/X-Ways-MCP](https://github.com/Donovoi/X-Ways-MCP)'s 21.8 export inventory (`data/xwf-external-surface/`: **77 `XWF_*` exports vs 85 documented**, PE + Ghidra, exe SHA256 recorded; flags `XWF_EDB` / `XT_error` as undocumented candidates) against a runtime export-table walk. Resolve-only on the two candidates — do **not** call them (unknown semantics). See the [exemplars](exemplars.md) entry.
-- Cross-reference the [xways-getprop-reference.md](xways-getprop-reference.md) findings with xwf-api-rs's `EvObjPropType` enum to name the empirical numbers.
-- Cross-reference the [xways-itemtype-metadata-text.md](xways-itemtype-metadata-text.md) decoding (`GetItemType` flag bits 29/30/31) — check whether xwf-api-rs has constants for them.
+- ~~Cross-reference the [xways-getprop-reference.md](xways-getprop-reference.md) findings with xwf-api-rs's `EvObjPropType` enum~~ — **done 2026-08-13**; 30/31 named and VSProp 90 identified as `XWF_VSPROP_RESET`.
+- ~~Cross-reference the [xways-itemtype-metadata-text.md](xways-itemtype-metadata-text.md) decoding (`GetItemType` flag bits 29/30/31)~~ — **done 2026-08-13**; the crate names all three, and bit 31 turned out to pack file-format consistency into the second-lowest return byte, correcting a misreading on that page.
+- Confirm the `api_20_9` claims empirically: that `XWF_SelectVolumeSnapshot` returns the item count on v20.9+, and that hash-type `19` is MD5-folded.
 - Pin down the `XT_PREPARE_*` flag values from the 21.6/21.7 forum threads (see [xtension-invocation.md](xtension-invocation.md)).
 
 ## See also

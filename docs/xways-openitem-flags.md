@@ -1,5 +1,5 @@
 ---
-source: the community xwf-api-rs binding (ThomasVogl, MIT) + the X-Ways SDK header (see getting-the-sdk.md) + project synthesis from forum announcements + the live XWF_functions.html (fetched 2026-07-03)
+source: the community xwf-api-rs binding (ThomasVogl, LGPL-3.0) + the X-Ways SDK header (see getting-the-sdk.md) + project synthesis from forum announcements + the live XWF_functions.html (fetched 2026-07-03)
 type: empirical-finding + community-RE + official
 fetched: 2026-05-17
 last_updated: 2026-08-12
@@ -12,7 +12,7 @@ author: project synthesis
 HANDLE __stdcall XWF_OpenItem(HANDLE hVolume, LONG nItemID, DWORD nFlags);
 ```
 
-The X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)) declares the function but doesn't document any of `nFlags`. The live official [XWF_functions.html](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html) documents the flag list (as of 2026-07-03) and is the authoritative source for this table; the community xwf-api-rs binding's `XWF_OpenItem` bitflag enum corroborates it (community reverse-engineering, MIT-licensed).
+The X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)) declares the function but doesn't document any of `nFlags`. The live official [XWF_functions.html](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html) documents the flag list (as of 2026-07-03) and is the authoritative source for this table; the community xwf-api-rs binding's `XWF_OpenItem` bitflag enum corroborates it (community reverse-engineering, LGPL-3.0).
 
 > **Note:** the EML-with-attachments flag is officially **`0x8000`** ("embed child objects if this file is an e-mail message extracted by X-Ways Forensics in .eml format, otherwise no effect, v21.8 and later"). The `0x2000` value seen in v21.8 Beta 5 forum user code is **not** in the official flag list — treat `0x2000` as unverified/wrong for this purpose.
 

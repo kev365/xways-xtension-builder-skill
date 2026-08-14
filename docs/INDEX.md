@@ -49,6 +49,10 @@ to these pages so generated code never invents `XWF_*` calls.
 - [xways-snapshot-mutation.md](xways-snapshot-mutation.md) — item-creation /
   snapshot-mutation findings (`XWF_CreateFile`, `XWF_SetItemSize`,
   `XWF_FindItem1`, `XWF_GetItemName`).
+- [xways-evidence-containers.md](xways-evidence-containers.md) — the evidence
+  file container API (`XWF_CreateContainer` / `XWF_CopyToContainer` /
+  `XWF_CloseContainer`), the `XWF_CTR_*` flags, and the one-container-at-a-time
+  rule.
 - [xways-evobj-source-resolution.md](xways-evobj-source-resolution.md) —
   `XWF_GetEvObjProp` property map across evidence-object contexts + a
   source-resolution algorithm.
@@ -73,8 +77,8 @@ to these pages so generated code never invents `XWF_*` calls.
   `XT_PrepareSearch`, `XT_ProcessSearchHit` + `SearchHitInfo`, `XWF_Search`,
   search-term management, and the three hit functions X-Ways never implemented.
 - [xways-api-coverage-map.md](xways-api-coverage-map.md) — which of the 99
-  officially documented functions these notes actually cover (59), name only
-  (20), or miss entirely (20). Read before concluding a function does not exist.
+  officially documented functions these notes actually cover, name only, or miss
+  entirely. Read before concluding a function does not exist.
 - [xways-api-recency-research.md](xways-api-recency-research.md) — which API
   additions appear in the SDK zip vs git HEAD vs the live HTML, and the
   `XT_Init` `LicenseInfo*` change.

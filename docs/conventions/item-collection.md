@@ -125,6 +125,11 @@ reason, before `XWF_GetItemCount` learned to report a selected-item count in
 undefined and **always ignored**, so old code passing a volume handle there was
 harmless — values other than `NULL` and `(LPVOID)1` are still ignored.
 
+`(LPVOID)1` is the literal value: a pointer-typed parameter carrying the
+integer 1 as a mode selector. `xwf-api-rs` gates that call on its `api_20_3`
+feature and exposes it as a separate `get_item_count_dbc()` — a useful
+corroboration that `NULL` and `1` are the only two meanings.
+
 ## Detecting that the analyst cancelled the run
 
 Call **`XWF_ShouldStop` in `XT_Finalize`** — that is X-Ways' own answer to "how

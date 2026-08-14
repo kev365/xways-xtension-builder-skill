@@ -54,6 +54,92 @@ All notable changes to this project are documented here. Versions follow
   forum's most directly relevant board has never been mined, and everything
   distilled here comes from the public announcement threads alone.
 
+- **Review of two community bindings** — the `v2-develop` branch of
+  [xwf-api-rs](https://github.com/ThomasVogl/xwf-api-rs) (Rust, LGPL-3.0, read at
+  `4f14ef9`, 2026-07-14) and the vendored `XT_API.pas` inside
+  [XT_ExtractDocsMail](https://github.com/gaiacalamari/XT_ExtractDocsMail-)
+  (Free Pascal, Apache-2.0). Both are working code rather than documentation,
+  and between them they closed gaps the official pages had left open:
+  - **The `XWF_SEARCH_*` family** (23 flags) and the **`XWF_CTR_*` container
+    flags** (10) — the two constant groups the coverage map named as genuinely
+    unexplored. The container values were confirmed against the official page;
+    the search values are recorded as a lead, since the Pascal binding is a
+    v18-era snapshot.
+  - **`XWF_ITEM_INFO_FLAGS_SET` / `_REMOVE` are 64 / 65**, confirmed
+    independently by both bindings.
+  - **`XWF_GetItemName(nItemID | 0x80000000)` returns the alternative name**
+    (v19.9+), and `XWF_GetItemCount((LPVOID)1)` returns the selected-item count.
+  - **`ItemInfoFlags` extended from 14 bits to 33**, including the three above
+    bit 31 that a `DWORD` would silently drop.
+  - **Hash-type codes and their byte sizes** (1..19), needed to size every
+    buffer that receives a hash value — recorded as provisional, since 21.5
+    Preview 3 renumbered part of the list.
+  - **`XWF_SelectVolumeSnapshot` returns the item count from v20.9**, where it
+    previously returned nothing.
+  - **`XT_Init`'s first parameter is a packed version word**, not an opaque
+    token — major / minor / service release / GUI language.
+
+- **`docs/xways-evidence-containers.md`** — new page covering
+  `XWF_CreateContainer` / `XWF_CopyToContainer` / `XWF_CloseContainer`: the
+  `XWF_CTR_*` flags, the copy modes, the rule that creating a second container
+  silently closes the first, and the opposite success polarity of copy (`0`) and
+  close (`1`).
+
+- **Unattended BitLocker, in `xways-command-line.md`** — the `Passwords.txt`
+  requirements behind `Override:4` / `Override:5` (UTF-16 encoding, general vs
+  case-specific collection, one entry per line) and the ordering constraint that
+  `RVS:~` must precede `XT:`, because an X-Tension reading refinement output
+  cannot distinguish "no matches" from "nothing computed yet". Sourced from the
+  XT_ExtractDocsMail README.
+
+- **A parent-walk termination guard** in `build-and-iteration-gotchas.md`:
+  `XWF_GetItemParent` can return the item's own ID, so the documented
+  walk-until-`-1` loop needs a self-parent check and an iteration cap.
+
+### Fixed
+
+- **`XWF_VSPROP_RESET` is property 90 — and the 2026-05-03 sweep called it
+  blind.** It forces a new volume snapshot and discards the previous one without
+  the usual warning about losing tags, search hits and refinement results. The
+  sweep had recorded it as *"live, returns 1 zero byte, identity unknown,
+  probably status flag"*. Now documented with the danger it carries, and the
+  whitelist-not-range lesson stated where the sweep lives.
+
+- **`XWF_GetItemType`'s return value was documented with the wrong legend.**
+  The page listed the four write-side `XWF_SetItemType` status values against a
+  read-side call whose official legend has seven — read-side `2` is *totally
+  unknown* where write-side `2` is *confirmed*, so the old table inverted the
+  meaning of the field. Also corrected: the buffer length lives in the lower
+  **word**, not the low 24 bits.
+
+- **`rv = 256` under `XWF_GetItemType`'s `0x80000000` flag was misread** as
+  "matches the `nBufferLen` we passed". It decodes as consistency `1` (OK) and
+  status `0` (not verified) — the flag packs file-format consistency into the
+  second-lowest byte. The two values collided because the test buffer happened
+  to be 256 characters.
+
+- **The `XWF_SetHashValue` / `XWF_GetHashValue` round-trip that "did not work"
+  was two malformed calls.** `nParam` is a slot selector (`1` primary, `2`
+  secondary), never a hash type, and `0` is undefined; `XWF_GetHashValue`'s
+  buffer is an in/out parameter that must open with a `DWORD` naming what you
+  want. The v21.5 hash-renumbering lead cited for months was unrelated. Both
+  calls now documented, with the general point that a zeroed buffer is not a
+  neutral input to this API.
+
+- **`XWF_GetEvObjProp` 30 / 31 were recorded as "(TBC) likely time-zone
+  related".** They are the reference and display time-zone biases, in minutes,
+  in the low 16 bits, with three sentinel values and an optional
+  `DaylightSavingsDefinition` struct. Noted that `xwf-api-rs` maps the two the
+  wrong way round.
+
+- **`xwf-api-rs` was attributed as MIT in two pages.** It is **LGPL-3.0**.
+
+- **Two resolved leads closed out** in `xways-api-recency-research.md`: the
+  proposed `XWF_AddToReportTable` flag-bit sweep is unnecessary (`0x0100` and
+  `0x1000` are documented as GUI-application defaults, and the sweep would have
+  mutated report-table state to learn something already written down), and the
+  `EvObjPropType` / `GetItemType` cross-references are done.
+
 ## [0.5.0] — 2026-08-12
 
 ### Changed

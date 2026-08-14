@@ -62,6 +62,32 @@ LONG __stdcall XT_Init(DWORD info, DWORD nFlags, HANDLE hMainWnd, void* lpReserv
 | `0x40` | `XT_INIT_ABOUTONLY` | About to call `XT_About` **or `XT_PrepareSearch`** only (since v16.5) — no real work happens this run |
 | `0x80` | `XT_INIT_ALTERED_SEARCH_PATH` | The DLL was loaded with `LOAD_WITH_ALTERED_SEARCH_PATH`, so statically-linked dependent DLLs beside the X-Tension resolve. Set from **v20.8 SR-9, v20.9 SR-11, v21.0 SR-8, v21.1 SR-4** and later; the analyst can switch the behaviour off, so **test this bit rather than assuming it** — see [naming-deployment](conventions/naming-deployment.md). |
 
+`0x10` is unassigned in the current header but appears as `XT_INIT_UNDOCUMENTED`
+in the older Pascal binding `XT_API.pas` — treat it as reserved and mask it out
+rather than asserting on it.
+
+#### Decoding the first parameter
+
+The first argument (`info`, named `nVersion` in most bindings) is a packed
+version word, not an opaque token. `xwf-api-rs` unpacks it as:
+
+```c
+WORD  v     = (info & 0xFFFF0000) >> 16;
+BYTE  major =  v / 100;          // e.g. 2170 -> 21
+BYTE  minor = (v % 100) / 10;    //             -> 7
+BYTE  sr    = (info & 0x0000FF00) >> 8;   // service release
+BYTE  lang  =  info & 0x000000FF;         // GUI language
+```
+
+Worth capturing when your X-Tension has a version floor: several API behaviours
+in these notes differ by service release, and this is the only place you are
+told which host you are running under. The crate treats `info == 0`, or a zero
+high word, as invalid and refuses to load.
+
+**Community-derived, not from the official page** — verify the arithmetic against
+a host you can check before gating behaviour on it. A version check that
+misparses is worse than none: it refuses to run on the hosts it was written for.
+
 Most X-Tensions that use the Events API or other forensic-license-only features should refuse to load on `WHX`/`XWI` callers:
 
 ```c
