@@ -1,6 +1,6 @@
 ---
 type: index
-last_updated: 2026-07-03
+last_updated: 2026-08-12
 author: project
 ---
 
@@ -69,6 +69,9 @@ to these pages so generated code never invents `XWF_*` calls.
 - [events-viewer-empirical-findings.md](events-viewer-empirical-findings.md) —
   measured `nEvtType` → Type/Category lookup, `nFlags` semantics, `lpDescr`
   capacity, and the X-Ways internal Type catalog.
+- [xways-api-coverage-map.md](xways-api-coverage-map.md) — which of the 99
+  officially documented functions these notes actually cover (59), name only
+  (20), or miss entirely (20). Read before concluding a function does not exist.
 - [xways-api-recency-research.md](xways-api-recency-research.md) — which API
   additions appear in the SDK zip vs git HEAD vs the live HTML, and the
   `XT_Init` `LicenseInfo*` change.

@@ -2,7 +2,7 @@
 source: X-Ways SDK header (see getting-the-sdk.md) + https://www.x-ways.net/forensics/x-tensions/api.html + empirical
 type: official-doc + empirical-finding
 fetched: 2026-04-19
-last_updated: 2026-08-09
+last_updated: 2026-08-12
 author: X-Ways Software Technology AG; empirical research notes from testing + CLI-wrapper X-Tension runs
 ---
 
@@ -14,6 +14,7 @@ How X-Ways calls into an X-Tension DLL: the entry points, the invocation modes, 
 
 - Entry points
 - Invocation modes (`nOpType` values)
+- Viewer X-Tensions — a separate class with different rules
 - Threading
 - Invocation flow examples
 - Common patterns
@@ -34,7 +35,14 @@ X-Ways calls these by name (no decoration — exported via the `.def` file). Onl
 | `XT_ProcessItemEx` | Same as `XT_ProcessItem` but receives an `hItem` for `XWF_Read` access. **Also driven by `0x01`** — *not* a separate flag (`0x04` is unrelated); X-Ways calls whichever per-item callback(s) you export. Export **both** and **both fire per item** (verified — see the return-value note below). | Multi-threaded under RVS |
 | `XT_ProcessSearchHit` | Per search hit — only when invoked from a search-hit context menu or as a search-refinement step. | Single-threaded |
 | `XT_Finalize` | Once after all per-item callbacks complete. Mirrors `XT_Prepare` — both get the same `nOpType`. | Single-threaded |
-| `XT_Done` | Once when X-Ways is about to unload the DLL. | Single-threaded |
+| `XT_Done` | Once when X-Ways is about to unload the DLL. **Do not let this throw** — an exception here cancels the `FreeLibrary` that would otherwise release your DLL (see [build-and-iteration-gotchas.md](build-and-iteration-gotchas.md)). | Single-threaded |
+| `XT_PrepareSearch` | Before a simultaneous search, to inspect/alter the search terms and code pages. Part of the search-X-Tension surface these notes do **not** cover — see the [coverage map](xways-api-coverage-map.md). | Single-threaded |
+| `XT_View` | Per file to be rendered, if the X-Tension is loaded as a **Viewer X-Tension** (v17.6+). See the section below — the ordinary callbacks do not fire in that mode. | Single-threaded |
+| `XT_ReleaseMem` | Frees a buffer returned by `XT_View`. **Mandatory if `XT_View` is exported.** | Single-threaded |
+
+X-Ways also defines the disk-I/O entry points `XT_SectorIOInit` / `XT_SectorIO` /
+`XT_SectorIODone` / `XT_FileIO` — a distinct X-Tension class with its own,
+much narrower API surface (see [forum-xtensions-distilled.md](forum-xtensions-distilled.md)).
 
 ### `XT_Init` arguments
 
@@ -51,7 +59,8 @@ LONG __stdcall XT_Init(DWORD info, DWORD nFlags, HANDLE hMainWnd, void* lpReserv
 | `0x04` | `XT_INIT_XWI` | Caller is X-Ways Investigator |
 | `0x08` | `XT_INIT_BETA` | Beta build |
 | `0x20` | `XT_INIT_QUICKCHECK` | Just probing whether the X-Tension accepts this caller (since v16.5) — return `1` to accept, `-1` to refuse. No further calls follow. |
-| `0x40` | `XT_INIT_ABOUTONLY` | About to call `XT_About` only (since v16.5) — no real work happens this run |
+| `0x40` | `XT_INIT_ABOUTONLY` | About to call `XT_About` **or `XT_PrepareSearch`** only (since v16.5) — no real work happens this run |
+| `0x80` | `XT_INIT_ALTERED_SEARCH_PATH` | The DLL was loaded with `LOAD_WITH_ALTERED_SEARCH_PATH`, so statically-linked dependent DLLs beside the X-Tension resolve. Set from **v20.8 SR-9, v20.9 SR-11, v21.0 SR-8, v21.1 SR-4** and later; the analyst can switch the behaviour off, so **test this bit rather than assuming it** — see [naming-deployment](conventions/naming-deployment.md). |
 
 Most X-Tensions that use the Events API or other forensic-license-only features should refuse to load on `WHX`/`XWI` callers:
 
@@ -110,6 +119,7 @@ Negative `XT_Prepare` returns (distinct, not interchangeable):
 | `3` | `XT_ACTION_PSS` | A **physical simultaneous search** is starting | Same as LSS, search-level |
 | `4` | `XT_ACTION_DBC` | **Directory-browser context menu** → Run X-Tension on the selected items | `XT_Prepare`, then `XT_ProcessItem(Ex)` for **each selected item only** (not the whole snapshot), then `XT_Finalize` |
 | `5` | `XT_ACTION_SHC` | **Search-hit-list context menu** | `XT_ProcessSearchHit` per hit |
+| `6` | `XT_ACTION_EVT` | **Event-list context menu** (since v20.3 SR-3) | as for DBC, but launched from the Events list |
 | `6` | (no symbol in 2024-05-31 header) | **Events viewer context menu** — added v20.3 SR-3 (2021-08-23, see [xways-api-history-19-to-21_4.md](xways-api-history-19-to-21_4.md)). xwf-api-rs names this `XtPrepareOpType::EventListContextMenu`. | `XT_Prepare` plus the analyst-selected event(s); the per-event callback shape is undocumented and unverified — confirm empirically before relying on it. |
 
 > **Note:** the DBC/SHC values are easy to misremember as 3 and 4 — the header values are 4 and 5 respectively. Use the `XT_ACTION_*` symbols defined here directly to avoid off-by-one confusion.
@@ -125,6 +135,41 @@ Negative `XT_Prepare` returns (distinct, not interchangeable):
 **`XT_ACTION_DBC`** — fires when the analyst right-clicks a selection in the directory browser and picks "Run X-Tension" from the context menu. Critically: `XT_ProcessItem(Ex)` is called **only for the selected items**, not the whole snapshot. Useful for "process this one file" or "process these N selected items" gestures. To honor the selection, return `0x01` (`XT_PREPARE_CALLPI`) from `XT_Prepare` so the per-item callbacks fire (X-Ways calls whichever you export — both `XT_ProcessItem` and `XT_ProcessItemEx` if you export both). Returning `0x04` alone is `EXPECTMOREITEMS` and fires **no** per-item callbacks.
 
 **`XT_ACTION_SHC`** — fires from the search-hit-list context menu. You get `XT_ProcessSearchHit` callbacks. Most X-Tensions can ignore.
+
+## Viewer X-Tensions — a separate class with different rules
+
+An X-Tension that exports **`XT_View`** becomes a *Viewer X-Tension* (v17.6+,
+X-Ways Forensics only — not WinHex Lab Edition). X-Ways calls it for each file
+shown in a separate window, in Preview mode, or included in a case report, and
+the X-Tension returns a human-readable rendering — plain text, HTML, or a
+converted image.
+
+**The part that surprises people: none of the ordinary callbacks fire.** When
+your X-Tension is loaded for viewing purposes, `XT_Prepare`, `XT_Finalize`,
+`XT_ProcessItem`, `XT_ProcessItemEx`, `XT_PrepareSearch` and
+`XT_ProcessSearchHit` are **not called even if exported**. A DLL can serve both
+roles, but a given *load* is one or the other — the same trap as ordinary
+vs disk-I/O X-Tensions (see [forum-xtensions-distilled.md](forum-xtensions-distilled.md)).
+
+Mechanics worth knowing before starting one:
+
+- You allocate the output buffer yourself (any allocator) and return its
+  address; **`XT_ReleaseMem` is mandatory when `XT_View` is exported** and is
+  where X-Ways hands the buffer back to be freed.
+- `*lpResSize` is the real signal: **`-1`** "not my file type, ask someone
+  else", **`-2`** an error worth reporting, **`0`** render as no data, positive
+  = success and the byte length.
+- HTML returned as UTF-16 **must** carry a `0xFF 0xFE` BOM or the viewer will
+  not treat it as HTML.
+- Only the first viewer X-Tension that claims a file gets to render it — later
+  ones in the list are skipped for that file.
+- For full control of the display, return a buffer containing just a NUL byte so
+  the viewer renders nothing, then get the preview window with
+  `XWF_GetWindow(6)` and parent your own controls onto it.
+
+None of this is covered further in these notes — see the
+[coverage map](xways-api-coverage-map.md) for what else is missing, and work
+from the official page.
 
 ## Threading
 

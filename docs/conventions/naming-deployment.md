@@ -103,17 +103,22 @@ historically **not found** when they sat next to the X-Tension, unless that
 directory happened to be the X-Ways install directory or another
 search-path-special location.
 
-From **v20.8** X-Ways loads X-Tensions with `LOAD_WITH_ALTERED_SEARCH_PATH`, so
-the X-Tension's **own directory** is searched for its dependencies. That is what
+X-Ways now loads X-Tensions with `LOAD_WITH_ALTERED_SEARCH_PATH`, so the
+X-Tension's **own directory** is searched for its dependencies. That is what
 makes the per-X-Tension bundle layout above work for native dependencies as well
-as for helper exes.
+as for helper exes. Per the official page it applies from **v20.8 SR-9,
+v20.9 SR-11, v21.0 SR-8, v21.1 SR-4** and later — a per-branch backport, not a
+clean "v20.8 and up".
 
-**Two caveats worth designing around.** The behaviour is **user-disableable** —
-there is a checkbox to turn it off if it causes problems — so a bundle that
-*requires* it can still fail on an analyst's machine. And it does nothing for
-hosts older than v20.8. If you can, prefer loading optional dependencies
-dynamically with an explicit path derived from `GetModuleFileNameW(g_hSelf)`,
-which works regardless of the host version or the checkbox.
+**You do not have to guess whether it is active.** `XT_Init` receives
+`XT_INIT_ALTERED_SEARCH_PATH` (`0x80`) in `nFlags` exactly when the DLL was
+loaded that way. Test the bit and degrade deliberately rather than assuming.
+That matters because the behaviour is **user-disableable** — there is a checkbox
+to turn it off if it causes problems — so a bundle that *requires* it can still
+fail on an analyst's machine, and it does nothing on older hosts. Where you can,
+prefer loading optional dependencies dynamically from a path derived from
+`GetModuleFileNameW(g_hSelf)`, which works regardless of host version or
+checkbox.
 
 Source: the X-Tension Programming board, 2023-04-13 (see
 [forum-xtensions-distilled.md](../forum-xtensions-distilled.md)).

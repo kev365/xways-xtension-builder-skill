@@ -24,6 +24,14 @@ verified in one of, **in this priority order**:
    **primary** check. These pages carry the project's vetted API surface,
    property numbers, flag bits, and behavior findings, and they ship in this
    repo.
+
+   **Silence in `docs/` proves nothing.** Of the 99 functions on the official
+   pages, 59 are explained here, 20 are only name-dropped, and **20 are absent
+   entirely** — whole subsystems among them (search hits, viewer X-Tensions,
+   progress reporting, hex blocks). `docs/xways-api-coverage-map.md` lists every
+   one. Check it first: if the symbol is on the Absent or Named-only list, skip
+   step 1 and verify at step 2. Never conclude a function does not exist because
+   these notes do not mention it.
 2. The live API HTML at
    `https://www.x-ways.net/forensics/x-tensions/XWF_functions.html` — the
    authoritative source for additions made after the SDK snapshot (21.5–21.8+),
