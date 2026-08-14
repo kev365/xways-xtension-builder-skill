@@ -61,7 +61,12 @@ foreach ($m in [regex]::Matches($text, '\b(XWF_[A-Za-z0-9_]+|XT_[A-Za-z0-9_]+)\s
     }
 }
 
-$tracked = @(& git -C $Root ls-files) | Where-Object { $excluded -notcontains $_ }
+# --others --exclude-standard includes new, not-yet-committed files. Without it
+# a doc written moments ago is invisible and the map under-reports coverage --
+# which is precisely when someone runs this.
+$tracked = @(& git -C $Root ls-files --cached --others --exclude-standard) |
+           Sort-Object -Unique |
+           Where-Object { $excluded -notcontains $_ }
 $bodies = @{}
 foreach ($rel in $tracked) {
     $p = Join-Path $Root $rel

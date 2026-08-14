@@ -16,75 +16,91 @@ The official reference documents **99 functions** across
 
 | | Count | Meaning |
 | --- | ---: | --- |
-| **Covered** | 62 | a page here explains it, not just names it |
-| **Named only** | 20 | appears in passing, usually in a version-history row |
-| **Absent** | 17 | not mentioned anywhere in this repository |
+| **Covered** | 67 | a page here explains it, not just names it |
+| **Named only** | 32 | appears, but do not expect a usable description |
+| **Absent** | 0 | nothing is completely unmentioned any more |
 
 Regenerate with [`scripts/api-coverage.ps1`](../scripts/api-coverage.ps1)
 (`-Detail` lists the buckets). It is not a CI gate — coverage gaps are expected
 and it needs network access.
 
-**Why this page exists.** The hard gate says never invent an `XWF_` call and to
-verify against the distilled notes first. That is only safe if it is obvious
-when the notes are *silent* — otherwise "not in `docs/`" gets misread as "not in
-the API". Roughly **40% of the documented surface is thin or missing here**, so
-absence from these notes means nothing at all about whether a function exists.
+**Read "0 absent" carefully.** It means every documented function is now
+*findable* here, not that every one is *explained*. A third of the surface is
+still name-level only, and seven functions are named precisely to record that
+**X-Ways has not implemented them** (see below). Treat the Named-only list as
+"go to the official page", exactly as before.
 
-**If the function you need is in the Absent list below, skip `docs/` and go
-straight to the live page.** Do not infer a signature from a neighbouring
-function, and do not assume a symbol is unavailable because it is unlisted here.
+**Why this page exists.** The hard gate says never invent an `XWF_` call and to
+verify against the distilled notes first. That is only safe when it is obvious
+where the notes are thin — otherwise "not in `docs/`" gets misread as "not in
+the API".
+
+## Documented but not implemented
+
+Seven entries exist on the official page yet do nothing. X-Ways greys out
+**ideas for potential future additions** and says so on the page, so a symbol
+appearing in the reference is *not* evidence that it works:
+
+| Function | Note |
+| --- | --- |
+| `XWF_AddSearchHit`, `XWF_GetSearchHit`, `XWF_SetSearchHit` | the entire search-hit manipulation trio — see [xways-search-api.md](xways-search-api.md) |
+| `XWF_SetItemName` | renaming an item |
+| `XWF_SetItemDataRuns` | supplying extents for an item |
+| `XWF_DeleteEvObj` | removing an evidence object from the case |
+| `XWF_Write` | and WinHex-only in any case, never X-Ways Forensics |
+
+`XWF_GetDriveInfo` carries the same wording. **Check for that sentence before
+designing around any symbol you have not used before** — verifying a function
+"exists on the official page" is not sufficient.
 
 ## Contents
 
-- Absent — not covered anywhere in this repository
-- Named only — a version-history row, not an explanation
+- Documented but not implemented
+- What is still thin
+- Named only — check the live page before relying on these
 - Constants are patchier than functions
 - Keeping this page honest
 
-## Absent — not covered anywhere in this repository
+## What is still thin
 
-Grouped by the subsystem they belong to, because they go missing in clusters:
-these are whole capabilities the notes never explore, not scattered oversights.
+Every function is now findable, but these subsystems are documented at
+reference depth rather than "here is how you use it":
 
-| Subsystem | Functions |
+| Subsystem | State |
 | --- | --- |
-| **Search hits** | `XWF_AddSearchHit`, `XWF_GetSearchHit`, `XWF_SetSearchHit`, `XWF_GetSearchTerm` |
-| **Progress reporting** | `XWF_ShowProgress`, `XWF_HideProgress`, `XWF_SetProgressDescription` |
-| **Hex blocks** | `XWF_GetBlock`, `XWF_SetBlock` |
-| **Item mutation** | `XWF_SetItemName`, `XWF_SetItemDataRuns` |
-| **Evidence & report tables** | `XWF_DeleteEvObj`, `XWF_GetEvObjReportTableAssocs`, `XWF_GetReportTableInfo` |
-| **Low-level I/O & rendering** | `XWF_Write`, `XWF_GetSectorContents`, `XWF_GetRasterImage` |
+| **Search** | [xways-search-api.md](xways-search-api.md) — entry points, hit struct, flags, term management, and which parts do not work |
+| **Progress** | [xways-user-input-and-dialogs.md](xways-user-input-and-dialogs.md) — the four calls plus the rule against using them in a per-item callback |
+| **Blocks, sector attribution, raster images, bulk label reads** | [xways-reading-events-and-items.md](xways-reading-events-and-items.md) |
+| **Viewer X-Tensions** | [xtension-invocation.md](xtension-invocation.md) — the class and the callbacks that do *not* fire in it |
 
-**Search X-Tensions are the biggest hole.** `XT_PrepareSearch` (entry point,
-now described in [xtension-invocation.md](xtension-invocation.md)) receives the
-search terms and code pages before a simultaneous search runs, and the
-`XWF_SEARCH_*` flag family — about 25 constants: `GREP`, `MATCHCASE`,
-`WHOLEWORDS`, `COVERSLACK`, `OMITFILTERED`, `DECODETEXT`, … — configures it.
-None of the four hit-manipulation functions is covered, so
-`XT_ProcessSearchHit` (which our templates *do* export) is the tail of a
-pipeline these notes otherwise never describe.
+What remains genuinely unexplored is **constants, not functions** — see below.
 
-**Viewer X-Tensions** (`XT_View` / `XT_ReleaseMem`) were on this list until
-2026-08-12 and are now described in
-[xtension-invocation.md](xtension-invocation.md) — the class, the buffer
-contract, and the callbacks that do *not* fire in that mode.
+## Named only — check the live page before relying on these
 
-There is roughly **16,000 characters of official text** behind the functions
-still listed above — about three pages. Distilling it is a bounded job, not an
-open-ended one.
+`XWF_AddSearchHit`, `XWF_AddSearchTerm`, `XWF_CloseContainer`,
+`XWF_CloseEvObj`, `XWF_CopyToContainer`, `XWF_CreateContainer`,
+`XWF_DeleteEvObj`, `XWF_GetColumnTitle`, `XWF_GetComment`, `XWF_GetFileCount`,
+`XWF_GetFirstEvObj`, `XWF_GetHashSetAssocs`, `XWF_GetHashValue`,
+`XWF_GetItemOfs`, `XWF_GetNextEvObj`, `XWF_GetRasterImage`,
+`XWF_GetReportTableInfo`, `XWF_GetSearchHit`, `XWF_GetSearchTerm`,
+`XWF_GetSectorContents`, `XWF_GetSize`, `XWF_GetVolumeInformation`,
+`XWF_HideProgress`, `XWF_ReleaseMem`, `XWF_SelectVolumeSnapshot`,
+`XWF_SetItemDataRuns`, `XWF_SetItemName`, `XWF_SetItemOfs`,
+`XWF_SetItemParent`, `XWF_SetProgressDescription`, `XWF_SetSearchHit`,
+`XWF_Write`.
 
-## Named only — a version-history row, not an explanation
+!!! note "The bucket is cruder than it looks — do not over-read it"
+    A function counts as *covered* only when some `docs/` page names it **twice
+    or more**. That is a proxy for "explained", and a rough one. Several
+    functions in the list above *are* properly documented and land here purely
+    because one well-written paragraph names them once — `XWF_GetSectorContents`,
+    `XWF_GetRasterImage`, `XWF_GetReportTableInfo`, `XWF_HideProgress`,
+    `XWF_SetProgressDescription` and `XWF_GetSearchTerm` among them. Others in
+    the list are named *because they do not work*.
 
-Present somewhere, but do not expect a usable description. Verify against the
-live page before writing code against any of these:
-
-`XWF_AddSearchTerm`, `XWF_CloseContainer`, `XWF_CloseEvObj`,
-`XWF_CopyToContainer`, `XWF_CreateContainer`, `XWF_GetColumnTitle`,
-`XWF_GetComment`, `XWF_GetFileCount`, `XWF_GetFirstEvObj`,
-`XWF_GetHashSetAssocs`, `XWF_GetHashValue`, `XWF_GetItemOfs`,
-`XWF_GetNextEvObj`, `XWF_GetSize`, `XWF_GetVolumeInformation`,
-`XWF_ReleaseMem`, `XWF_Search`, `XWF_SelectVolumeSnapshot`, `XWF_SetItemOfs`,
-`XWF_SetItemParent`.
+    The fix is not to sprinkle repeated mentions to move the number — that would
+    be gaming the measurement rather than improving the notes. Use the list as a
+    prompt to check, not as a verdict.
 
 ## Constants are patchier than functions
 
@@ -114,8 +130,12 @@ absent functions. A map that measures itself always reports full coverage. The
 same applies to the CHANGELOG, which describes the gaps in prose; it is excluded
 for the same reason.
 
-The counts also moved once *legitimately* on the day of writing, from 59/20/20
-to 62/20/17, because the same change that created this page also documented
-`XT_View`, `XT_ReleaseMem` and `XT_PrepareSearch`. That is the map working as
-intended — but it is why the numbers here are only trustworthy as of the
-frontmatter date.
+A second bug in the same script: it listed only **tracked** files, so a doc
+written minutes earlier was invisible and the map under-reported — exactly when
+someone would run it. It now includes new, uncommitted files.
+
+The counts moved twice *legitimately* on the day of writing —
+**59/20/20 → 62/20/17 → 67/32/0** — as the same work that created this page went
+on to document the viewer entry points, then the search, progress, block,
+sector-attribution and raster-image surfaces. That is the map doing its job. It
+is also why the numbers are only trustworthy as of the frontmatter date.

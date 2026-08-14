@@ -17,6 +17,7 @@ The short answer: **yes, both surfaces are readable from C++**, via stable APIs 
 - Reading existing events (`XWF_GetEvent`)
 - Reading the Directory Browser (volume snapshot items)
 - Combining: events × items × content
+- Three more readers worth knowing
 - What you cannot read
 - See also
 
@@ -149,6 +150,32 @@ vs locale dates), the relevant bits are above `0x80` — untested. Pass
 Source: live [XWF_functions.html](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html)
 (re-checked 2026-08-12, after the 21.8 SR-5 note was added).
 
+### Reading labels in bulk — `XWF_GetEvObjReportTableAssocs`
+
+Available **v17.7+**. On a large snapshot this is the difference between a fast
+pass and an unusable one: instead of calling the per-item label getter for every
+item, it hands back **one internal list covering the whole evidence object**.
+
+```c
+LPVOID XWF_GetEvObjReportTableAssocs(HANDLE hEvidence, LONG nFlags, PLONG lpValue);
+```
+
+The buffer is a flat run of **(16-bit report-table ID, 32-bit item ID)** pairs
+stored back to back; `*lpValue` receives the number of pairs. Set `nFlags` bit
+`0x01` to get the list sorted by item ID — no other flags are permitted. NULL
+means unavailable.
+
+Note the return is a pointer into X-Ways' own structure, and the page warns it
+may cease to be available in a future version, so treat it as read-only and
+short-lived: copy what you need rather than holding the pointer.
+
+**`XWF_GetReportTableInfo(pReserved, nReportTableID, lpOptional)`** — v17.7+ —
+turns an ID from that list into a name. Pass `nReportTableID = -1` to learn the
+maximum number of labels the running version supports (written to `*lpOptional`);
+valid IDs are then `0 … max-1`. `pReserved` must be NULL and `*lpOptional` must
+be `0` on entry. From **v18.1** the same out-parameter also returns flags on a
+real lookup — `0x0001` marks a hint shown to the user by the application.
+
 ### Label / Report-Table API renames (backported to 21.4–21.7 SRs) + remove-label (v21.8)
 
 Both Report-Table functions were renamed; the old names remain callable but are **deprecated**. Per the live [XWF_functions.html](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html) (re-checked 2026-07-03), the renames shipped in **v21.4 SR-11, v21.5 SR-13, v21.6 SR-8, and v21.7 SR-4** (backported across branches):
@@ -266,6 +293,35 @@ LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void*
     return 0;
 }
 ```
+
+## Three more readers worth knowing
+
+**`XWF_GetSectorContents(hVolume, nSectorNo, lpDescr, lpItemID)`** — answers
+"what is this sector for?". Returns FALSE when the sector belongs to an unused
+or free cluster, TRUE otherwise. `lpDescr` receives a textual description — a
+file name and path, or something like `FAT 1` — so **size the buffer for 511
+characters plus a terminating NUL**, and expect it to be language-specific
+(do not parse it). The optional `lpItemID` receives the snapshot item the sector
+is allocated to, or `-1`. This is the natural way to attribute a raw offset back
+to a file without walking the snapshot yourself.
+
+**`XWF_GetRasterImage(RasterImageInfo*)`** — v18.0+, **not in WinHex Lab
+Edition**. Decodes any picture type X-Ways supports internally (JPEG, GIF, PNG,
+…) into a standardised **24-bit true-colour RGB raster**, returning a buffer
+pointer or NULL when the type is unsupported or the file too corrupt. Fill
+`nSize`, `nItemID` and `hItem`; the call returns `nWidth`, `nHeight` and
+`nResSize`. **You own the buffer and must free it with `VirtualFree(ptr, 0,
+MEM_RELEASE)`** — not `XWF_ReleaseMem`, and not `free`. Getting that wrong leaks
+per picture, which on a snapshot of images adds up quickly.
+
+**`XWF_GetBlock` / `XWF_SetBlock(hVolume, …)`** — v17.7+, read or set the
+selected block in the volume's window. `XWF_GetBlock` returns FALSE when no
+block is defined; `XWF_SetBlock` returns FALSE if the offsets exceed the volume,
+and **`nEndOfs = -1` clears the block**. The block *is* applied immediately, but
+**the hex display does not repaint by itself** — a developer reported exactly
+that confusion and X-Ways confirmed the block was set and only the display was
+stale. Refresh with *View | Refresh View*, or call `InvalidateRect` on the data
+window's hex window.
 
 ## What you cannot read
 

@@ -69,6 +69,9 @@ to these pages so generated code never invents `XWF_*` calls.
 - [events-viewer-empirical-findings.md](events-viewer-empirical-findings.md) —
   measured `nEvtType` → Type/Category lookup, `nFlags` semantics, `lpDescr`
   capacity, and the X-Ways internal Type catalog.
+- [xways-search-api.md](xways-search-api.md) — the simultaneous-search surface:
+  `XT_PrepareSearch`, `XT_ProcessSearchHit` + `SearchHitInfo`, `XWF_Search`,
+  search-term management, and the three hit functions X-Ways never implemented.
 - [xways-api-coverage-map.md](xways-api-coverage-map.md) — which of the 99
   officially documented functions these notes actually cover (59), name only
   (20), or miss entirely (20). Read before concluding a function does not exist.
