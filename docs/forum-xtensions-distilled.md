@@ -1,6 +1,6 @@
 ---
 type: empirical-finding
-last_updated: 2026-06-06
+last_updated: 2026-08-12
 author: project
 ---
 
@@ -10,6 +10,15 @@ author: project
 > specifics against the official API page / live `XWF_functions.html`.
 
 ---
+
+## Contents
+
+- XT_ProcessItem(Ex) — which items are actually delivered
+- XWF_AddToReportTable — label removal
+- XWF_OpenItem — opening EMLs with embedded attachments
+- Disk I/O X-Tensions vs ordinary X-Tensions — API surface
+- Host watchdog on refinement threads (v21.8 Preview 5)
+- Version-history pointers extracted from these threads
 
 ## XT_ProcessItem(Ex) — which items are actually delivered
 
@@ -66,6 +75,28 @@ The key facts here are the explicit pagefault outcome and the four canonical ent
 
 ---
 
+## Host watchdog on refinement threads (v21.8 Preview 5)
+
+From **2026-03-26**: X-Ways monitors additional threads during volume snapshot
+refinement, and attempts to **terminate and resume hanging threads** found to be
+unresponsive for **~15 minutes** (the announcement gives 15 min as an example,
+not a documented constant).
+
+This is a host-robustness feature, but it bounds how long an X-Tension may block
+a refinement thread. It matters most for CLI wrappers that wait on a slow helper
+process — see the note in
+[subprocess-stdio](conventions/subprocess-stdio.md) and
+[threading-model](conventions/threading-model.md).
+
+**Unverified — worth measuring before relying on either reading.** The
+announcement says "additional threads" without defining which. It is not known
+whether the watchdog covers the thread that runs `XT_Finalize` (where the
+wrapper template does its work) or only the multi-threaded file-examination
+workers, nor whether "terminate and resume" means the X-Tension's call is
+unwound, the thread is killed outright, or the operation is retried.
+
+---
+
 ## Version-history pointers extracted from these threads
 
 Dated API-history data points from these threads (see also [xways-api-history-19-to-21_4.md](xways-api-history-19-to-21_4.md)):
@@ -75,4 +106,14 @@ Dated API-history data points from these threads (see also [xways-api-history-19
 - **v21.8 Beta 5** (2026-05-08) —
   - `XWF_OpenItem()` gains a new flag to include embedded EML attachments (officially **`0x8000`** per the live HTML, checked 2026-07-03; the thread's `0x2000` is not in the official list).
   - A label-removal counterpart to `XWF_AddToReportTable` is added (`XWF_Label` with `nFlags` `0x80000000`).
+- **v21.8 SR-4** (2026-07-02) — **`XWF_OpenItem()` could fail when called from
+  `XT_ProcessItem()` for files inside nested archives while refinement ran with
+  multiple threads.** Fixed in this release. Not mentioned on the official API
+  page (checked 2026-08-12) — this is forum-only. If you support hosts older
+  than 21.8 SR-4, handle a failed open on nested-archive items rather than
+  assuming a valid handle.
+- **v21.8 SR-5** (2026-07-28) — exceptions inside `XWF_GetCellText` are now
+  caught by the function itself instead of reaching the X-Tension, and notes
+  were added to the official documentation. Both are distilled in
+  [xways-reading-events-and-items.md](xways-reading-events-and-items.md).
 - **Pending fix (no version named yet)** — `XT_PREPARE_TARGETZEROBYTEFILES` will start affecting `XT_ProcessItemEx()` (currently a doc-vs-reality mismatch).

@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-07-04
+last_updated: 2026-08-12
 author: project
 ---
 
@@ -27,6 +27,13 @@ depth 5, with zero failures. A "never self-open on a worker thread" claim from
 [xways-linux-logs](https://github.com/kev365/xways-linux-logs) (`xways-linux-logs.cpp` →
 `XT_Finalize`, request-then-run) — the job runs synchronously on X-Ways' thread instead of on a
 spawned `std::thread`, so `XWF_AddEvent` is never called off-thread.
+
+## Contents
+
+- Pattern
+- Variant: run in-place in the dialog (keep it open, show progress)
+- The host watches for hanging refinement threads (v21.8 Preview 5)
+- Do / Don't
 
 ## Pattern
 
@@ -78,9 +85,29 @@ already on X-Ways' thread, so every `XWF_*` call (e.g. an evidence-object add-ba
     moment a thread would call `XWF_AddEvent` / `XWF_CreateEvObj` / `XWF_OpenItem`, keep it on
     X-Ways' thread.
 
+## The host watches for hanging refinement threads (v21.8 Preview 5)
+
+Since **2026-03-26**, X-Ways monitors additional threads during volume snapshot
+refinement and attempts to **terminate and resume** any it finds unresponsive
+for **~15 minutes** (the announcement offers 15 min as an example, not a
+documented constant). Source: the 21.8 announcement thread, distilled in
+[forum-xtensions-distilled.md](../forum-xtensions-distilled.md).
+
+Running synchronously on X-Ways' thread — which this page tells you to do — is
+therefore not a licence to block indefinitely. Work that can take tens of
+minutes (a slow helper process, a large archive) should report progress and be
+interruptible rather than sit in an unbounded wait.
+
+**Scope unverified.** "Additional threads" is not defined, so it is unknown
+whether the watchdog covers the thread running `XT_Finalize` or only the
+multi-threaded file-examination workers, nor what "terminate and resume" does to
+an in-flight X-Tension call. Treat it as a reason to bound long waits, not as a
+measured limit.
+
 ## Do / Don't
 
 - **Do** run the job synchronously in `XT_Prepare` (one-shot) or `XT_Finalize` (after a dialog).
+- **Do** bound long waits and surface progress — the host may terminate a thread it judges hung (see above).
 - **Do** emit events (`XWF_AddEvent`) from `XT_Prepare`/`XT_Finalize` on X-Ways' thread.
 - **Do** use `XWF_OutputMessage` for progress instead of a dialog progress bar driven by a worker.
 - **Don't** spawn a `std::thread`/worker that calls any `XWF_*` function.

@@ -3,6 +3,31 @@
 All notable changes to this project are documented here. Versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Forum sweep of the 21.8 and 21.9 announcement threads** (read in full
+  2026-08-12), which surfaced three API facts the knowledge base did not have:
+  - **`XWF_GetCellText` return codes and its multi-threading restriction.**
+    21.8 SR-5 added a new return code `-3` (exception, now caught by the
+    function rather than reaching the X-Tension) and, on the official page,
+    a restriction we had never recorded: the **Metadata** column and the columns
+    depending on it (generator signature, device type) may be inaccessible
+    during multi-threaded refinement, with X-Ways advising the call be made from
+    `XT_Finalize`. That is independent vendor corroboration of the shape
+    `item-collection` and `threading-model` already prescribe.
+  - **`XWF_OpenItem()` could fail from `XT_ProcessItem()` for files in nested
+    archives** under multi-threaded refinement — fixed in 21.8 SR-4, and absent
+    from the official page, so forum-only.
+  - **The host watchdogs refinement threads** since 21.8 Preview 5, terminating
+    and resuming ones unresponsive for ~15 minutes. Recorded with its scope
+    flagged unverified, and carried into `subprocess-stdio` as a caution about
+    the template's `WaitForSingleObject(..., INFINITE)`.
+
+  Also recorded that 21.9 Previews 2–6 and Beta 1 were read and contain nothing
+  API-facing, so the next sweep need not re-read them.
+
 ## [0.5.0] — 2026-08-12
 
 ### Changed

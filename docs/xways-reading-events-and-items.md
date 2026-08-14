@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XWF_functions.html (official) + the X-Ways SDK header (see getting-the-sdk.md) + project empirical
 type: official-doc + empirical-finding
 fetched: 2026-04-27
-last_updated: 2026-04-27
+last_updated: 2026-08-12
 author: X-Ways Software Technology AG; project synthesis from xways-events-api.md and xtension-invocation.md
 ---
 
@@ -104,9 +104,50 @@ The directory browser is the rendered view of the **volume snapshot** — the li
 | `XWF_GetItemInformation(nItemID, nInfoType, &success)` | Attributes, deletion status, hash status, timestamps, flags. `nInfoType` is an enum — see the SDK header. |
 | `XWF_GetHashSetAssocs` / `XWF_GetReportTableAssocs` / `XWF_GetComment` | Hash-set membership, Labels (Report Tables), free-text Comments. **`XWF_GetReportTableAssocs` was renamed `XWF_GetLabels`** (backported to the 21.4–21.7 SRs; old name still callable, deprecated) — see the label-API note below. |
 | `XWF_GetProp(hVolumeOrItem, nPropType, buf)` | Generic property accessor — see [xways-getprop-reference.md](xways-getprop-reference.md) for the property numbers. |
-| `XWF_GetCellText(nItemID, ..., nColIndex, buf, len)` | Reads the **rendered cell text** for a given column — i.e., the exact string the directory browser is displaying for that column on that item. Useful when you want to consume what the analyst sees rather than reconstructing it. **`nFlags` low bits (0x00..0x80) appear to be inert** — empirical testing (observed 2026-05-03) shows the Size column emits identical text for every flag value 0x00..0x80 across 5 sample items. If flags can change notation (decimal vs hex sizes, ISO vs locale dates), the relevant bits are higher than 0x80 — not yet tested. Pass `nFlags=0` for predictable output. |
+| `XWF_GetCellText(nItemID, lpPointer, nFlags, nColIndex, buf, len)` | Reads the **rendered cell text** for a given column — the exact string the directory browser would display for that item, whether or not the item is currently listed or the column visible. See the dedicated section below: it has a real multi-threading restriction. |
 
 **Empirical column count:** the directory browser exposes **62 columns** (indices 0..61) on X-Ways 21.7. Past 61, `XWF_GetColumnTitle` returns `FALSE` but **leaks string-table garbage** in the buffer — see [build-and-iteration-gotchas.md](build-and-iteration-gotchas.md). Trust only `rv=1` rows when iterating columns.
+
+### `XWF_GetCellText` — return codes and the Metadata-column restriction
+
+Available since **v20.3**. Text is language-specific and follows the current
+GUI notation settings, so it is what the analyst sees rather than a canonical
+form.
+
+| Return | Meaning |
+| --- | --- |
+| `0` or positive | success |
+| `-1` | unknown column index |
+| `-2` | a specific error while retrieving the text (e.g. I/O) |
+| `-3` | an exception occurred — **v21.8 SR-5 and later** |
+
+**Do not call it for Metadata-derived columns during multi-threaded
+refinement.** Per the official page, cell text from the **Metadata** column and
+the columns that internally depend on it (**generator signature**, **device
+type**) may be inaccessible while volume snapshot refinement is running with
+multiple threads. X-Ways' own guidance is to call the function **after** the
+multi-threaded file-examination phase is over — from `XT_Finalize`.
+
+That is the same shape as [item-collection](conventions/item-collection.md) and
+[threading-model](conventions/threading-model.md) prescribe for other reasons:
+accumulate item IDs in the per-item callbacks, do the work in `XT_Finalize`.
+Useful corroboration — the convention was derived here empirically, and the
+vendor arrived at the same advice independently.
+
+**Exceptions are contained from v21.8 SR-5.** Before that release an exception
+raised inside `XWF_GetCellText` could reach the X-Tension uncontrolled; the
+function now catches its own and reports `-3` instead. On older hosts, treat a
+call on a Metadata-derived column during refinement as genuinely hazardous
+rather than merely unreliable.
+
+**`nFlags` low bits appear inert** — empirical testing (observed 2026-05-03)
+shows the Size column emits identical text for every flag value `0x00..0x80`
+across 5 sample items. If flags can change notation (decimal vs hex sizes, ISO
+vs locale dates), the relevant bits are above `0x80` — untested. Pass
+`nFlags=0` for predictable output.
+
+Source: live [XWF_functions.html](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html)
+(re-checked 2026-08-12, after the 21.8 SR-5 note was added).
 
 ### Label / Report-Table API renames (backported to 21.4–21.7 SRs) + remove-label (v21.8)
 
