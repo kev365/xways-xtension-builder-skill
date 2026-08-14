@@ -1,6 +1,6 @@
 ---
 type: empirical-finding
-last_updated: 2026-06-06
+last_updated: 2026-08-12
 author: project
 ---
 
@@ -96,7 +96,7 @@ persistent name pool. Revisit if a future build/context shows clobbering.
 | `XWF_AddToReportTable(0x0002\|0x0020\|0x8000)` | **rv=1** (the label triplet is accepted; rv = table number) |
 | `XWF_SetItemInformation` CREATIONTIME/MODIFICATIONTIME | `set=TRUE`, read-back differs from the set value by **+512** (×100 ns ≈ 51 µs) — sticks, with a small transform worth a follow-up |
 | `XWF_SetItemType` | `set` returned without error but `XWF_GetItemType` gave rv=2 + empty description — **inconclusive** |
-| `XWF_SetHashValue` (nParam=0) | returned **TRUE**, but `XWF_GetHashValue` read back zeros (`FALSE`) — **unconfirmed**; `nParam` (hash type) semantics unknown |
+| `XWF_SetHashValue` (nParam=0) | returned **TRUE**, but `XWF_GetHashValue` read back zeros (`FALSE`) — **unconfirmed**; `nParam` (hash type) semantics unknown. **Lead:** v21.5 Preview 3 changed 3 hash-type IDs and deprecated 6, pointing at the `XWF_GetVSProp()` documentation for the current list — so a hash-type number taken from older material may name a different algorithm. See [xways-api-recency-research.md](xways-api-recency-research.md). |
 
 ## nOpType read-only bit
 

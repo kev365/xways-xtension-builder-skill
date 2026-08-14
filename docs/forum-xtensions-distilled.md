@@ -9,10 +9,32 @@ author: project
 > Distilled notes on X-Tension runtime behavior in X-Ways 21.7–21.8. Verify
 > specifics against the official API page / live `XWF_functions.html`.
 
+## Which parts of the forum are readable
+
+The X-Ways user forum has **five boards**, and only one is public
+(surveyed 2026-08-12):
+
+| Board | URL stem | Access |
+| --- | --- | --- |
+| Public Announcements — the version threads | `messages/1/` | **public** |
+| four further boards | `messages/6/`, `messages/838/`, `messages/1744/`, `messages/5307/` | **HTTP 401** |
+
+The board menu states that access is limited to users with **active update
+maintenance**. One of the restricted boards is the **X-Tension programming
+section**, announced 2021-03-26 in the Miscellaneous thread — which means the
+forum's most directly relevant material has *never* been mined here, and cannot
+be without forum credentials.
+
+Everything in this file and in
+[xways-api-recency-research.md](xways-api-recency-research.md) therefore comes
+from the **public announcement threads only**. If you have forum access, the
+X-Tension programming board is the highest-value unread source.
+
 ---
 
 ## Contents
 
+- Which parts of the forum are readable
 - XT_ProcessItem(Ex) — which items are actually delivered
 - XWF_AddToReportTable — label removal
 - XWF_OpenItem — opening EMLs with embedded attachments

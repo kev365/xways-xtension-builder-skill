@@ -1,7 +1,7 @@
 ---
 source: X-Ways 21.6 manual §3.10 + https://www.x-ways.net/forensics/x-tensions/api.html + empirical
 type: official-doc + empirical-finding
-last_updated: 2026-06-06
+last_updated: 2026-08-12
 author: project notes
 ---
 
@@ -37,7 +37,7 @@ Synthesised reference for what `xwforensics64.exe` / `xwb64.exe` / `winhex64.exe
 | `<path>` (positional) | Open file or .xfc case file. First-position `.xfc` opens the case; later-position `.xfc` *imports* its evidence objects into the active case. |
 | `:N` (positional) | Open physical disk N (e.g. `:0` = hard disk 0). Combine with the `\|fmt\|path\|...` second arg below to image automatically. |
 | `<file>.whs` | Run the WinHex script instead of opening it. |
-| `XT:<path>` | Load the named X-Tension DLL (full path). |
+| `XT:<path>` | Load the named X-Tension DLL (full path). **Since v21.5 Beta 5 (2025-05-19) X-Ways prompts before actually executing/loading an X-Tension, explicitly including command-line-triggered runs** — so an unattended script cannot assume the X-Tension starts without a confirmation. Budget for the prompt, or check whether `Override:1` (auto-OK every message/dialog box) covers it before relying on it. Source: 21.5 announcement thread ([messages/1/5501](https://www.x-ways.net/winhex/forum/messages/1/5501.html)). |
 | `XTParam:<id>:<value>` | **v19.4 SR-6+** (per the [X-Tensions API page](https://www.x-ways.net/forensics/x-tensions/api.html), even though the 21.6 manual doesn't list it). X-Ways itself **ignores** any parameter starting with `XTParam:` — no "file not found" error pops. The X-Tension fetches the full command line via `GetCommandLine`, parses it, and pulls out tokens whose `<id>` matches its own short identifier (a per-X-Tension string the X-Tension's docs declare). The `<value>` may contain colons. If `<id>` or `<value>` contains spaces, quote the entire `XTParam:...` token. Multiple `XTParam:` tokens may target different X-Tensions in the same launch. A common convention is to layer a `<key>=<value>` micro-format inside `<value>` (the X-Tension parses it after stripping the `<id>:` prefix). |
 | `NewCase:<path>` | Create a new case at the given path. **Overwrites** any existing case at that path *without prompt*. Supports relative paths and `%ENVVARS%`. |
 | `NewCase;<path>` | Same as above but **semicolon** = if the .xfc already exists, generate a unique filename instead of overwriting. |

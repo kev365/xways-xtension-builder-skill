@@ -28,6 +28,32 @@ All notable changes to this project are documented here. Versions follow
   Also recorded that 21.9 Previews 2–6 and Beta 1 were read and contain nothing
   API-facing, so the next sweep need not re-read them.
 
+- **Second forum sweep — the 21.5, 21.6 and 21.7 announcement threads**, none of
+  which had ever been read (the knowledge base cited every thread from 19.0 to
+  21.4, then jumped to 21.8). Four more facts:
+  - **Hash-type IDs changed in 21.5 Preview 3** — three changed value, six were
+    deprecated, with the current list in the `XWF_GetVSProp()` documentation.
+    Bears directly on the open `nParam` question in `xways-snapshot-mutation.md`:
+    a hash-type number taken from older material may now name a different
+    algorithm.
+  - **X-Ways prompts before loading an X-Tension since 21.5 Beta 5**, explicitly
+    including command-line-triggered runs — so an unattended script cannot assume
+    it starts unattended. Recorded against `XT:` in `xways-command-line.md`.
+  - **The `[XT]` log prefix could be separated from its message** when an
+    X-Tension logged from multiple threads, fixed in 21.6 Beta 4. A display
+    artefact on older hosts, not lost data.
+  - **The 21.7 SR-4 announcement lists the label-API rename pairs in a
+    misleading order**, which reads as a positional mapping and is not one. The
+    correct role-based pairing was already documented; the announcement is now
+    cited as the source of the trap.
+
+- **The forum's structure and access limits are recorded.** Of five boards only
+  Public Announcements is readable without credentials; the other four return
+  401, access being limited to users with active update maintenance. One of them
+  is the **X-Tension programming section** (announced 2021-03-26) — so the
+  forum's most directly relevant board has never been mined, and everything
+  distilled here comes from the public announcement threads alone.
+
 ## [0.5.0] — 2026-08-12
 
 ### Changed

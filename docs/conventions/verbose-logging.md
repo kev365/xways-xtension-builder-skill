@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-07-04
+last_updated: 2026-08-12
 author: project
 ---
 
@@ -75,3 +75,4 @@ sites**.
 - **Do** use `LogVerbose` / `_log_verbose` for per-item, per-row, and per-event diagnostics.
 - **Don't** gate a `Log` call that prints error or summary information behind `VERBOSE` — analysts need errors regardless.
 - **Don't** set `VERBOSE = false` in a template or shared file — templates ship with `true`; flip it only in a deployed build.
+- **Don't** read too much into garbled log lines on older hosts. Until **v21.6 Beta 4** (2025-09-21) the `[XT]` prefix could be separated from its message in the Messages window when an X-Tension logged from multiple threads. That is a display artefact of concurrent writes, not lost or corrupted data — and it is a good reason to keep per-item `LogVerbose` output terse under RVS. Source: 21.6 announcement thread, distilled in [xways-api-recency-research.md](../xways-api-recency-research.md).
