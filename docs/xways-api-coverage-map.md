@@ -16,9 +16,13 @@ The official reference documents **99 functions** across
 
 | | Count | Meaning |
 | --- | ---: | --- |
-| **Covered** | 59 | a page here explains it, not just names it |
+| **Covered** | 62 | a page here explains it, not just names it |
 | **Named only** | 20 | appears in passing, usually in a version-history row |
-| **Absent** | 20 | not mentioned anywhere in this repository |
+| **Absent** | 17 | not mentioned anywhere in this repository |
+
+Regenerate with [`scripts/api-coverage.ps1`](../scripts/api-coverage.ps1)
+(`-Detail` lists the buckets). It is not a CI gate — coverage gaps are expected
+and it needs network access.
 
 **Why this page exists.** The hard gate says never invent an `XWF_` call and to
 verify against the distilled notes first. That is only safe if it is obvious
@@ -30,6 +34,13 @@ absence from these notes means nothing at all about whether a function exists.
 straight to the live page.** Do not infer a signature from a neighbouring
 function, and do not assume a symbol is unavailable because it is unlisted here.
 
+## Contents
+
+- Absent — not covered anywhere in this repository
+- Named only — a version-history row, not an explanation
+- Constants are patchier than functions
+- Keeping this page honest
+
 ## Absent — not covered anywhere in this repository
 
 Grouped by the subsystem they belong to, because they go missing in clusters:
@@ -37,23 +48,30 @@ these are whole capabilities the notes never explore, not scattered oversights.
 
 | Subsystem | Functions |
 | --- | --- |
-| **Search hits** | `XT_PrepareSearch`, `XWF_AddSearchHit`, `XWF_GetSearchHit`, `XWF_SetSearchHit`, `XWF_GetSearchTerm` |
-| **Viewer X-Tensions** | `XT_View`, `XT_ReleaseMem` |
+| **Search hits** | `XWF_AddSearchHit`, `XWF_GetSearchHit`, `XWF_SetSearchHit`, `XWF_GetSearchTerm` |
 | **Progress reporting** | `XWF_ShowProgress`, `XWF_HideProgress`, `XWF_SetProgressDescription` |
 | **Hex blocks** | `XWF_GetBlock`, `XWF_SetBlock` |
 | **Item mutation** | `XWF_SetItemName`, `XWF_SetItemDataRuns` |
 | **Evidence & report tables** | `XWF_DeleteEvObj`, `XWF_GetEvObjReportTableAssocs`, `XWF_GetReportTableInfo` |
 | **Low-level I/O & rendering** | `XWF_Write`, `XWF_GetSectorContents`, `XWF_GetRasterImage` |
 
-Two of those clusters are **whole X-Tension classes**, not just functions:
+**Search X-Tensions are the biggest hole.** `XT_PrepareSearch` (entry point,
+now described in [xtension-invocation.md](xtension-invocation.md)) receives the
+search terms and code pages before a simultaneous search runs, and the
+`XWF_SEARCH_*` flag family — about 25 constants: `GREP`, `MATCHCASE`,
+`WHOLEWORDS`, `COVERSLACK`, `OMITFILTERED`, `DECODETEXT`, … — configures it.
+None of the four hit-manipulation functions is covered, so
+`XT_ProcessSearchHit` (which our templates *do* export) is the tail of a
+pipeline these notes otherwise never describe.
 
-- **Search X-Tensions** — `XT_PrepareSearch` receives the search terms and code
-  pages before a simultaneous search runs, and the `XWF_SEARCH_*` flag family
-  (about 25 constants: `GREP`, `MATCHCASE`, `WHOLEWORDS`, `COVERSLACK`,
-  `OMITFILTERED`, `DECODETEXT`, …) configures it. `XT_ProcessSearchHit` — which
-  our templates *do* export — is the tail of a pipeline the notes otherwise
-  never describe.
-- **Viewer X-Tensions** — see [xtension-invocation.md](xtension-invocation.md).
+**Viewer X-Tensions** (`XT_View` / `XT_ReleaseMem`) were on this list until
+2026-08-12 and are now described in
+[xtension-invocation.md](xtension-invocation.md) — the class, the buffer
+contract, and the callbacks that do *not* fire in that mode.
+
+There is roughly **16,000 characters of official text** behind the functions
+still listed above — about three pages. Distilling it is a bounded job, not an
+open-ended one.
 
 ## Named only — a version-history row, not an explanation
 
@@ -84,9 +102,20 @@ official lists.
 
 ## Keeping this page honest
 
-Regenerate rather than hand-edit. The counts came from extracting every
-`XWF_*(` / `XT_*(` token from both official pages and matching each against the
-tracked files, classifying a function as *covered* only when a `docs/` page
-mentions it more than once. Re-run that when the official pages change, and
-update the date in the frontmatter — a stale coverage map is worse than none,
-because it invites exactly the false confidence this page exists to prevent.
+Regenerate with [`scripts/api-coverage.ps1`](../scripts/api-coverage.ps1) rather
+than hand-editing, and update `last_updated` when you do. A stale coverage map
+is worse than none: it invites exactly the false confidence this page exists to
+prevent.
+
+**This page must exclude itself from the measurement**, and the script does.
+The first cut did not, and the effect was immediate — by naming every uncovered
+function, the map counted as a mention of each and the next run reported **zero**
+absent functions. A map that measures itself always reports full coverage. The
+same applies to the CHANGELOG, which describes the gaps in prose; it is excluded
+for the same reason.
+
+The counts also moved once *legitimately* on the day of writing, from 59/20/20
+to 62/20/17, because the same change that created this page also documented
+`XT_View`, `XT_ReleaseMem` and `XT_PrepareSearch`. That is the map working as
+intended — but it is why the numbers here are only trustworthy as of the
+frontmatter date.
