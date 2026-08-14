@@ -2,7 +2,7 @@
 source: the community xwf-api-rs binding (ThomasVogl, MIT) + the X-Ways SDK header (see getting-the-sdk.md) + project synthesis from forum announcements + the live XWF_functions.html (fetched 2026-07-03)
 type: empirical-finding + community-RE + official
 fetched: 2026-05-17
-last_updated: 2026-07-03
+last_updated: 2026-08-12
 author: project synthesis
 ---
 
@@ -29,7 +29,7 @@ The X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)) declares th
 | `0x0400` | `ExtractPlainTextUtf8` | v20.0+ | On-the-fly plain-text extraction (UTF-8). `XWF_Read` yields the text body. Avoids the OCR path (`XWF_GetText` `nFlags=0x02`) for documents that already carry indexable text. |
 | `0x0800` | `ExtractPlainTextUtf16` | v20.0+ | Same as 0x0400 but UTF-16. |
 | `0x1000` | `PrependByteOrderMark` | v20.0+ | Combine with `0x0400` or `0x0800` to prepend a BOM. |
-| `0x8000` | (embed e-mail child objects) | v21.8+ | Embed child objects if the item is an e-mail message extracted by X-Ways in `.eml` format (otherwise no effect) — mirrors the GUI "Copy/Recovery" behaviour. Official per the live [XWF_functions.html](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html) (2026-07-03); supersedes the `0x2000` value observed in user code on the forum. *Caveat — open issue:* the returned handle's size props may still report the bare-EML size; measure by reading to EOF. |
+| `0x8000` | (embed e-mail child objects) | v21.8+ | Embed child objects if the item is an e-mail message extracted by X-Ways in `.eml` format (otherwise no effect) — mirrors the GUI "Copy/Recovery" behaviour. Official per the live [XWF_functions.html](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html) (2026-07-03); supersedes the `0x2000` value observed in user code on the forum. *Resolved 2026-05-23:* a forum report of "bare-EML size" came from calling the old, wrong documented value `0x2000` (which embeds nothing). With `0x8000` the size props report the embedded size. |
 
 Bits not listed (`0x04`, `0x20`, `0x40`, `0x100`, `0x2000`, `0x4000`, and everything `0x10000+`) are **undocumented on the official page and untested** — xwf-api-rs doesn't bind them either.
 

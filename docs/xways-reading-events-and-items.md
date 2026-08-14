@@ -168,12 +168,36 @@ For the bytes of a file:
 HANDLE hItem = XWF_OpenItem(hVolume, nItemID, 0x01);  // open for reading
 if (hItem) {
     INT64 size = XWF_GetSize(hItem, nullptr);  // or XWF_GetProp
+
+    // nNumberOfBytesToRead is a DWORD, so one call cannot express >= 4 GiB --
+    // casting the size straight into it silently truncates. Chunk instead.
+    // X-Ways states plainly that XWF_Read has to be called multiple times for
+    // files of 4 GB or more.
+    constexpr DWORD kChunk = 8u * 1024 * 1024;
     std::vector<BYTE> buf(static_cast<size_t>(size));
-    DWORD got = XWF_Read(hItem, 0, buf.data(), static_cast<DWORD>(size));
+    INT64 off = 0;
+    while (off < size) {
+        DWORD want = static_cast<DWORD>(std::min<INT64>(kChunk, size - off));
+        DWORD got  = XWF_Read(hItem, off, buf.data() + off, want);
+        if (got == 0) break;      // read error or EOF -- do not spin
+        off += got;
+    }
     XWF_Close(hItem);
-    // analyze buf[0..got]
+    // analyze buf[0..off]
 }
 ```
+
+Two things behind that loop, both from the vendor on the X-Tension board:
+
+- **`XWF_Read` must be called repeatedly for files of 4 GB or more.** A single
+  call cannot cover them, and the naive `static_cast<DWORD>(size)` wraps.
+- **The return value was always `0` for data sizes between 2 and 4 GB** until it
+  was fixed (2021-01-07). On an older host, a `0` from a 2–4 GB read is not
+  necessarily a failure — which is another reason to drive the loop from the
+  offset rather than trusting a single returned count.
+
+Do not try to detect failure by inspecting your own handle after `XWF_Close`:
+the function takes the handle **by value**, so your copy cannot change.
 
 Open flags and the full set of `XWF_OpenItem` modes are in the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)). For text content of supported types, `XWF_PrepareTextAccess` + `XWF_GetText` route through X-Ways' viewer component / OCR pipeline.
 

@@ -20,15 +20,15 @@ The X-Ways user forum has **five boards**, and only one is public
 | four further boards | `messages/6/`, `messages/838/`, `messages/1744/`, `messages/5307/` | **HTTP 401** |
 
 The board menu states that access is limited to users with **active update
-maintenance**. One of the restricted boards is the **X-Tension programming
-section**, announced 2021-03-26 in the Miscellaneous thread — which means the
-forum's most directly relevant material has *never* been mined here, and cannot
-be without forum credentials.
+maintenance**, which is what the four restricted boards need. Board **5307 is
+the X-Tension Programming section** — announced 2021-03-26 in the Miscellaneous
+thread and, at the time of writing, **46 threads carrying 75 posts from X-Ways
+themselves**. It is by a wide margin the densest API source outside the official
+function reference, and much of what follows is drawn from it.
 
-Everything in this file and in
-[xways-api-recency-research.md](xways-api-recency-research.md) therefore comes
-from the **public announcement threads only**. If you have forum access, the
-X-Tension programming board is the highest-value unread source.
+Anything sourced from a restricted board is cited by thread number below. If you
+are re-checking a claim and get an HTTP 401, that is why — you need forum
+credentials, not a different URL.
 
 ---
 
@@ -51,6 +51,23 @@ This is the most consequential finding for any X-Tension that iterates items. Th
 1. `XT_PREPARE_TARGETZEROBYTEFILES` had **no effect on `XT_ProcessItemEx()`** despite documentation. Zero-byte files were only delivered to `XT_ProcessItem()`. A fix is planned for all future releases.
 2. `XT_PREPARE_TARGETFILESWITHUNKNOWNDATA` was scoped narrower than docs imply — pre-v21.7 Beta 2 it only targeted **metadata-only files**. Encrypted files and files with unsupported compression were *not* included. Fixed in v21.7 Beta 2.
 3. Files inside corrupt/incomplete archives weren't passed to `XT_ProcessItemEx()` at all. Fixed in v21.7 Beta 4 — such items are now opened with a (useless) size-0 handle so the callback fires.
+
+**The vendor's own framing (2019-03-08), which is broader than the bug list.**
+File-level refinement does **not** process previously-existing files whose first
+cluster is known to have been overwritten, or whose first cluster is unknown,
+*unless the user specifically targets them by tagging or selection*. And
+`XT_ProcessItem()` is called as part of file-based processing — so "not targeted
+for refinement" means **no call**, by design rather than by defect.
+
+The stated escape hatch: *"If you wish to be in control over which items you
+process, and not be restricted to what X-Ways Forensics or the user thinks
+should be processed, then you can simply iterate over all items of the volume
+snapshot yourself, in response to `XT_Prepare()` or `XT_Finalize()`."*
+
+That is a real trade-off rather than a better option. Driving the callbacks
+honours the analyst's active filter and right-click selection; iterating the
+snapshot yourself sees every item but ignores what the analyst asked for. Pick
+deliberately — see [item-collection](conventions/item-collection.md).
 
 **Practical rules of thumb:**
 
@@ -78,7 +95,14 @@ Until v21.8 Beta 5 there was **no API to remove a report-table label** from an i
 
   > The official flag is **`0x8000`** per the live [XWF_functions.html](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html) ("embed child objects ... v21.8 and later", checked 2026-07-03); the thread's `0x2000` is not in the official flag list. See [xways-openitem-flags.md](xways-openitem-flags.md).
 
-- **Caveat (as of 2026-05-11):** with that flag, `XWF_GetProp(hHandle, 1, 0)` and `XWF_GetSize()` may still return the size of the bare EML (~1.3 KB in one example), not the size with attachments. Don't trust the reported size; measure by reading until EOF.
+- **The "wrong size" caveat is resolved — it was the wrong flag, not a size bug.**
+  The reporter measured 1.3 KB (bare EML) while calling
+  `XWF_OpenItem(hVol, 1256, 0x2000)`. He reached the right conclusion himself on
+  2026-05-22 — *not* a `XWF_GetProp` problem, but `XWF_OpenItem` not embedding —
+  and X-Ways confirmed the next day that **the flag value in the documentation
+  was wrong: `0x8000`, not `0x2000`**, and corrected the page. With `0x8000` the
+  size functions report the embedded size. Do **not** write a read-to-EOF
+  workaround for this.
 
 ---
 

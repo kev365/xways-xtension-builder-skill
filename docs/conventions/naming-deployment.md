@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-07-04
+last_updated: 2026-08-12
 author: project
 ---
 
@@ -28,6 +28,13 @@ The build system then copies the DLL into a **deploy bundle** whose path uses
     `xtensions\` deploy bundle exists for consistency: one self-contained
     folder per X-Tension (DLL + cfg sidecar + helper exe) at a stable path the
     analyst registers once and rebuilds never invalidate.
+
+## Contents
+
+- Pattern
+- Deploy targets (which install)
+- Dependent DLLs beside the X-Tension (v20.8+)
+- Do / Don't
 
 ## Pattern
 
@@ -87,6 +94,29 @@ Shared helper binaries live one level up at `xtensions\tools\` (e.g.
 `tools\EZTools\`, `tools\Hayabusa\`) so multiple X-Tensions reuse the same
 fetched tools; any shared tool-fetcher utility can sit beside them under
 `xtensions\`.
+
+## Dependent DLLs beside the X-Tension (v20.8+)
+
+If your X-Tension **statically** links against extra DLLs — i.e. they are named
+in the import table rather than `LoadLibrary`'d on demand — those DLLs were
+historically **not found** when they sat next to the X-Tension, unless that
+directory happened to be the X-Ways install directory or another
+search-path-special location.
+
+From **v20.8** X-Ways loads X-Tensions with `LOAD_WITH_ALTERED_SEARCH_PATH`, so
+the X-Tension's **own directory** is searched for its dependencies. That is what
+makes the per-X-Tension bundle layout above work for native dependencies as well
+as for helper exes.
+
+**Two caveats worth designing around.** The behaviour is **user-disableable** —
+there is a checkbox to turn it off if it causes problems — so a bundle that
+*requires* it can still fail on an analyst's machine. And it does nothing for
+hosts older than v20.8. If you can, prefer loading optional dependencies
+dynamically with an explicit path derived from `GetModuleFileNameW(g_hSelf)`,
+which works regardless of the host version or the checkbox.
+
+Source: the X-Tension Programming board, 2023-04-13 (see
+[forum-xtensions-distilled.md](../forum-xtensions-distilled.md)).
 
 ## Do / Don't
 

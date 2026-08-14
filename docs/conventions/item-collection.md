@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-07-04
+last_updated: 2026-08-12
 author: project
 ---
 
@@ -40,6 +40,13 @@ you'll add items). Empirically verified.
 `CollectItem` / `ResetItems`: deduped, mutex-guarded collection) and its `XT_Prepare` /
 `XT_ProcessItem(Ex)` call sites.
 
+## Contents
+
+- Pattern
+- Detecting that the analyst cancelled the run
+- Remembering what you already processed, across runs
+- Do / Don't
+
 ## Pattern
 
 When you collect selected items to process later (e.g. in a dialog-driven X-Tension), route **both**
@@ -66,6 +73,48 @@ LONG __stdcall XT_ProcessItemEx(LONG id, HANDLE, void*) { CollectItem(id); retur
 
 If instead you do the work **inline** per item (carver/classifier — no collection), still synchronise
 any shared counters/output because RVS is multi-threaded, and put the work in `XT_ProcessItemEx`.
+
+## Detecting that the analyst cancelled the run
+
+Call **`XWF_ShouldStop` in `XT_Finalize`** — that is X-Ways' own answer to "how
+does my X-Tension learn the RVS was cancelled" (X-Tension Programming board,
+2026-08-05). It matters because `XT_Finalize` still fires after a cancelled run,
+so without the check an X-Tension happily does its post-enumeration work on a
+truncated item list.
+
+**Two caveats, both live as of 2026-08-12.**
+
+The same reporter found `XWF_ShouldStop` **always returned false inside
+`XT_ProcessItemEx`** even when the user aborted, while returning true in
+`XT_Finalize`. Behaviour in `XT_ProcessItem` (the non-`Ex` callback, where the
+collect-only pattern polls it) has not been reported either way, so treat an
+abort check in a per-item callback as **unconfirmed** rather than reliable.
+
+He then found `XT_Finalize` did **not** always return true either, without
+finding the pattern; X-Ways replied that it should be consistent and asked for a
+retest on 21.9 Beta. So this is the best available signal, not a guarantee.
+
+Polling `XWF_ShouldStop` per N items is still worth doing regardless of its
+return value: since v19.3 Preview 1 the call also pumps the message queue and
+keeps the host repainting — X-Ways explicitly says you are "doing something good
+already by making the calls in the first place". See
+[xtension-invocation.md](../xtension-invocation.md).
+
+## Remembering what you already processed, across runs
+
+There is no API for per-item X-Tension state. The vendor's recommended shape
+(X-Tension Programming board, 2019-06-26) is an external file you own:
+
+- Put it in the evidence object's own volume-snapshot directory —
+  `XWF_GetEvObjProp` with `nPropType = 12`. Anything stored there is **deleted
+  along with the snapshot when the user takes a new volume snapshot**, so your
+  state cannot silently desynchronise from the items it describes.
+- Key it by evidence-object ID (`XWF_GetEvObjProp`, `nPropType = 1`) and case ID
+  (`XWF_GetCaseProp` with `XWF_CASEPROP_ID`).
+- A bitmap of one bit per snapshot item is enough to record "already processed".
+- If you keep the file somewhere else instead, detect a re-taken snapshot
+  yourself by comparing the stored **volume snapshot ID** (`nPropType = 4`)
+  against the current one.
 
 ## Do / Don't
 
