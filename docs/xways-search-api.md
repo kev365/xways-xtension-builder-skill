@@ -203,19 +203,19 @@ think you are running once may run once per evidence object.
 - **`XWF_Search` re-enters your own X-Tension**: each call ran our
   `XT_Finalize` (with `nOpType = 2`, LSS) before returning — entry points must
   be re-entrancy-safe if you call `XWF_Search`.
-- **Post-search host instability**: every CLI-context run in which
-  `XWF_Search` executed — even cleanly — ended with runtime error 217 at the
-  same address during shutdown. Tracked as a bug candidate; treat `XWF_Search`
-  from CLI-launched X-Tensions as hazardous on 21.9 Beta 1 until narrowed.
+- **Post-search host instability**: every run in which `XWF_Search`
+  executed — even cleanly, CLI-launched *and* GUI-session alike — ended with
+  runtime error 217 at the same address. Tracked as a bug candidate; treat
+  `XWF_Search` as hazardous on 21.9 Beta 1 regardless of context.
 
 **On the hit callback:** the official prose (missed in this page's first
 distillation) says *"Only if the XWF_SEARCH_CALLPSH flag is specified, X-Ways
 Forensics will call XT_ProcessSearchHit(), if exported, for each hit"* — i.e.
 the trap stated at the top of this page is the *default*, and `CALLPSH`
 (`0x01000000`, observed from v16.8 SR-5) is the documented opt-in. **Empirically
-on 21.9 Beta 1 (CLI-launched, from `XT_Prepare`) the opt-in did not work**: two
-searches with `CALLPSH` and a needle guaranteed present delivered zero
-callbacks. See the [conflicts register](xways-sdk-conflicts-test-plan.md)
+on 21.9 Beta 1 the opt-in did not work in any tested context**: CLI-launched
+and GUI-session runs both delivered **zero callbacks against a term with 2,658
+confirmed hits**. See the [conflicts register](xways-sdk-conflicts-test-plan.md)
 entry 2 for caveats and status.
 
 ## The `XWF_SEARCH_*` flag family

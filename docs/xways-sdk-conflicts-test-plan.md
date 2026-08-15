@@ -67,9 +67,12 @@ marked **mutating** or **crash-risk** must never run against a real case.
   `CALLPSH` delivered zero of them. "Hits found, callbacks withheld" is
   confirmed. (The morning's `$Boot` needle shows `(0)` hits — logical search
   genuinely excludes metafile content, validating the ordinary-file needle
-  rule.) Still untested: GUI-session / RVS-context searches, and whether this
-  is a 21.9 **Beta 1** regression vs long-standing behaviour — the remaining
-  steps before tracker B9(c) is post-ready.
+  rule.) **GUI retest (same day): identical result** — active volume set,
+  snapshot live, `rv=0`, zero callbacks; and the post-search runtime 217
+  reproduced in the GUI session too. Both behaviours are
+  **context-independent on 21.9 Beta 1**. Remaining before tracker B9 is
+  post-ready: a 21.8 cross-check to separate Beta-1 regression from
+  long-standing behaviour.
 - **Bonus findings from the same probes** (see
   [xways-search-api.md](xways-search-api.md)): a **NULL `pCPages` access
   violates inside `XWF_Search`** (0xC0000005 — CodePages is mandatory in

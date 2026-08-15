@@ -2,7 +2,7 @@
 source: X-Ways SDK header (see getting-the-sdk.md) + https://www.x-ways.net/forensics/x-tensions/api.html + empirical
 type: official-doc + empirical-finding
 fetched: 2026-04-19
-last_updated: 2026-08-12
+last_updated: 2026-08-15
 author: X-Ways Software Technology AG; empirical research notes from testing + CLI-wrapper X-Tension runs
 ---
 
@@ -143,6 +143,18 @@ Negative `XT_Prepare` returns (distinct, not interchangeable):
 `XT_Finalize` returns `0` or: `0x01` (v17.6+) refresh the directory-browser listing after `XT_ACTION_DBC` (only needed when you added files); `0x02` (v21.3+) save the volume snapshot. Combine when an item-creating X-Tension runs from DBC.
 
 ## Invocation modes (`nOpType` values)
+
+!!! note "Which gesture produces which op — two conflicting observations"
+    On **21.9 Beta 1** (2026-08-15), both the command-line `XT:` parameter and
+    the GUI **Tools → Run X-Tension** gesture delivered `nOpType = 0`
+    (`XT_ACTION_RUN`) — under which a `0x01` return produces **no per-item
+    callbacks**. An earlier empirical note from **21.8 SR-1** (2026-06-06, in
+    [xways-snapshot-mutation.md](xways-snapshot-mutation.md)) recorded "Run
+    X-Tension on Volume Snapshot → `nOpType = 0x1`". Either the gesture's op
+    changed between builds or the two tests used different gestures
+    (Tools menu vs the RVS dialog's "Run X-Tensions" operation, which runs
+    under refinement and does deliver per-item callbacks). Log `nOpType` and
+    branch on it rather than assuming the gesture→op mapping.
 
 `XT_Prepare` and `XT_Finalize` both receive an `nOpType` (`DWORD`) that tells you which UI gesture invoked the X-Tension. Constants from the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)):
 
