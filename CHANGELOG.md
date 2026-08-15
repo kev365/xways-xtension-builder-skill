@@ -128,6 +128,18 @@ All notable changes to this project are documented here. Versions follow
     README tensions, the `GetHashValue` overflow, the `MAX_PATH` name crash,
     and the carried-over `0x0040` flag ambiguity.
 
+- **First register entry closed the same day — and a new binary-only finding.**
+  A PE-import read of the shipped `XT_Python.dll` (hash-verified against the
+  official SourceForge zip) settled the Python-version contradiction: it links
+  **`python312.dll`**; both readmes are wrong. The same read found an
+  **undocumented load-time dependency on `ins.dll`** — the vendor's private
+  instrumentation library, absent from the bundle but shipped with X-Ways
+  itself — which is why the DLL only loads from the XWF main folder and fails
+  with `ERROR_MOD_NOT_FOUND` anywhere else, and why an out-of-process bridge
+  harness needs an `ins.dll` beside the host EXE. The binary's export table
+  was also verified: exactly the 8 entry points, `XT_ProcessSearchHit`
+  included.
+
 - **Vendor-sample findings folded into existing pages:** `Luhn.cpp`'s hit-
   mutation idioms (the `0x0008` discard flag confirmed in vendor code, in-place
   `nLength` rewrite, the `iSize` version gate, and the `nCodePage == 1200` ⇒

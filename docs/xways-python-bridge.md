@@ -75,12 +75,26 @@ Consequences that matter in practice:
   written by the bridge's `XT_About` — the "About" gesture on `XT_Python.dll`
   *is* the script picker (a multi-select `.py` file dialog). That is what the
   readme's cryptic "click …" instruction refers to.
-- **Which Python version?** The shipped bundle contradicts itself: the
-  2024-05-31 bundle directory is named `3.12`, ships `python312.dll`, and its
-  readme says "requires Python 3.10"; the source drops' readmes say 3.11; the
-  project files still reference 3.7 and 2.7 paths. **The `pythonXYZ.dll`
-  filename in the bundle you deploy is the only trustworthy statement** of the
-  required version.
+- **Which Python version? Settled 2026-08-14 by the binary itself:** the
+  shipped `XT_Python.dll`'s PE import table links **`python312.dll`**. The
+  bundle readme's "requires Python 3.10" and the source drops' "3.11" are both
+  wrong for this binary; the DLL filename in the bundle was the truth-teller.
+  Check the import table (or the shipped `pythonXYZ.dll`) for any future
+  bundle, not the readme.
+- **Undocumented dependency: `ins.dll`.** The shipped DLL has a *load-time*
+  import of `ins.dll` — three symbols (`stEnterScope`, `stSetOp`, `stReturn`)
+  from the author's private instrumentation library, i.e. the vendor shipped an
+  instrumented build. The bundle does not contain `ins.dll`; **X-Ways itself
+  ships it** in the install root, and Windows always searches the EXE's
+  directory, so inside X-Ways it resolves invisibly. Outside X-Ways the DLL
+  fails to load with `ERROR_MOD_NOT_FOUND` (126) — verified 2026-08-14. This
+  is the real teeth behind the readme's "extract into the XWF main folder"
+  instruction, and it means any out-of-process harness for the bridge must put
+  a real or stub `ins.dll` beside the host EXE.
+- **The binary's export table matches the source exactly** (verified
+  2026-08-14): the 8 entry points including `XT_ProcessSearchHit`, and no
+  `XT_PrepareSearch` — independent, binary-level confirmation of the
+  spreadsheet correction above.
 
 ## The 46 methods, by group
 

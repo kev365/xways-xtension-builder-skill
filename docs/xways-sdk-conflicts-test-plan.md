@@ -91,15 +91,13 @@ marked **mutating** or **crash-risk** must never run against a real case.
 
 ## 5. Which Python DLL does the shipped bridge bind?
 
-- **In tension:** the binary bundle is named 3.12 and ships `python312.dll`;
-  its own readme says "requires Python 3.10"; both source drops' readmes say
-  3.11; the project files reference 3.7/2.7
-  ([xways-python-bridge.md](xways-python-bridge.md)).
-- **Probe:** no X-Tension needed. `dumpbin /dependents XT_Python.dll` (or a
-  PE-import read) names the exact `pythonXY.dll` the binary links. Then load in
-  X-Ways with only that DLL present and run a one-line script printing
-  `sys.version` for belt-and-braces.
-- **Risk:** none.
+**RESOLVED 2026-08-14** — PE-import read of the shipped `XT_Python.dll`
+(hash-verified against the official SourceForge zip): it links
+**`python312.dll`**. Both readmes are wrong. The same read surfaced an
+unexpected second finding — an undocumented load-time dependency on the
+vendor's `ins.dll`, which ships with X-Ways itself, not with the bundle.
+Findings recorded in [xways-python-bridge.md](xways-python-bridge.md); this
+entry is kept for numbering stability.
 
 ## 6. Python template README vs SDK statements
 
@@ -158,8 +156,9 @@ marked **mutating** or **crash-risk** must never run against a real case.
 
 ## Working the list
 
-Cheap and safe first: **4 and 5 need no case at all** (4 rides along on any
-run; 5 is a PE-import read). **1 and 3 are read-only** and can share one probe
+Cheap and safe first: **4 needs no case at all** (it rides along on any run);
+5 was closed the same day this register was written, by exactly the promised
+PE-import read. **1 and 3 are read-only** and can share one probe
 X-Tension. 2, 6, 7, 8, 9 each mutate or risk crashing and get their own
 disposable case. Entries 7 and 8 exist to *confirm a hazard*, not to enable a
 feature — a "still crashes" result just hardens the existing warnings.
