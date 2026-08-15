@@ -114,8 +114,8 @@ casing. Many "functions" are convenience splits of a single C call, so the
 | `xwf.GetItemParent(itemID)` | `XWF_GetItemParent` | |
 | `xwf.GetItemInformation(itemID, infoType)` | `XWF_GetItemInformation` | Returns a **2-tuple `(value, success)`** — the only wrapper that surfaces the success flag. |
 | `xwf.GetComment(itemID)` / `xwf.AddComment(itemID, comment, howToAdd)` | `XWF_GetComment` / `XWF_AddComment` | `howToAdd` optional, default = replace; passed straight through to the C API. |
-| `xwf.GetReportTableAssocs(itemID)` | `XWF_GetReportTableAssocs` | Comma-separated string. Fixed 2048-wchar buffer — see bugs. |
-| `xwf.AddToReportTable(itemID, name, flags)` | `XWF_AddToReportTable` | `flags` optional. |
+| `xwf.GetReportTableAssocs(itemID)` | `XWF_GetReportTableAssocs` | Comma-separated string. Fixed 2048-wchar buffer — see bugs. The bridge predates the rename to `XWF_GetLabels`; the old export still resolves on current hosts. |
+| `xwf.AddToReportTable(itemID, name, flags)` | `XWF_AddToReportTable` | `flags` optional. Pre-rename name for `XWF_Label` — same note as above. |
 | `xwf.GetHashSetAssocs(itemID)` | `XWF_GetHashSetAssocs` | Capped ~1600 wchars + leaks — see bugs. |
 | `xwf.GetHashValue(itemID, hashType)` | `XWF_GetHashValue` | `hashType`: 1, 2 (primary/secondary) or 256–259 (PhotoDNA 1–4). Returns lowercase hex string or `None`. **Broken for hashes wider than 128 bits** — see bugs. |
 | `xwf.GetExtractedMetadata(itemID)` | `XWF_GetExtractedMetadata` | |

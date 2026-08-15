@@ -86,15 +86,16 @@ in these notes differ by service release, and this is the only place you are
 told which host you are running under. The crate treats `info == 0`, or a zero
 high word, as invalid and refuses to load.
 
-**Corroborated by the SDK itself (2026-08-14), still not by the official page.**
-The 2024-05-31 SDK header packs the same layout into a `CallerInfo` struct
-(`byte lang; byte ServiceRelease; WORD version`), and the SDK's C# manager
-shift-unpacks identically — so three independent sources (community crate,
-vendor struct, vendor C#) agree on the decode. Empirical confirmation on a live
-host is still the missing piece
-([xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md)). A
-version check that misparses is worse than none: it refuses to run on the hosts
-it was written for.
+**Confirmed live (2026-08-15).** On a host banner-identified as X-Ways
+Forensics 21.9 Beta 1, `XT_Init` received `nVersion = 0x088E0001`: hi16 `2190`
+→ v21.9, byte1 `0` → SR-0, byte0 `1` → language 1 — exactly the decode above.
+`nFlags` arrived as `0x89` = `XT_INIT_XWF | XT_INIT_BETA |
+XT_INIT_ALTERED_SEARCH_PATH`, matching the flag table for a beta build with
+the altered-search-path default. (Previously corroborated by the 2024-05-31
+SDK's `CallerInfo` struct, the SDK's C# manager, and xwf-api-rs — but never a
+live host; the official page still calls the parameter a bare `nVersion`.)
+Watch the arithmetic all the same: a version check that misparses is worse
+than none — it refuses to run on the hosts it was written for.
 
 Most X-Tensions that use the Events API or other forensic-license-only features should refuse to load on `WHX`/`XWI` callers:
 

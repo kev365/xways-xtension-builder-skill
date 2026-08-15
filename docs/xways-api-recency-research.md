@@ -2,7 +2,7 @@
 source: SourceForge SDK page (xwf-api-rs v2-develop reviewed 2026-08-13), X-Ways 21.5–21.9 release notes / changelog, live API HTML (checked 2026-08-12), github.com/ThomasVogl/xwf-api-rs, the 21.8 + 21.9 announcement threads, 21.7 / 21.8 X-Tension behaviour notes (2026-05-13)
 type: research-summary
 fetched: 2026-05-03
-last_updated: 2026-08-14
+last_updated: 2026-08-15
 author: empirical research notes
 ---
 
@@ -168,7 +168,7 @@ Research leads that would extend or confirm the findings above:
 - Cross-check [Donovoi/X-Ways-MCP](https://github.com/Donovoi/X-Ways-MCP)'s 21.8 export inventory (`data/xwf-external-surface/`: **77 `XWF_*` exports vs 85 documented**, PE + Ghidra, exe SHA256 recorded; flags `XWF_EDB` / `XT_error` as undocumented candidates) against a runtime export-table walk. Resolve-only on the two candidates — do **not** call them (unknown semantics). See the [exemplars](exemplars.md) entry.
 - ~~Cross-reference the [xways-getprop-reference.md](xways-getprop-reference.md) findings with xwf-api-rs's `EvObjPropType` enum~~ — **done 2026-08-13**; 30/31 named and VSProp 90 identified as `XWF_VSPROP_RESET`.
 - ~~Cross-reference the [xways-itemtype-metadata-text.md](xways-itemtype-metadata-text.md) decoding (`GetItemType` flag bits 29/30/31)~~ — **done 2026-08-13**; the crate names all three, and bit 31 turned out to pack file-format consistency into the second-lowest return byte, correcting a misreading on that page.
-- Confirm the `api_20_9` claims empirically: that `XWF_SelectVolumeSnapshot` returns the item count on v20.9+, and that hash-type `19` is MD5-folded.
+- ~~Confirm that `XWF_SelectVolumeSnapshot` returns the item count on v20.9+~~ — **confirmed 2026-08-15** on 21.9 Beta 1: rv 310 == `XWF_GetItemCount(NULL)` 310. Still open from the same `api_20_9` gating: hash-type `19` = MD5-folded.
 - Pin down the `XT_PREPARE_*` flag values from the 21.6/21.7 forum threads (see [xtension-invocation.md](xtension-invocation.md)).
 
 ## See also

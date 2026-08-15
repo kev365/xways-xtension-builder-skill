@@ -2,7 +2,7 @@
 source: the X-Ways SDK source drops (2024-05-31 zip + git HEAD c46a1bd2) and the XT_Python 3.12 binary bundle — see getting-the-sdk.md; reviewed in full 2026-08-14
 type: research-summary
 fetched: 2026-08-14
-last_updated: 2026-08-14
+last_updated: 2026-08-15
 author: project review of X-Ways Software Technology AG source
 ---
 
@@ -124,8 +124,8 @@ The zip's struct layout and the C# arithmetic agree with each other and with
 the community decode already documented in
 [xtension-invocation.md](xtension-invocation.md) (version word high 16 bits,
 SR, language) — three independent sources now, none of them the official page.
-Empirical confirmation on a live host is tracked in the
-[test plan](xways-sdk-conflicts-test-plan.md).
+**Confirmed live 2026-08-15** on 21.9 Beta 1 (`0x088E0001` → v21.9 SR-0
+lang 1) — see [xtension-invocation.md](xtension-invocation.md).
 
 ## The five C++ samples — what each teaches
 
@@ -154,7 +154,7 @@ copy-paste sources inherits these:
 | Sample | Defect |
 | --- | --- |
 | `QTest.cpp` | The picture-signature check reads `if ((buf[0] = 'B' && buf[1] == 'M') \|\| (buf[0] = 0xff && buf[1] == 0xd8))` — **assignment, not comparison**, in both branches; it comments nearly every 512-byte-readable file as a picture. |
-| `QTest.cpp` | Prints `XWF_GetProp(hVolume, 0, nullptr)` with an `" MB"` label without dividing — conflicts with the byte-scale reading in [xways-getprop-reference.md](xways-getprop-reference.md); tracked in the test plan. |
+| `QTest.cpp` | Prints `XWF_GetProp(hVolume, 0, nullptr)` with an `" MB"` label without dividing — **confirmed wrong 2026-08-15**: the value is in bytes ([xways-getprop-reference.md](xways-getprop-reference.md)). |
 | `Luhn.cpp` | In the `nCodePage == 1200` branch it computes the wide length but **never copies the hit bytes into the buffer** — it validates uninitialised stack memory. The UTF-16 path never worked. |
 | `Luhn.cpp` + `QTest.cpp` + `XT_Timer.cpp` + `New.cpp` | `#pragma pack(2)` before the local `SearchHitInfo` **without push/pop** — 2-byte packing stays in force for every struct declared after it in the translation unit. Only `Python.cpp` does `#pragma pack(push/pop)` correctly. Use push/pop in real code. |
 | `XT_Timer.cpp` | Deciseconds computed as `delta % 10` (should be `(delta % 1000) / 100`); one raw `wcscat` into a fixed 100-wchar buffer that long locale date strings can overrun. |

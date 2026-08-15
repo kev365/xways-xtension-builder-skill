@@ -154,6 +154,31 @@ All notable changes to this project are documented here. Versions follow
   **deprecated**, with `NULL` = physical / `1` = logical / `2` = valid data
   length — reframing QTest's "deviant sizes" as physical-vs-logical by design.
 
+- **First live X-Ways runs — headless, on 21.9 Beta 1 — close four register
+  entries and two adjacent unknowns.** Two 13-second command-line runs
+  (`NewCase: AddImage: Override:1 XT:… auto`) against a 64 MiB E01:
+  - **Register 1:** `XWF_GetProp(hVolume, 0)` returns **bytes** (equal to the
+    exact image size and to `GetEvObjProp(hEv,16)`); QTest's `" MB"` label is
+    wrong. `GetProp(hVol, 2)` returns `-1` on a volume handle.
+  - **Register 3 (first corpus):** across 310 items, all five size views were
+    identical on 309; the sole deviant is the virtual "Free space" item, where
+    `GetItemSize` says `-1` (unknown) and `GetSize` says `0` — the two APIs
+    disagree only on how to spell "no size". Resident/compressed corpora still
+    untested.
+  - **Register 4:** the version word decodes exactly as predicted —
+    `0x088E0001` → v21.9 SR-0 lang 1 on a host banner-identified as 21.9
+    Beta 1 — and `nFlags = 0x89` matched `XWF | BETA | ALTERED_SEARCH_PATH`.
+    The cpp template's `nVersion / 100.0` banner is therefore confirmed wrong.
+  - **`Override:1` auto-confirms the 21.5+ X-Tension-execution prompt** —
+    msglog records `Prompt | … | Override: OK`; fully unattended runs work.
+  - **`XT_ACTION_RUN` (op 0) delivers no per-item callbacks under `0x01`** —
+    confirmed live; the probe grew a self-driving enumeration
+    (`SelectVolumeSnapshot` → `GetItemCount` → `OpenItem`/`Close`) for
+    command-line use, which also **confirmed the v20.9+ claim that
+    `XWF_SelectVolumeSnapshot` returns the item count** (310 == 310).
+  - Also recorded: `RVS:~` fails on a fresh install (`Error #9 Cannot load "?"`
+    — the `~` needs stored refinement settings).
+
 - **Vendor-sample findings folded into existing pages:** `Luhn.cpp`'s hit-
   mutation idioms (the `0x0008` discard flag confirmed in vendor code, in-place
   `nLength` rewrite, the `iSize` version gate, and the `nCodePage == 1200` ⇒

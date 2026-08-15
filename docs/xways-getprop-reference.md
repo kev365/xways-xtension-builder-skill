@@ -125,8 +125,9 @@ Empirical sweep on a partition volume handle (observed 2026-05-03):
 
 | `nPropType` (volume) | Returns | Notes |
 | ---: | --- | --- |
-| 0 | Volume size in bytes | Empirical: matches `XWF_GetEvObjProp` property 16. |
-| 1 | Same as 0 | Possibly an alias or sector count. |
+| 0 | Volume size **in bytes** | **Confirmed 2026-08-15** (21.9 Beta 1): equals `XWF_GetEvObjProp` 16 and the exact image byte size (64 MiB image → 67108864). The SDK's QTest.cpp labels this value `" MB"` — that label is wrong. |
+| 1 | Same as 0 (logical size) | Equal to 0 on a volume handle, confirmed live. |
+| 2 | Valid data length | Returns **-1** on a volume handle (observed 2026-08-15) — meaningful for items only. |
 | 2 | (numeric) | Internal pointer-shaped value. Probably opaque. |
 | 16 | (numeric, small) | Empirical 3 — possibly a bitmap of features. |
 | **3..15, 17..127** | Identical pointer-shaped value across all of these | **Sentinel** — the function returns the same pointer-looking value for every unsupported property number, suggesting a single "unknown" handler. **Don't treat anything past 2 (or 16) as live.** |

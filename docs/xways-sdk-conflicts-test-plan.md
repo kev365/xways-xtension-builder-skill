@@ -43,11 +43,12 @@ marked **mutating** or **crash-risk** must never run against a real case.
   `XWF_GetEvObjProp` property 16" (documented as size **in bytes**) — which
   argues the vendor label is just sloppy, but a *volume handle* vs *item
   handle* difference has not been excluded.
-- **Probe:** read-only. On a volume of known size, log
-  `XWF_GetProp(hVolume, 0)`, `XWF_GetProp(hVolume, 1)`,
-  `XWF_GetEvObjProp(hEv, 16)` and the size X-Ways shows in the case tree.
-  One run settles it.
-- **Risk:** none.
+- **RESOLVED 2026-08-15** (xways-sdk-probe on 21.9 Beta 1, 64 MiB E01):
+  `GetProp(hVol,0) = GetProp(hVol,1) = GetSize(hVol,NULL) =
+  GetEvObjProp(hEv,16) = 67108864` — exactly the image size. **Bytes.**
+  QTest's `" MB"` label is simply wrong. Also observed:
+  `GetProp(hVol,2)` (valid data length) returns `-1` on a volume handle.
+  Finding recorded in [xways-getprop-reference.md](xways-getprop-reference.md).
 
 ## 2. `XWF_SEARCH_CALLPSH` — does your own search reach your hit callback?
 
@@ -76,12 +77,17 @@ marked **mutating** or **crash-risk** must never run against a real case.
   physical-vs-item-size — deviance is *expected by design* for resident,
   compressed and slack-bearing files; the open question is only whether
   `GetItemSize == GetSize(1) == GetProp(1)` holds universally.
-- **Probe:** read-only sweep: for every item (or a large sample), compare
-  `XWF_GetItemSize(id)` with `XWF_GetSize(hItem, NULL)` and with
-  `XWF_GetProp(hItem, 0/1/2)`; log only mismatch rows with item type,
-  deletion state, and whether the item is compressed/resident. NTFS resident
-  files, slack semantics and carved files are the likely divergence classes.
-- **Risk:** none (open items with `0x0002` suppress-errors).
+- **RESOLVED for a first corpus, 2026-08-15** (xways-sdk-probe, 21.9 Beta 1,
+  310-item snapshot of a 64 MiB E01): **309/310 items had all five size views
+  identical** (`GetItemSize` = `GetSize(NULL)` = `GetSize(1)` = `GetProp(0)` =
+  `GetProp(1)`), and `GetProp(0/1)` matched `GetSize(NULL/1)` on every single
+  item — the documented deprecation mapping holds exactly. The one deviant was
+  the **virtual "Free space" item**: `GetItemSize = -1` (documented "unknown
+  size") while `GetSize` returns `0` — so the two APIs disagree on how to say
+  "no size", which is likely all QTest's "deviant sizes" checker ever caught.
+  **Residual caveat:** the corpus had no NTFS-resident, compressed or carved
+  items; re-run the sweep on a richer image before calling the equality
+  universal. Sweep code lives in the probe's `CompareItemSizes`.
 
 ## 4. `XT_Init` version-word decode
 
@@ -89,10 +95,16 @@ marked **mutating** or **crash-risk** must never run against a real case.
   parameter packs `version(hi16) | SR(8) | language(8)` — but the current
   official header calls it a bare `nVersion` and no live host has confirmed the
   arithmetic ([xtension-invocation.md](xtension-invocation.md)).
-- **Probe:** trivial — log the raw DWORD and the decoded triple in `XT_Init`
-  on a host whose exact version/SR is known from the About box; run on two
-  different SRs if available.
-- **Risk:** none. Piggyback on any other probe run.
+- **RESOLVED 2026-08-15** (xways-sdk-probe on a host banner-identified as
+  "X-Ways Forensics BYOD 21.9 Beta 1 x64"): raw `nVersion = 0x088E0001`
+  decodes as hi16 `2190` → **v21.9**, byte1 `0` → **SR-0** (a Beta 1 has no
+  SR), byte0 `1` → language 1. The packed-word decode is confirmed on a live
+  host. Bonus: `nFlags = 0x89` = `XWF | BETA | ALTERED_SEARCH_PATH` — all
+  three bits exactly as the flag table predicts for a beta with the
+  altered-search-path default on. Recorded in
+  [xtension-invocation.md](xtension-invocation.md). Consequence: the cpp
+  template's `nVersion / 100.0` banner (entry 6) is now confirmed wrong —
+  it prints `1435238.41` on this host.
 
 ## 5. Which Python DLL does the shipped bridge bind?
 
@@ -172,9 +184,14 @@ entry is kept for numbering stability.
 
 ## Working the list
 
-Cheap and safe first: **4 needs no case at all** (it rides along on any run);
-5 was closed the same day this register was written, by exactly the promised
-PE-import read.
+**Four of nine entries are now closed** (1, 3-first-corpus, 4, 5), all within
+a day of the register being written — 5 by a static PE read, the rest by one
+headless 13-second X-Ways run. The same runs settled two adjacent unknowns for
+free: `Override:1` **does** auto-confirm the 21.5+ X-Tension-execution prompt
+(msglog logs `Prompt | … | Override: OK`), and `XWF_SelectVolumeSnapshot`
+**does** return the item count on a modern host (rv 310 == `GetItemCount` 310,
+the v20.9+ community claim). Remaining open: 2, 6 (probe parts), 7, 8, 9 —
+the mutating and crash-risk tier.
 
 **Probe status (2026-08-14):** a read-only probe X-Tension covering entries
 1, 3 and 4 exists — scaffolded *with the authoring skill* (its first end-to-end
