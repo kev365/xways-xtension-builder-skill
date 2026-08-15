@@ -52,18 +52,30 @@ marked **mutating** or **crash-risk** must never run against a real case.
 
 ## 2. `XWF_SEARCH_CALLPSH` — does your own search reach your hit callback?
 
-- **In tension:** the official prose says `XT_ProcessSearchHit` is not called
-  for a search your X-Tension starts; the `XWF_SEARCH_CALLPSH` (`0x01000000`)
-  flag name says otherwise; **no code anywhere** — SDK samples, Python bridge,
-  C# tree, community bindings — has ever demonstrated `XWF_Search` at all
-  ([xways-search-api.md](xways-search-api.md)).
-- **Probe:** from `XT_Prepare`, call `XWF_Search` with a term guaranteed to hit
-  (a string planted in a test file), once with and once without `CALLPSH`;
-  count `XT_ProcessSearchHit` invocations and log every hit's
-  `nSearchTermID`/offsets. Also record whether the search's hits appear in the
-  GUI hit list afterwards (`DISPLAYHITS` on/off).
-- **Risk:** **mutating** — creates search hits and terms in the case (8,191
-  search-term cap per case). Throwaway case only.
+- **Documentation answer found 2026-08-15**, in official prose missed by the
+  original distillation: *"Only if the XWF_SEARCH_CALLPSH flag is specified,
+  X-Ways Forensics will call XT_ProcessSearchHit(), if exported, for each
+  hit... Other X-Tensions' XT_ProcessSearchHit() will not be called."* So the
+  documented design is: not called by default, **CALLPSH is the opt-in**.
+- **Empirical result (21.9 Beta 1, CLI-launched X-Tension, `XT_Prepare`,
+  `hVolume=0`, LOGICAL, CodePages supplied): `CALLPSH` delivered ZERO
+  `XT_ProcessSearchHit` callbacks** — twice, with two different needles, the
+  second (`<?xml version='1.0' enco`) taken verbatim from an in-scope ordinary
+  file that the search must hit. Baseline (no CALLPSH) also 0, as documented.
+  **Residual caveat:** the searches' hit counts were not independently
+  confirmed (the post-search host crash, below, prevented saving/inspecting
+  the case) — pending a GUI read of the term hit counts, "hits found but not
+  delivered" vs "no hits found" is not fully separated. Also untested: whether
+  CALLPSH delivers in a GUI-session or RVS-context search rather than a
+  CLI-launched run.
+- **Bonus findings from the same probes** (see
+  [xways-search-api.md](xways-search-api.md)): a **NULL `pCPages` access
+  violates inside `XWF_Search`** (0xC0000005 — CodePages is mandatory in
+  practice); each `XWF_Search` call **re-enters your own `XT_Finalize`**
+  (op=2) before returning; and **every run in which `XWF_Search` executed
+  ended with Delphi runtime error 217 at the same address during shutdown**,
+  even when the searches completed cleanly — a reproducible host bug candidate
+  (tracker B9).
 
 ## 3. `XWF_GetItemSize` vs `XWF_GetSize` — "deviant sizes"
 

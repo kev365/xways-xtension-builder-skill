@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XT_functions.html + XWF_functions.html (official), distilled 2026-08-12; XWF_SEARCH_* family from XT_API.pas (hmrc/XT_XWF-AutoCTR, Apache-2.0), 2026-08-13
 type: official-doc
 fetched: 2026-08-12
-last_updated: 2026-08-13
+last_updated: 2026-08-15
 author: X-Ways Software Technology AG (distilled); project notes
 ---
 
@@ -18,10 +18,15 @@ Two directions, and they do not compose the way you would expect:
 | **X-Ways searches, you observe** | `XT_PrepareSearch` before, `XT_ProcessSearchHit` per hit |
 | **You search** | `XWF_Search` from `XT_Prepare` or `XT_Finalize` |
 
-**The trap:** `XT_ProcessSearchHit` is **not called for a search your own
-X-Tension started** with `XWF_Search`. If you kick off a search expecting your
-hit callback to fire, nothing happens. Observing hits and driving a search are
-separate modes, not two halves of one pipeline.
+**The trap:** by default `XT_ProcessSearchHit` is **not called for a search
+your own X-Tension started** with `XWF_Search`. The documented opt-in is the
+`XWF_SEARCH_CALLPSH` flag (*"Only if the XWF_SEARCH_CALLPSH flag is specified,
+X-Ways Forensics will call XT_ProcessSearchHit(), if exported, for each
+hit"* — official prose this page originally missed). **Empirically the opt-in
+delivered zero callbacks on 21.9 Beta 1 in a CLI-launched context** — see the
+`XWF_Search` section and the
+[conflicts register](xways-sdk-conflicts-test-plan.md) before designing around
+either behaviour.
 
 ## Contents
 
@@ -178,7 +183,40 @@ error. Run as part of refinement, it can fire automatically for every selected
 evidence object if the analyst applies the X-Tension that way — so a search you
 think you are running once may run once per evidence object.
 
-And again: hits from this search do **not** reach your `XT_ProcessSearchHit`.
+**Corrections and live findings (2026-08-15, 21.9 Beta 1):**
+
+- **`hVolume` must be `0`** — official: "Currently must be 0, function is
+  always applied to the active volume."
+- **`pCPages` is mandatory in practice.** Passing `NULL` — which the signature
+  invites — **access-violates inside X-Ways** (0xC0000005; surfaces as Delphi
+  runtime error 217 and kills the host if unhandled). Pass a `CodePages`
+  struct with `nSize` set and at least one code page (e.g. 1252).
+- **`nSize` may be 28** (packed, through `nSearchWindow`) — official: "should
+  cover at least all member variables up to nSearchWindow". The two alphabet
+  pointers are v20.0+ extensions, and **both overwrite the analyst's alphabet
+  settings permanently when non-NULL** ("The previously used alphabet will be
+  lost") — leave them NULL unless that is intended.
+- **The SDK C header's `SearchInfo` is wrong twice**: it lacks the two
+  alphabet members and is **not packed** (default alignment puts `hVolume` at
+  offset 8; the packed/official layout has it at 4). Use the official page's
+  `#pragma pack(2)` 7-field layout.
+- **`XWF_Search` re-enters your own X-Tension**: each call ran our
+  `XT_Finalize` (with `nOpType = 2`, LSS) before returning — entry points must
+  be re-entrancy-safe if you call `XWF_Search`.
+- **Post-search host instability**: every CLI-context run in which
+  `XWF_Search` executed — even cleanly — ended with runtime error 217 at the
+  same address during shutdown. Tracked as a bug candidate; treat `XWF_Search`
+  from CLI-launched X-Tensions as hazardous on 21.9 Beta 1 until narrowed.
+
+**On the hit callback:** the official prose (missed in this page's first
+distillation) says *"Only if the XWF_SEARCH_CALLPSH flag is specified, X-Ways
+Forensics will call XT_ProcessSearchHit(), if exported, for each hit"* — i.e.
+the trap stated at the top of this page is the *default*, and `CALLPSH`
+(`0x01000000`, observed from v16.8 SR-5) is the documented opt-in. **Empirically
+on 21.9 Beta 1 (CLI-launched, from `XT_Prepare`) the opt-in did not work**: two
+searches with `CALLPSH` and a needle guaranteed present delivered zero
+callbacks. See the [conflicts register](xways-sdk-conflicts-test-plan.md)
+entry 2 for caveats and status.
 
 ## The `XWF_SEARCH_*` flag family
 

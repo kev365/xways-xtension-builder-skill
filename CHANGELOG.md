@@ -183,6 +183,31 @@ All notable changes to this project are documented here. Versions follow
   - Also recorded: `RVS:~` fails on a fresh install (`Error #9 Cannot load "?"`
     — the `~` needs stored refinement settings).
 
+- **The search probes ran — `XWF_Search` behaves very differently from its
+  documentation.** Findings from six live runs on 21.9 Beta 1, folded into the
+  search page and the conflicts register: **NULL `pCPages` access-violates
+  inside X-Ways** (CodePages is mandatory in practice; the crash surfaces as
+  Delphi runtime error 217 and kills the host); `hVolume` must be 0; the SDK
+  C header's `SearchInfo` is wrong twice (missing the two v20.0 alphabet
+  members, and unpacked where the official layout is `#pragma pack(2)`); the
+  alphabet pointers permanently overwrite the analyst's alphabet settings;
+  each `XWF_Search` call **re-enters the calling X-Tension's own
+  `XT_Finalize`** (op=2); every CLI-context run that executed `XWF_Search`
+  ended with a reproducible runtime error 217 at shutdown; and
+  `XWF_SEARCH_CALLPSH` — whose official prose ("will call
+  XT_ProcessSearchHit for each hit") was itself recovered this pass after
+  being missed in the original distillation — **delivered zero callbacks**
+  with a needle guaranteed present (caveats tracked in the register).
+- **The CLI snapshot-visibility rule, mapped across nine runs:** an `XT:`
+  X-Tension sees a volume snapshot only when refinement ran **in the same
+  session** — fresh `AddImage:` evidence and reopened cases (even with a
+  saved 137k-item snapshot) both report `GetItemCount = 0`, `XWF_OpenEvObj`
+  notwithstanding. The unlock is a preceding no-op `RVS:~` with stored
+  all-unchecked settings. Recorded in `xways-command-line.md`.
+- **Register #3 quantified on NTFS:** 5,000-item sweep — 1,353 deviants,
+  every one a directory (`GetItemSize` > `GetSize` by a varying margin);
+  `GetProp(0/1)` matched `GetSize(NULL/1)` on all 5,000.
+
 - **Vendor-sample findings folded into existing pages:** `Luhn.cpp`'s hit-
   mutation idioms (the `0x0008` discard flag confirmed in vendor code, in-place
   `nLength` rewrite, the `iSize` version gate, and the `nCodePage == 1200` ⇒
