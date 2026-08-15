@@ -68,9 +68,14 @@ marked **mutating** or **crash-risk** must never run against a real case.
 
 - **In tension:** `QTest.cpp` ships a disabled checker comparing the two under
   the label `"Deviant sizes for …"` — evidence of vendor suspicion, not a
-  documented difference. The official page gives `XWF_GetSize(hItem, lpOptional)`
-  its own mode parameter (physical/logical/valid-data), so a mismatch against
-  `XWF_GetItemSize` may simply be a mode question.
+  documented difference. The official page (re-read 2026-08-14) marks
+  `XWF_GetSize` **deprecated** ("call XWF_GetProp() instead" on 19.9 SR-7+) and
+  defines its modes precisely: `NULL` = volume size / **physical** file size,
+  `(LPVOID)1` = logical size, `(LPVOID)2` = valid data length. So QTest's
+  `GetSize(hItem, NULL)` vs `GetItemSize(nItemID)` comparison is
+  physical-vs-item-size — deviance is *expected by design* for resident,
+  compressed and slack-bearing files; the open question is only whether
+  `GetItemSize == GetSize(1) == GetProp(1)` holds universally.
 - **Probe:** read-only sweep: for every item (or a large sample), compare
   `XWF_GetItemSize(id)` with `XWF_GetSize(hItem, NULL)` and with
   `XWF_GetProp(hItem, 0/1/2)`; log only mismatch rows with item type,
@@ -115,6 +120,17 @@ entry is kept for numbering stability.
 - **Risk:** comment writes are **mutating** — throwaway case.
 - **Resolution target:** template README edits (deferred by decision — this
   pass documents, a later pass fixes the README against the probe result).
+- **Extended 2026-08-14 (cpp template, found by dogfooding a probe scaffold):**
+  two more template claims now in tension with the conventions/SDK:
+  (a) the cpp template's `XT_Init` **logs before checking
+  `XT_INIT_QUICKCHECK`** — it has no `nFlags & 0x20` guard at all, violating
+  the invocation page's own rule ("return 1 on QUICKCHECK without doing real
+  work"); the mock-host harness verifies the guard, so the template fails that
+  test as shipped. (b) the template's banner prints `nVersion / 100.0` as
+  "X-Ways build %.2f" — correct only if the parameter is a bare build number;
+  if the packed-word decode (entry 4) is confirmed, this prints garbage
+  (142868737 / 100 for 21.8 SR-1). Both are template *edits* deferred to the
+  post-probe pass.
 
 ## 7. `xwf.GetHashValue` overflow on wide hashes
 
@@ -158,7 +174,16 @@ entry is kept for numbering stability.
 
 Cheap and safe first: **4 needs no case at all** (it rides along on any run);
 5 was closed the same day this register was written, by exactly the promised
-PE-import read. **1 and 3 are read-only** and can share one probe
+PE-import read.
+
+**Probe status (2026-08-14):** a read-only probe X-Tension covering entries
+1, 3 and 4 exists — scaffolded *with the authoring skill* (its first end-to-end
+dogfood) and verified under a **mock host**: a console EXE that exports stub
+`XWF_*` functions, exploiting the fact that X-Tensions resolve the API against
+the host EXE's export table. All entry points sequence correctly, QUICKCHECK
+stays quiet, the mismatch classifier buckets engineered deviances, 0 failures.
+The mock proves harness-and-DLL mechanics only — entries 1/3/4 still need a
+real X-Ways run (Tier 2) for ground truth. **1 and 3 are read-only** and can share one probe
 X-Tension. 2, 6, 7, 8, 9 each mutate or risk crashing and get their own
 disposable case. Entries 7 and 8 exist to *confirm a hazard*, not to enable a
 feature — a "still crashes" result just hardens the existing warnings.

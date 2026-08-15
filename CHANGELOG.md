@@ -140,6 +140,20 @@ All notable changes to this project are documented here. Versions follow
   was also verified: exactly the 8 entry points, `XT_ProcessSearchHit`
   included.
 
+- **First end-to-end dogfood of the skill, via a probe X-Tension and a mock
+  host.** `new-xtension.ps1` and `build-xtension.ps1` ran clean end to end
+  (scaffold → identity → build gate, `-NoDeploy`). The probe covers register
+  entries 1/3/4 and was verified under a **mock host** — a console EXE that
+  exports stub `XWF_*` functions, which works because X-Tensions resolve the
+  API against the host EXE's export table. 0 failures. The dogfood surfaced
+  two cpp-template defects, recorded (not fixed) per the conflicts-register
+  decision: `XT_Init` logs before checking `XT_INIT_QUICKCHECK` (no `0x20`
+  guard, violating the skill's own convention), and the version banner's
+  `nVersion / 100.0` arithmetic is wrong if the packed-word decode is
+  confirmed. Also re-read from the official page: `XWF_GetSize` is
+  **deprecated**, with `NULL` = physical / `1` = logical / `2` = valid data
+  length — reframing QTest's "deviant sizes" as physical-vs-logical by design.
+
 - **Vendor-sample findings folded into existing pages:** `Luhn.cpp`'s hit-
   mutation idioms (the `0x0008` discard flag confirmed in vendor code, in-place
   `nLength` rewrite, the `iSize` version gate, and the `nCodePage == 1200` ⇒
