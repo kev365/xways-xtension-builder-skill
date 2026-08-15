@@ -62,12 +62,14 @@ marked **mutating** or **crash-risk** must never run against a real case.
   `XT_ProcessSearchHit` callbacks** — twice, with two different needles, the
   second (`<?xml version='1.0' enco`) taken verbatim from an in-scope ordinary
   file that the search must hit. Baseline (no CALLPSH) also 0, as documented.
-  **Residual caveat:** the searches' hit counts were not independently
-  confirmed (the post-search host crash, below, prevented saving/inspecting
-  the case) — pending a GUI read of the term hit counts, "hits found but not
-  delivered" vs "no hits found" is not fully separated. Also untested: whether
-  CALLPSH delivers in a GUI-session or RVS-context search rather than a
-  CLI-launched run.
+  **Caveat closed 2026-08-15 (GUI read of the saved case): the search found
+  2,658 hits** — the term list shows `<?xml version='1.0' enco (2,658)` — and
+  `CALLPSH` delivered zero of them. "Hits found, callbacks withheld" is
+  confirmed. (The morning's `$Boot` needle shows `(0)` hits — logical search
+  genuinely excludes metafile content, validating the ordinary-file needle
+  rule.) Still untested: GUI-session / RVS-context searches, and whether this
+  is a 21.9 **Beta 1** regression vs long-standing behaviour — the remaining
+  steps before tracker B9(c) is post-ready.
 - **Bonus findings from the same probes** (see
   [xways-search-api.md](xways-search-api.md)): a **NULL `pCPages` access
   violates inside `XWF_Search`** (0xC0000005 — CodePages is mandatory in
