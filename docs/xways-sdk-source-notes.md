@@ -100,11 +100,24 @@ C# material (different generations). The one header difference matters:
   LicenseInfo* license)`) and deletes `CallerInfo` — the 21.5 Beta 4 change
   already recorded in [xways-api-recency-research.md](xways-api-recency-research.md).
 
-**Git HEAD's own `Python.cpp` was not updated for that change**: it still
-declares `XT_Init(CallerInfo info, …)` and reads `info.version`, but
-`CallerInfo` no longer exists in git HEAD's header — **the XT_Python project in
-the newer drop cannot compile as shipped**. (Both drops' `XT_Python.vcxproj`
-also still carry the original developer's hardcoded Python 3.7 / 2.7 paths.)
+**The XT_Python project cannot be built from any shipped drop** —
+compile-verified with MSVC 2019 on 2026-08-15, three independent blockers:
+
+1. `Python.cpp` includes **`BGStringTemplates.h`**, which is absent from both
+   current drops (it last shipped in the 2021-04-19 drop).
+2. `BGCPString.h` includes **`libinstrumentation.h`**, which has never shipped
+   in any drop — it is the header of the vendor's private `ins` library (the
+   same one the shipped binary links; see
+   [xways-python-bridge.md](xways-python-bridge.md)). A no-op stub defining
+   `SET_SCOPE`, `RETURN` and the `st*` functions lets compilation proceed.
+3. With both headers supplied, git HEAD still fails at `Python.cpp:1302` —
+   `error C2065: 'CallerInfo': undeclared identifier` — because the
+   `LicenseInfo` change deleted the struct the bridge still uses.
+
+Blockers 1–2 affect the 2024-05-31 zip as well; blocker 3 is git-HEAD-only.
+(Both drops' `XT_Python.vcxproj` also carry the original developer's hardcoded
+Python 3.7 / 2.7 paths.) The likely story is ordinary: an incomplete export
+from an internal tree where the two headers exist.
 
 Practical rule: **build C++ against git HEAD's header; treat the Python project
 as reference source only** (the shipped `XT_Python.dll` binary bundle is what
