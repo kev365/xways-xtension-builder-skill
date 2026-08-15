@@ -169,8 +169,12 @@ All notable changes to this project are documented here. Versions follow
     `0x088E0001` → v21.9 SR-0 lang 1 on a host banner-identified as 21.9
     Beta 1 — and `nFlags = 0x89` matched `XWF | BETA | ALTERED_SEARCH_PATH`.
     The cpp template's `nVersion / 100.0` banner is therefore confirmed wrong.
-  - **`Override:1` auto-confirms the 21.5+ X-Tension-execution prompt** —
-    msglog records `Prompt | … | Override: OK`; fully unattended runs work.
+  - **Corrected the same day:** the X-Tension-execution prompt was in fact
+    clicked by the operator, yet msglog recorded `Prompt | … | Override: OK` —
+    so that msglog line is **not** evidence of auto-confirmation, and whether
+    `Override:1` covers the prompt unattended remains open. A UAC elevation
+    prompt also precedes each launch on this host. The runs were
+    operator-assisted, not fully unattended.
   - **`XT_ACTION_RUN` (op 0) delivers no per-item callbacks under `0x01`** —
     confirmed live; the probe grew a self-driving enumeration
     (`SelectVolumeSnapshot` → `GetItemCount` → `OpenItem`/`Close`) for

@@ -186,9 +186,14 @@ entry is kept for numbering stability.
 
 **Four of nine entries are now closed** (1, 3-first-corpus, 4, 5), all within
 a day of the register being written — 5 by a static PE read, the rest by one
-headless 13-second X-Ways run. The same runs settled two adjacent unknowns for
-free: `Override:1` **does** auto-confirm the 21.5+ X-Tension-execution prompt
-(msglog logs `Prompt | … | Override: OK`), and `XWF_SelectVolumeSnapshot`
+13-second X-Ways run. One "settled" claim was then **un-settled by the
+operator**: the X-Tension-execution prompt appeared on screen and was clicked
+by a human — msglog nonetheless logged `Prompt | … | Override: OK`, so
+**msglog's `Override: OK` is not evidence of auto-confirmation**; whether
+`Override:1` covers this prompt with nobody at the keyboard remains open (the
+dialog's "Do not display this message again" checkbox is the documented
+unattended route). A UAC elevation prompt also preceded each launch. Genuinely
+settled the same day: `XWF_SelectVolumeSnapshot`
 **does** return the item count on a modern host (rv 310 == `GetItemCount` 310,
 the v20.9+ community claim). Remaining open: 2, 6 (probe parts), 7, 8, 9 —
 the mutating and crash-risk tier.
