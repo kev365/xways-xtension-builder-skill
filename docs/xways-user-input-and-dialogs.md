@@ -221,7 +221,7 @@ even if you ignore the result.
 
 ## Caveats
 
-- `XWF_GetUserInput` is **not exposed by `XT_Python.dll`'s embedded `xwf` module** (per the XT_Python readme shipped with the SDK). Python X-Tensions can prompt via `tkinter` or similar instead — but with no parenting to `hMainWnd`, the dialog can be hidden behind X-Ways.
+- `XWF_GetUserInput` is **not exposed by `XT_Python.dll`'s embedded `xwf` module** — verified against the bridge's method table in the SDK's `Python.cpp` (see [xways-python-bridge.md](xways-python-bridge.md); an earlier revision cited the XT_Python readme, which doesn't actually address it). For file/folder input the bridge *does* ship two dialogs of its own — **`xwf.GetOpenFileName()` and `xwf.GetSaveFileName()`**, zero-argument native pickers — reach for those before `tkinter`. For free-text input it's `tkinter` or similar; either way there is no parenting to `hMainWnd`, so the dialog can end up hidden behind X-Ways.
 - The dialog is **modal to the calling thread**. Calling it from a multi-threaded `XT_ProcessItem(Ex)` is wrong — prompt once in `XT_Prepare`, store the answer in a global, consume it during item iteration.
 - **Cancel returns `-1`.** Treat that as "abort the operation" and return `-1` from `XT_Prepare` so X-Ways skips the rest of the run cleanly.
 - The "password hint" flag (`0x10`) is documented as **not yet implemented** — don't rely on it for actual secret-handling.

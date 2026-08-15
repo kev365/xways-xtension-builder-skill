@@ -2,7 +2,7 @@
 source: SourceForge SDK page (xwf-api-rs v2-develop reviewed 2026-08-13), X-Ways 21.5–21.9 release notes / changelog, live API HTML (checked 2026-08-12), github.com/ThomasVogl/xwf-api-rs, the 21.8 + 21.9 announcement threads, 21.7 / 21.8 X-Tension behaviour notes (2026-05-13)
 type: research-summary
 fetched: 2026-05-03
-last_updated: 2026-08-13
+last_updated: 2026-08-14
 author: empirical research notes
 ---
 
@@ -30,7 +30,7 @@ What the git HEAD adds vs the 2024-05-31 zip:
 
 - **`XT_Init` signature change** — `void* lpReserved` is now `LicenseInfo* license`. License info lives in the fourth parameter, not in `nFlags`. Binary-compatible at the call site (no source change required to keep existing X-Tensions building / loading).
 - **No other `X-Tension.h` changes** — every function pointer typedef, every `XWF_*` / `XT_*` / `IIO_*` constant identical to the 2024-05-31 zip. The 23-line diff is exclusively the `XT_Init` block.
-- New `C#/` directory under active development (Björn Ganster commits 2024-06-12 → 2024-07-26) — first official C# binding from the vendor. Not yet evaluated against community alternatives (e.g. kezzier's `XTension_template`).
+- New `C#/` directory under active development (Björn Ganster commits 2024-06-12 → 2024-07-26) — first official C# binding from the vendor. **Evaluated 2026-08-14** ([xways-sdk-source-notes.md](xways-sdk-source-notes.md)): a CLR-hosting shim that wraps exactly **three** functions (`OutputMessage`, `Read`, `GetProp` — the last with a >4 GB truncation bug), marshals callbacks as decimal strings, and never forwards search hits to managed code. Community C# bindings remain far more complete; the official one is a proof of concept.
 - Bugfix `CoInitializeEx → CoInitialize` (file-dialog crash) in `X-Tension.cpp` (commit `512321`, 2024-07-12). Worth porting into any X-Tension that raises file dialogs from `XT_Prepare`.
 - MSVC 2019 project files removed; MSVC 2022 only.
 
@@ -163,7 +163,7 @@ Searches for "xwforensics64.exe exports" / "X-Ways IDA database" returned nothin
 Research leads that would extend or confirm the findings above:
 
 - A `XWF_GetEvObjProp` sweep over `nPropType` 0..127 covers the `100` added in 21.5 SR-5 (see [xways-getprop-reference.md](xways-getprop-reference.md)).
-- A runtime export-table enumeration catches anything new in the binary that the SDK header doesn't declare.
+- A runtime export-table enumeration catches anything new in the binary that the SDK header doesn't declare. Note the SDK's own loader (`X-Tension.cpp`) resolves `XWF_Mount` / `XWF_Unmount` — two functions absent from the SDK's status spreadsheets and from these notes' coverage sources; they'd be caught by such a walk.
 - ~~`XWF_AddToReportTable` flag-bit sweep including `0x0100` and `0x1000`~~ — **closed 2026-08-13.** Both bits are named on the official page and in the v2 branch (`GuiApplyToSelectedItem`, `GuiApplyToDuplicates`); no mutating sweep needed.
 - Cross-check [Donovoi/X-Ways-MCP](https://github.com/Donovoi/X-Ways-MCP)'s 21.8 export inventory (`data/xwf-external-surface/`: **77 `XWF_*` exports vs 85 documented**, PE + Ghidra, exe SHA256 recorded; flags `XWF_EDB` / `XT_error` as undocumented candidates) against a runtime export-table walk. Resolve-only on the two candidates — do **not** call them (unknown semantics). See the [exemplars](exemplars.md) entry.
 - ~~Cross-reference the [xways-getprop-reference.md](xways-getprop-reference.md) findings with xwf-api-rs's `EvObjPropType` enum~~ — **done 2026-08-13**; 30/31 named and VSProp 90 identified as `XWF_VSPROP_RESET`.

@@ -51,6 +51,11 @@ sites**.
     def _log(msg):
         """Visible in the X-Ways Messages window AND in the console (if allocated)."""
         try:
+            # Note: the XT_Python bridge already prepends "<script>: " to every
+            # OutputMessage call, so the [{NAME}] prefix appears doubled in the
+            # Messages window ("myscript.py: [myscript] ..."). Kept anyway for
+            # console/grep symmetry with the C++ convention — but know it's there.
+            # Both arguments are mandatory (flags has no default in the bridge).
             xwf.OutputMessage(f"[{NAME}] {msg}", 0)
         except Exception:
             pass

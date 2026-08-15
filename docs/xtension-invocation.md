@@ -26,6 +26,8 @@ How X-Ways calls into an X-Tension DLL: the entry points, the invocation modes, 
 
 X-Ways calls these by name (no decoration — exported via the `.def` file). Only `XT_Init` is mandatory; the rest are optional and only invoked if you've exported them.
 
+The SDK's own samples model the corollary: **implement everything, export selectively**. `New.cpp` defines all eight entry points but its `.def` exports only `XT_Init` (the rest `;`-commented); `QTest` implements `XT_ProcessItem` and `XT_ProcessSearchHit` yet exports neither. Since X-Ways drives behaviour off the export table — including the both-callbacks-fire trap below — commenting an export out in the `.def` is the correct way to turn a callback off, not stubbing it to return 0.
+
 | Function | When it's called | Threading |
 | --- | --- | --- |
 | `XT_Init` | Once when the DLL is loaded. Resolve `XWF_*` function pointers here, refuse to load if anything required is missing (return `-1`). | Single-threaded, X-Ways main thread |
@@ -84,9 +86,15 @@ in these notes differ by service release, and this is the only place you are
 told which host you are running under. The crate treats `info == 0`, or a zero
 high word, as invalid and refuses to load.
 
-**Community-derived, not from the official page** — verify the arithmetic against
-a host you can check before gating behaviour on it. A version check that
-misparses is worse than none: it refuses to run on the hosts it was written for.
+**Corroborated by the SDK itself (2026-08-14), still not by the official page.**
+The 2024-05-31 SDK header packs the same layout into a `CallerInfo` struct
+(`byte lang; byte ServiceRelease; WORD version`), and the SDK's C# manager
+shift-unpacks identically — so three independent sources (community crate,
+vendor struct, vendor C#) agree on the decode. Empirical confirmation on a live
+host is still the missing piece
+([xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md)). A
+version check that misparses is worse than none: it refuses to run on the hosts
+it was written for.
 
 Most X-Tensions that use the Events API or other forensic-license-only features should refuse to load on `WHX`/`XWI` callers:
 

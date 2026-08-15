@@ -163,6 +163,32 @@ If your X-Tension doesn't iterate items, omit `XT_ProcessItem`. If it doesn't ne
   - **Mitigation.** Cap any sweep at `nWndIndex ≤ 11`. For `nWndNo`, you can either query the value of "how many data windows are open" via some other API (none currently known) or sweep with SEH wrappers + bail after N consecutive empty `nWndNo`s (3 is a reasonable threshold). SEH **does** catch the fault — X-Ways' VEH dialog complains but the X-Tension thread survives. Each AV displays a modal "page protection fault" dialog that the analyst has to dismiss, so prefer to **avoid making the call** when possible.
 - **`XWF_GetColumnTitle` "succeeds" past the real column count by leaking string-table entries.** Empirical: when the index exceeds the real column count, the function returns `FALSE` but **leaves the buffer populated with random strings from X-Ways' internal localisation table** (menu items, error messages, dialog strings). Trust **only** rows where the function returned `TRUE`. Empirically X-Ways 21.7 has 62 directory-browser columns (indices 0..61); past that everything is leaked-string-table data.
 - **Some property numbers are write-only despite being callable on `XWF_Get*Prop`.** `XWF_GetEvObjProp(hEvidence, 100, pBuf)` does **not** return data — calling it triggers an asynchronous **image-replacement** operation that uses whatever bytes are in `pBuf` as the new image path (per 21.5 SR-5 forum announcement). Testing (2026-05-03) showed that calling it with a zeroed buffer caused X-Ways to fail asynchronously with `Error #10 Cannot access "<evidence working dir>". Access is denied.` — the image-replace logic queues an operation that fires later and can terminate the X-Tension. Same pattern applies to `XWF_GetVSProp` properties **25** (`SET_HASHTYPE1`), **26** (`SET_HASHTYPE2`), **30** (`SET_HASCHANGED`) and — worst of the set — **90** (`XWF_VSPROP_RESET`, v21.4+), which **discards the volume snapshot and forces a new one, without the usual warning**. All are write-only despite living on the `Get` function, and our own 2026-05-03 sweep called 90 blind (see [xways-getprop-reference.md](xways-getprop-reference.md)). **Lesson: when sweeping property numbers, blacklist known write-side properties.** A read-only sweep should maintain a `SkipEvObjProp` / `SkipVSProp` blacklist. Any read-side sweep against a binary should treat property numbers as opt-in (whitelist) once the safe set is known, not opt-out.
+- **`#pragma pack(2)` without push/pop poisons the rest of the file.** Four of
+  the five vendor C++ samples declare their local `SearchHitInfo` under a bare
+  `#pragma pack(2)` and never restore packing — every struct declared later in
+  the translation unit silently gets 2-byte packing too. The SDK's own
+  `Python.cpp` is the only sample that does `#pragma pack(push, 2)` /
+  `#pragma pack(pop)` correctly. Always push/pop around API structs; a
+  mis-packed unrelated struct is a miserable bug to find.
+- **Vendor-recorded hazards in the SDK's `QTest.cpp`** (see
+  [xways-sdk-source-notes.md](xways-sdk-source-notes.md)) — three comments from
+  X-Ways' own sample author worth believing until re-tested:
+  - `// Leads to a crash in WinHex for filenames that exceed MAX_PATH` — on
+    `XWF_GetItemName` + string concatenation. Age unknown (SDK-era); whether
+    current builds still crash is in the
+    [test plan](xways-sdk-conflicts-test-plan.md).
+  - `// This does not crash WinHex, but it slows down very much` — per-item
+    `XWF_OutputMessage` under RVS. Vendor confirmation of the
+    [verbose-logging](conventions/verbose-logging.md) rationale.
+  - A disabled checker comparing `XWF_GetItemSize(nItemID)` against
+    `XWF_GetSize(hItem, NULL)` under the label `"Deviant sizes for ..."` — the
+    author had reason to compare the two. Unverified; also in the test plan.
+- **The vendor's version-compat pattern is a NULL-probe, not a version check.**
+  `QTest.cpp` NULL-checks 13 newer function pointers after resolution and
+  counts misses; the SDK's shared loader (`X-Tension.cpp`) likewise returns the
+  number of *missing* functions from `XT_RetrieveFunctionPointers` (`> 0` =
+  degraded host). Matches this project's convention of probing `GetProcAddress`
+  results rather than gating on `nVersion`.
 - **`XWF_GetItemParent` can return the item's own ID — bound every parent walk.** The
   documented way to build a path is to call `XWF_GetItemName` / `XWF_GetItemParent`
   repeatedly until the parent comes back `-1`. That loop does not always terminate:

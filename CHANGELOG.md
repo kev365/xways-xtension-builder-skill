@@ -96,6 +96,47 @@ All notable changes to this project are documented here. Versions follow
   `XWF_GetItemParent` can return the item's own ID, so the documented
   walk-until-`-1` loop needs a self-parent check and an iteration cap.
 
+- **Full review of the vendor SDK source drops** (the 2024-05-31 zip, git HEAD
+  `c46a1bd2`, and the XT_Python binary bundle) — the last unreviewed authority.
+  Three new pages:
+  - **`docs/xways-python-bridge.md`** — the `xwf` module's real surface,
+    distilled from reading the bridge's `Python.cpp` in full: the 46-method
+    table (only ~27 distinct `XWF_*` calls behind it), the 8 forwarded entry
+    points, the generated-source dispatch mechanism (handles as decimal ints,
+    ASCII-only call boundary, every configured script gets every callback), and
+    a verified bug table — `GetHashValue` stack overflow for hashes over
+    128 bits, `GetHashSetAssocs` ~1600-wchar cap plus a per-call leak,
+    silent short reads in `xwf.Read`, mangled UTF-16 search-hit text, and the
+    fixed `XT_Prepare → 1` that makes script return values unpropagatable.
+    Also: `XT_ProcessSearchHit` **is** bridged to Python (the vendor's own
+    spreadsheet says otherwise), and the readme's `import XWF` never worked —
+    the module is lowercase `xwf`.
+  - **`docs/xways-sdk-source-notes.md`** — the vendor's per-function status
+    spreadsheets (binary vocabulary: 24 functions `tested`, 52 merely
+    `provided` — the vendor's samples never exercised three quarters of the
+    API), the drop divergence (git HEAD's XT_Python project cannot compile —
+    `Python.cpp` still uses the `CallerInfo` struct the same drop's header
+    deleted), three inconsistent vendor models of `XT_Init`'s first parameter,
+    a vendor-sample bug catalog, the C# facts (the official binding wraps
+    exactly 3 functions; "C# Search Test" never calls `XWF_Search`), and the
+    file-system-ID table from `Sample.py`.
+  - **`docs/xways-sdk-conflicts-test-plan.md`** — a 9-entry register of claims
+    where trusted sources disagree, each with a probe design and risk class:
+    `GetProp(hVolume, 0)` bytes-vs-MB, `XWF_SEARCH_CALLPSH` (no code anywhere
+    has ever called `XWF_Search`), `GetItemSize` vs `GetSize` "deviant sizes",
+    the version-word decode, the Python-DLL version contradiction, template
+    README tensions, the `GetHashValue` overflow, the `MAX_PATH` name crash,
+    and the carried-over `0x0040` flag ambiguity.
+
+- **Vendor-sample findings folded into existing pages:** `Luhn.cpp`'s hit-
+  mutation idioms (the `0x0008` discard flag confirmed in vendor code, in-place
+  `nLength` rewrite, the `iSize` version gate, and the `nCodePage == 1200` ⇒
+  UTF-16LE byte-count convention) into the search page; the
+  `#pragma pack(2)`-without-push/pop hazard, QTest's crash/perf warnings, and
+  the vendor's NULL-probe version-compat pattern into the gotchas page; the
+  selective-`.def`-export idiom and SDK corroboration of the version-word
+  decode into the invocation page.
+
 ### Fixed
 
 - **`XWF_VSPROP_RESET` is property 90 — and the 2026-05-03 sweep called it
@@ -139,6 +180,22 @@ All notable changes to this project are documented here. Versions follow
   `0x1000` are documented as GUI-application defaults, and the sweep would have
   mutated report-table state to learn something already written down), and the
   `EvObjPropType` / `GetItemType` cross-references are done.
+
+- **Two more citations to a document that doesn't say it.** The claims that the
+  Python bridge lacks `AddEvent`/`GetEvent` and `XWF_GetUserInput` were
+  attributed to "the XT_Python readme shipped with the SDK"; the readme is a
+  positive list and never addresses either. Both conclusions are true and now
+  cite the bridge's actual method table. The user-input page also gains the two
+  file dialogs the bridge *does* ship (`xwf.GetOpenFileName` /
+  `xwf.GetSaveFileName`), which the tkinter advice had overlooked.
+- **The threading page never mentioned Python.** It now states that a Python
+  X-Tension is single-threaded by construction — the bridge hard-returns `1`
+  from `XT_Init` with the vendor's own "not thread-safe" comment, and the
+  script's return value is not propagated.
+- The external-tool page's "just embed Python via the XT_Python bridge" is now
+  qualified with the bridge's install requirements and API gaps.
+- Coverage map regenerated: **72/27/0 → 73/26/0**, plus a pointer to the
+  per-language exposure dimension the map deliberately does not carry.
 
 ## [0.5.0] — 2026-08-12
 

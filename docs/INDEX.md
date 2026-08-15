@@ -49,6 +49,9 @@ to these pages so generated code never invents `XWF_*` calls.
 - [xways-snapshot-mutation.md](xways-snapshot-mutation.md) — item-creation /
   snapshot-mutation findings (`XWF_CreateFile`, `XWF_SetItemSize`,
   `XWF_FindItem1`, `XWF_GetItemName`).
+- [xways-python-bridge.md](xways-python-bridge.md) — the `xwf` module's real
+  surface: 46 methods, 8 forwarded entry points, the generated-source dispatch
+  mechanism, and the bridge's bugs and limits, from the SDK's `Python.cpp`.
 - [xways-evidence-containers.md](xways-evidence-containers.md) — the evidence
   file container API (`XWF_CreateContainer` / `XWF_CopyToContainer` /
   `XWF_CloseContainer`), the `XWF_CTR_*` flags, and the one-container-at-a-time
@@ -82,6 +85,11 @@ to these pages so generated code never invents `XWF_*` calls.
 - [xways-api-recency-research.md](xways-api-recency-research.md) — which API
   additions appear in the SDK zip vs git HEAD vs the live HTML, and the
   `XT_Init` `LicenseInfo*` change.
+- [xways-sdk-source-notes.md](xways-sdk-source-notes.md) — the SDK drops
+  themselves: vendor status spreadsheets (24 tested / 52 never exercised),
+  sample bug catalog, drop divergence, and the C# binding facts.
+- [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md) — open
+  conflicts between trusted sources, each with a concrete probe design.
 - [xways-api-history-19-to-21_4.md](xways-api-history-19-to-21_4.md) — dated,
   sourced table of API additions / flags / behavior changes from v19.0–v21.4.
 - [forum-xtensions-distilled.md](forum-xtensions-distilled.md) — X-Tension

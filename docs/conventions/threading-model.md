@@ -33,6 +33,7 @@ spawned `std::thread`, so `XWF_AddEvent` is never called off-thread.
 - Pattern
 - Variant: run in-place in the dialog (keep it open, show progress)
 - The host watches for hanging refinement threads (v21.8 Preview 5)
+- Python X-Tensions are single-threaded by construction
 - Do / Don't
 
 ## Pattern
@@ -103,6 +104,19 @@ whether the watchdog covers the thread running `XT_Finalize` or only the
 multi-threaded file-examination workers, nor what "terminate and resume" does to
 an in-flight X-Tension call. Treat it as a reason to bound long waits, not as a
 measured limit.
+
+## Python X-Tensions are single-threaded by construction
+
+A C++ X-Tension chooses its threading by returning `1` or `2` from `XT_Init`. A
+Python X-Tension never gets that choice: the `XT_Python.dll` bridge hard-returns
+**`1`** with the vendor's own source comment — *"not thread-safe, since the
+global state is stored in a few global variables"* — and dispatches every
+callback by running generated source against one shared interpreter dict, with
+no GIL management. Your script's `XT_Init` return value is not propagated.
+
+So never design a Python X-Tension around concurrent `XT_ProcessItem(Ex)`
+delivery; it cannot happen with the stock bridge. Details in
+[xways-python-bridge.md](../xways-python-bridge.md).
 
 ## Do / Don't
 

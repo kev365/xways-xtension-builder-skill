@@ -190,7 +190,7 @@ Recommended defaults for every new wrapper — start with all of them and adjust
 
 ## 6. When NOT to use this pattern
 
-- **The tool is a Python library.** Just embed Python via the `XT_Python` bridge — no subprocess, no extraction, no temp files.
+- **The tool is a Python library.** Consider embedding via the `XT_Python` bridge — no subprocess, no extraction, no temp files. But it is not a drop-in: the bridge needs a matching system-wide Python install, its files live in the X-Ways main folder (not `xtensions\`), scripts are configured through a separate `Python.cfg`, and the exposed API surface is 46 methods with real gaps and bugs — see [xways-python-bridge.md](xways-python-bridge.md) before committing to it.
 - **The tool is a small algorithm.** Port it to C++ in the X-Tension. CrowdStrike's YARA scanner does this — runs YARA in-process against `XWF_Read` bytes, no extraction needed.
 - **Bytes flow X-Ways → Tool → X-Ways with no other side effects.** Consider whether `XT_ProcessItemEx` + an in-process call is cleaner.
 

@@ -350,7 +350,7 @@ If you want de-duplication, compare `(nEvtType, TimeStamp, nItemID, nOfs)` tuple
 
 ## Python exposure
 
-`XT_Python.dll`'s embedded `xwf` module (per the XT_Python readme shipped with the SDK) does **not** expose `AddEvent`/`GetEvent`. Event-emitting X-Tensions must be written in **C++** (or Delphi/C#), not Python with the stock bridge.
+`XT_Python.dll`'s embedded `xwf` module does **not** expose `AddEvent`/`GetEvent` — verified against the bridge's own method table in the SDK's `Python.cpp` (see [xways-python-bridge.md](xways-python-bridge.md) for the full 46-method inventory; an earlier revision of this note cited "the XT_Python readme", which never actually says this — the readme is a positive list only). Event-emitting X-Tensions must be written in **C++** (or Delphi), not Python with the stock bridge.
 
 ## Threading
 

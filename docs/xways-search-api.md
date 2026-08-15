@@ -97,6 +97,33 @@ struct SearchHitInfo {
 may change `nRelOfs`, `nAbsOfs`, `nLength`, `nSearchTermID` and the flags to
 improve a hit, re-file it under a different search term, or throw it away.
 
+### Vendor-sample confirmation — the SDK's `Luhn.cpp`
+
+The SDK ships exactly one search-related sample: `Luhn.cpp` (see
+[getting-the-sdk.md](getting-the-sdk.md)), a passive hit filter that
+Luhn-validates credit-card hits. It demonstrates, in working vendor code,
+the hit-mutation idioms this page could previously only state from prose:
+
+- **Discard a hit:** `info->nFlags |= 0x0008;` with the vendor's own comment
+  `// ignore hit` — confirming the `0x0008` reading in the flag table below.
+- **Rewrite the hit in place:** it shrinks `info->nLength` after stripping
+  separator characters, and X-Ways honours the new length.
+- **Version-gate on `iSize`:** `if (info->iSize < 36) return 0;` — the struct
+  is versioned by its size field; check it before touching later fields.
+- **The hit-buffer convention:** `nLength` is a **byte** count in `nCodePage`.
+  If `nCodePage != 1200`, convert with `MultiByteToWideChar(nCodePage, …)`;
+  if `nCodePage == 1200` the bytes are **already UTF-16LE** (wchar count =
+  `nLength / 2`). This is the clearest statement of the convention anywhere in
+  the SDK — with the caveat that the sample's own 1200 branch is broken (it
+  never copies the bytes; see the bug catalog in
+  [xways-sdk-source-notes.md](xways-sdk-source-notes.md)).
+
+Also instructive: `Luhn.cpp` never calls `XWF_Search` and returns `0` from
+`XT_Prepare` — a hit filter is *passive*, driven entirely by the analyst's own
+search. Python note: `XT_ProcessSearchHit` does reach Python scripts, but as a
+**flattened copy** — mutation-based filtering like Luhn's is C++-only
+([xways-python-bridge.md](xways-python-bridge.md)).
+
 | Flag | Meaning |
 | --- | --- |
 | `0x0001` | index search hit |
@@ -203,6 +230,13 @@ the rest of the list.
     that `XT_ProcessSearchHit` is not called for a search you started yourself.
     Either the flag is what lifts that restriction, or it is a leftover. **Test
     it before designing around either reading.**
+
+    The 2026-08-14 SDK source review made this worse, not better: **no working
+    `XWF_Search` invocation exists anywhere in the SDK** — not in the C++
+    samples, not in the Python bridge (which doesn't expose it), and not in the
+    C# tree (the project literally named "C# Search Test" never calls it). The
+    flag has never been demonstrated by anyone, vendor included. Probe design in
+    [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md).
 
 ## Search terms — read and create
 

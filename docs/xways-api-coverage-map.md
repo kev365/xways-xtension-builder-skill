@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XT_functions.html + XWF_functions.html (official), enumerated 2026-08-12
 type: coverage-map
 fetched: 2026-08-12
-last_updated: 2026-08-13
+last_updated: 2026-08-14
 author: project
 ---
 
@@ -16,8 +16,8 @@ The official reference documents **99 functions** across
 
 | | Count | Meaning |
 | --- | ---: | --- |
-| **Covered** | 72 | a page here explains it, not just names it |
-| **Named only** | 27 | appears, but do not expect a usable description |
+| **Covered** | 73 | a page here explains it, not just names it |
+| **Named only** | 26 | appears, but do not expect a usable description |
 | **Absent** | 0 | nothing is completely unmentioned any more |
 
 Regenerate with [`scripts/api-coverage.ps1`](../scripts/api-coverage.ps1)
@@ -84,8 +84,8 @@ What remains genuinely unexplored is **constants, not functions** — see below.
 `XWF_GetFirstEvObj`, `XWF_GetHashSetAssocs`, `XWF_GetItemOfs`,
 `XWF_GetNextEvObj`, `XWF_GetRasterImage`, `XWF_GetReportTableInfo`,
 `XWF_GetSearchHit`, `XWF_GetSearchTerm`, `XWF_GetSectorContents`,
-`XWF_GetSize`, `XWF_GetVolumeInformation`, `XWF_HideProgress`,
-`XWF_ReleaseMem`, `XWF_SetItemDataRuns`, `XWF_SetItemName`, `XWF_SetItemOfs`,
+`XWF_GetVolumeInformation`, `XWF_HideProgress`, `XWF_ReleaseMem`,
+`XWF_SetItemDataRuns`, `XWF_SetItemName`, `XWF_SetItemOfs`,
 `XWF_SetItemParent`, `XWF_SetProgressDescription`, `XWF_SetSearchHit`,
 `XWF_Write`.
 
@@ -139,6 +139,16 @@ The counts moved twice *legitimately* on the day of writing —
 on to document the viewer entry points, then the search, progress, block,
 sector-attribution and raster-image surfaces. That is the map doing its job. It
 is also why the numbers are only trustworthy as of the frontmatter date.
+
+A fourth move, **72/27/0 → 73/26/0** on 2026-08-14, came from the SDK source
+review ([xways-sdk-source-notes.md](xways-sdk-source-notes.md)) — which also
+added a dimension this map deliberately does not carry: **per-language
+exposure**. The map counts a function as covered if any `docs/` page explains
+it, but whether a Python X-Tension can *call* it is a separate question —
+answered per-method by [xways-python-bridge.md](xways-python-bridge.md)
+(46 exposed of the C surface). Note also the SDK's own status spreadsheet says
+the vendor's samples exercise only 24 of these functions; most of the API has
+no vendor-demonstrated call anywhere.
 
 A third move, **67/32/0 → 72/27/0** on 2026-08-13, came from reviewing two
 community bindings rather than the official pages: the `v2-develop` branch of
