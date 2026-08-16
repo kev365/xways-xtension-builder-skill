@@ -138,11 +138,13 @@ $cases = @(
        Reject = @()
        Expect = @()
        Sidecars = @(
-         @{ File   = 'xways-idpy.config.json'
+         # Underscore stem: python files rename to xways_<name>.* because the
+         # bridge imports by file stem (hyphens are un-importable).
+         @{ File   = 'xways_idpy.config.json'
             # The scaffold renames this file now, so telling the analyst to
             # rename it by hand is stale instruction.
             Reject = @(@{ S = 'Rename to <NAME>.config.json'; W = 'stale manual-rename instruction' })
-            Expect = @('xways-idpy') }
+            Expect = @('xways_idpy') }
        ) }
 )
 

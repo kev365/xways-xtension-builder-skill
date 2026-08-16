@@ -241,8 +241,9 @@ function Get-Replacements {
     # Python source file stem = 'xtension' (template) or same as renamed
     if ($ext -eq '.py' -and $Kind -eq 'python') {
         # Only patch the main entry-point file, never helpers.py. The template
-        # ships it as xtension.py and the rename makes it xways-<name>.py, so by
-        # the time replacements run the stem already equals $DestStem.
+        # ships it as xtension.py and the rename makes it xways_<name>.py
+        # (underscores - the bridge imports by file stem, so hyphens are
+        # illegal), so by the time replacements run the stem equals $DestStem.
         if ($base -eq $DestStem) {
             $reps.Add(@{
                 Pattern     = '(?m)^NAME\s*=\s*"[^"]*"'
@@ -475,10 +476,19 @@ if (-not $Year)   { $Year   = (Get-Date).Year.ToString() }
 # ---------------------------------------------------------------------------
 $effectiveKind = if ($Exemplar) { 'cpp' } else { $Template }
 
+# Python module names cannot contain hyphens: the XT_Python bridge loads the
+# script via `import <filestem>` and then executes `<filestem>.XT_Init(...)`,
+# so a file named xways-foo.py can NEVER load (`import xways-foo` is a syntax
+# error — verified live 2026-08-16, "Failed to execute import ..." for every
+# entry point). The FOLDER keeps the naming convention's hyphens; only the
+# python file stem (and therefore NAME / the sidecar name) uses underscores.
+$fileStem = if ($effectiveKind -eq 'python') { $fullName -replace '-', '_' } else { $fullName }
+
 # ---------------------------------------------------------------------------
 # 7. Enumerate source files and build copy/rename plan
 # ---------------------------------------------------------------------------
-function Get-DestRelPath([string]$srcFilePath, [string]$srcRootPath, [string]$stem, [string]$newStem) {
+function Get-DestRelPath([string]$srcFilePath, [string]$srcRootPath, [string]$stem, [string]$newStem, [string]$newLeafStem = '') {
+    if (-not $newLeafStem) { $newLeafStem = $newStem }
     $rel  = $srcFilePath.Substring($srcRootPath.Length).TrimStart('\','/')
     $dir  = Split-Path $rel -Parent
     $leaf = Split-Path $rel -Leaf
@@ -492,7 +502,7 @@ function Get-DestRelPath([string]$srcFilePath, [string]$srcRootPath, [string]$st
     $dot  = $leaf.IndexOf('.')
     $base = if ($dot -gt 0) { $leaf.Substring(0, $dot) } else { $leaf }
     $ext  = if ($dot -gt 0) { $leaf.Substring($dot) }    else { '' }
-    $newLeaf = if ($base -eq $stem) { "$newStem$ext" } else { $leaf }
+    $newLeaf = if ($base -eq $stem) { "$newLeafStem$ext" } else { $leaf }
     # Also rename directory path components that exactly match the source stem
     # (e.g. xtensions\xways-bulk_extractor\ -> xtensions\xways-skilltest\)
     $newDir = if ($dir) {
@@ -507,7 +517,7 @@ $srcFiles = Get-ChildItem -Path $srcDir -File -Recurse
 
 $plan = [System.Collections.Generic.List[hashtable]]::new()
 foreach ($f in $srcFiles) {
-    $destRel  = Get-DestRelPath $f.FullName $srcDir $srcStem $fullName
+    $destRel  = Get-DestRelPath $f.FullName $srcDir $srcStem $fullName $fileStem
     $destPath = Join-Path $destDir $destRel
     $plan.Add(@{ SrcPath = $f.FullName; DestRel = $destRel; DestPath = $destPath })
 }
@@ -573,7 +583,7 @@ if ($DryRun) {
     $noMatchCount   = 0
     foreach ($op in $plan) {
         $fName = Split-Path $op.DestRel -Leaf
-        $reps  = Get-Replacements -Kind $effectiveKind -SrcStem $srcStem -DestStem $fullName `
+        $reps  = Get-Replacements -Kind $effectiveKind -SrcStem $srcStem -DestStem $fileStem `
                      -Ver $Version -Desc $Description -RepTable $ReportTable -FileName $fName
         if ($reps.Count -gt 0) {
             $anyReplacement = $true
@@ -678,7 +688,7 @@ foreach ($op in $plan) {
     $ext   = [System.IO.Path]::GetExtension($fName).ToLower()
 
     if ($ext -notin $binaryExts) {
-        $reps = Get-Replacements -Kind $effectiveKind -SrcStem $srcStem -DestStem $fullName `
+        $reps = Get-Replacements -Kind $effectiveKind -SrcStem $srcStem -DestStem $fileStem `
                     -Ver $Version -Desc $Description -RepTable $ReportTable -FileName $fName
 
         if ($reps.Count -gt 0) {
