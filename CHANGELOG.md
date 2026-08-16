@@ -25,6 +25,13 @@ All notable changes to this project are documented here. Versions follow
 
 ## [0.6.0] — 2026-08-16
 
+### Community files
+
+- `CONTRIBUTING.md` — ground rules (no copyrighted X-Ways material, evidence
+  for API claims), the local gate commands, and the junction-install setup for
+  live-editing the skill, moved out of the README (which keeps a one-line
+  pointer).
+
 ### Added
 
 - **Full skill review + repair sweep (2026-08-16)** — two parallel reviewers
