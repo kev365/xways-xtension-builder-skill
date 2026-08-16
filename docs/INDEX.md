@@ -90,6 +90,8 @@ to these pages so generated code never invents `XWF_*` calls.
   sample bug catalog, drop divergence, and the C# binding facts.
 - [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md) — open
   conflicts between trusted sources, each with a concrete probe design.
+- [skill-review-roadmap.md](skill-review-roadmap.md) — the 2026-08-16 full-review
+  findings register: phased repair roadmap + empirical test queue, with statuses.
 - [xways-api-history-19-to-21_4.md](xways-api-history-19-to-21_4.md) — dated,
   sourced table of API additions / flags / behavior changes from v19.0–v21.4.
 - [forum-xtensions-distilled.md](forum-xtensions-distilled.md) — X-Tension
