@@ -150,6 +150,15 @@ def XT_Prepare(hVolume, hEvidence, nOpType, lpReserved):
     vol_name = xwf.GetVolumeName(hVolume, 0) if hVolume else "(no volume)"
     _log(f"XT_Prepare [{op_name}] on volume: {vol_name}")
 
+    # GOTCHA (confirmed live on 21.8 SR-5 + 21.9 Beta 1): under nOpType 0
+    # (XT_ACTION_RUN -- Tools -> Run X-Tension, and the command-line XT:
+    # parameter) X-Ways delivers NO per-item callbacks even when you return 1,
+    # so this template silently processes zero items in that mode. Run under
+    # RVS or a directory-browser selection instead.
+    if nOpType == XT_ACTION_RUN:
+        _log("note: op=0 delivers no per-item callbacks -- run via RVS or a "
+             "directory-browser selection")
+
     # RVS is multi-threaded and high-volume — keep logging minimal there.
     # DBC runs on a user-selected handful of items — safe to be chatty.
     # 0x01 = call per-item callback(s). X-Ways calls whichever you export; both

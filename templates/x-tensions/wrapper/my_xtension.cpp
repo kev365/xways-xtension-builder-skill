@@ -2263,6 +2263,16 @@ LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void*
     g_collected.hEvidence      = hEvidence;
     g_collected.invocationMode = (nOpType == XT_ACTION_DBC)
         ? InvocationMode::Selection : InvocationMode::Run;
+
+    // GOTCHA (confirmed live on 21.8 SR-5 + 21.9 Beta 1): under nOpType 0
+    // (XT_ACTION_RUN — Tools -> Run X-Tension, and the command-line XT:
+    // parameter) X-Ways delivers NO per-item callbacks, so the collector
+    // stays empty in that mode. Run under RVS or a directory-browser
+    // selection, or self-enumerate. See docs/xtension-invocation.md.
+    if (nOpType == 0)
+        Log(L"note: op=0 delivers no per-item callbacks \x2014 the item "
+            L"collector will stay empty; run via RVS or a selection instead");
+
     return 0x01;  // request XT_ProcessItem callbacks
 }
 

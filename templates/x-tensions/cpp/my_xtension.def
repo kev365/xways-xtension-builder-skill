@@ -1,5 +1,11 @@
 ; Module definition for my_xtension.dll — exports the X-Ways X-Tension entry
 ; points by their unmangled names. Rename LIBRARY to match your DLL filename.
+;
+; X-Ways drives behaviour off this export table: an exported no-op still gets
+; called (export BOTH per-item callbacks and both fire per item — the "2N"
+; trap). To turn a callback off, comment its line out here with ';' rather
+; than stubbing it — the SDK's own samples model this (New.def exports only
+; XT_Init). See docs/xtension-invocation.md.
 LIBRARY my_xtension
 EXPORTS
     XT_Init

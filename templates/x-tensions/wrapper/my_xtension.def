@@ -1,3 +1,7 @@
+; X-Ways drives behaviour off this export table: an exported no-op still gets
+; called (export BOTH per-item callbacks and both fire per item - the "2N"
+; trap). To turn a callback off, comment its line out here with ';' rather
+; than stubbing it. See docs/xtension-invocation.md.
 LIBRARY my_xtension
 EXPORTS
     XT_Init

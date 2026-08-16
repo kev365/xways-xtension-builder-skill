@@ -222,6 +222,17 @@ LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, LONG nOpType, void* 
     //   std::wstring tempBase = GetTempBase(hEvidence);
     //   Log(L"temp base: " + tempBase);
 
+    // GOTCHA (confirmed live on 21.8 SR-5 + 21.9 Beta 1): under nOpType 0
+    // (XT_ACTION_RUN — Tools -> Run X-Tension, and the command-line XT:
+    // parameter) X-Ways delivers NO per-item callbacks even when you return
+    // 0x01, so this template silently processes zero items in that mode.
+    // Run under RVS/DBC instead, or self-enumerate the snapshot
+    // (XWF_SelectVolumeSnapshot -> XWF_GetItemCount -> XWF_OpenItem).
+    // See docs/xtension-invocation.md + docs/xways-command-line.md.
+    if (nOpType == 0)
+        Log(L"note: op=0 delivers no per-item callbacks — run via RVS or a "
+            L"directory-browser selection, or add self-enumeration here");
+
     // 0x01 (CALLPI): X-Ways calls your per-item callback(s) — whichever of
     // XT_ProcessItem / XT_ProcessItemEx you export. We export BOTH, so BOTH fire
     // for every item (RVS delivers each item to both, on a worker pool).

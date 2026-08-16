@@ -220,6 +220,14 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- **Templates warn about the op=0 silent no-op.** All three templates now
+  carry the confirmed gotcha (21.8 SR-5 + 21.9 Beta 1: `XT_ACTION_RUN`
+  delivers no per-item callbacks despite a `0x01` return) as a comment *and*
+  a runtime log hint, so a scaffold run via Tools → Run X-Tension explains
+  its empty result instead of silently doing nothing. Both `.def` files gained
+  the selective-export guidance (comment exports out rather than stubbing
+  them — the SDK's own `New.def` idiom).
+
 - **All three templates fixed against the probe findings** (the deferred
   post-probe pass): `XT_Init` now guards `XT_INIT_QUICKCHECK` before any work
   (the cpp and python templates logged during compatibility probes; the
