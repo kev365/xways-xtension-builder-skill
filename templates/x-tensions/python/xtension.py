@@ -43,7 +43,9 @@ XT_ACTION_PSS = 3  # Physical Simultaneous Search
 XT_ACTION_DBC = 4  # Directory Browser Context menu
 XT_ACTION_SHC = 5  # Search Hit Context menu
 
-# --- AddComment howToAdd flags (per official API docs) -----------------------
+# --- AddComment howToAdd flags -----------------------------------------------
+# Values from the C-API page for XWF_AddComment; the bridge passes howToAdd
+# through uninspected, so only that page backs them (not the bridge source).
 COMMENT_REPLACE = 0
 COMMENT_APPEND = 1
 COMMENT_PREPEND = 2
@@ -106,10 +108,19 @@ def _load_config():
 
 def XT_Init(nVersion, nFlags, hMainWnd, lpReserved):
     """First call. Set up console/logging. Return 1 to continue, <0 to abort."""
+    # XT_INIT_QUICKCHECK (0x20): X-Ways is only probing compatibility --
+    # answer without side effects (no console, no config load, no logging).
+    if nFlags & 0x20:
+        return 1
     OutputRedirector.install()
     xwf.AllocConsole()
     _state["config"] = _load_config()
-    _log(f"{VERSION} — X-Ways build {nVersion / 100.0:.2f}")
+    # nVersion is a packed word: version*10 in the high 16 bits, service
+    # release in byte 1 (confirmed live on 21.9 Beta 1; see the authoring
+    # skill's docs/xtension-invocation.md).
+    ver = (nVersion >> 16) & 0xFFFF
+    sr = (nVersion >> 8) & 0xFF
+    _log(f"{VERSION} — X-Ways v{ver // 100}.{(ver % 100) // 10} SR-{sr}")
     return 1
 
 

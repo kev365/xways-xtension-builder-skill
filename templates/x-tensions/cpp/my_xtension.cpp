@@ -179,9 +179,19 @@ extern "C" {
 
 LONG __stdcall XT_Init(DWORD nVersion, DWORD nFlags, HWND hMainWnd, void* lpReserved) {
     int missing = RetrieveFunctionPointers();
+    // XT_INIT_QUICKCHECK (0x20): X-Ways is only probing compatibility.
+    // Return 1 to accept (-1 to refuse) and do nothing else — no logging,
+    // no side effects. See docs/xtension-invocation.md.
+    if (nFlags & 0x20) return 1;
+    // nVersion is a packed word: version*10 in the high 16 bits, service
+    // release in byte 1, GUI language in byte 0. Confirmed live on 21.9
+    // Beta 1 (0x088E0001 -> v21.9 SR-0). See docs/xtension-invocation.md.
+    const DWORD ver = (nVersion >> 16) & 0xFFFF;
+    const DWORD sr  = (nVersion >>  8) & 0xFF;
     wchar_t buf[128];
-    swprintf_s(buf, L"%s — X-Ways build %.2f (%d missing exports)",
-               VERSION, nVersion / 100.0, missing);
+    swprintf_s(buf, L"%s — X-Ways v%lu.%lu SR-%lu (%d missing exports)",
+               VERSION, (unsigned long)(ver / 100), (unsigned long)((ver % 100) / 10),
+               (unsigned long)sr, missing);
     Log(buf);
     return 1;
 }

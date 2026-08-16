@@ -18,8 +18,8 @@ Starting point for an X-Tension written in Python, targeting **X-Ways Forensics 
 
 ## Runtime prerequisites
 
-- `XT_Python.dll` and matching `pythonXYZ.dll` must sit next to X-Ways Forensics (both ship in the SDK download — see [getting-the-sdk.md](../../../docs/getting-the-sdk.md); pick the 3.10 or 3.12 build to match your DLL).
-- In X-Ways: **Tools → Run X-Tension…** → select `XT_Python.dll`, then point it at your `.py` script.
+- `XT_Python.dll` and matching `pythonXYZ.dll` must sit next to X-Ways Forensics (both ship in the SDK download — see [getting-the-sdk.md](../../../docs/getting-the-sdk.md)). The current bundle links **`python312.dll`** — verified from the DLL's import table, since the bundle's own readme misstates the version; check the shipped `pythonXYZ.dll` name for any future bundle. Full bridge reference: [xways-python-bridge.md](../../../docs/xways-python-bridge.md).
+- To register your script: add `XT_Python.dll` to the X-Tensions list, then use its **About** gesture — the bridge's `XT_About` *is* the script picker (a multi-select `.py` dialog that writes `Python.cfg` next to the X-Ways EXE). Running the DLL via **Tools → Run X-Tension** executes whatever scripts `Python.cfg` already lists.
 
 ## Entry points implemented
 

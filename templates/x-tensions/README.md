@@ -11,8 +11,10 @@ Don't edit these in place — scaffold a copy with the skill's
 - [`cpp/`](cpp/) — **C++ DLL** (MSVC 2019/2022, x64). The primary template for
   forensic-license-only features (e.g. the Events API). Self-contained: resolves
   `XWF_*` exports via `GetProcAddress`, so it compiles without the SDK header.
-- [`python/`](python/) — **Python** skeleton (for `XT_Python.dll`, Python 3.10 or
-  3.12). Faster to iterate; use when you don't need APIs the Python bridge omits
+- [`python/`](python/) — **Python** skeleton (for `XT_Python.dll`; the current
+  bundle links Python 3.12). Faster to iterate; use when you don't need APIs
+  the Python bridge omits — the full 46-method inventory of what it *does*
+  expose is in [xways-python-bridge.md](../../docs/xways-python-bridge.md)
   (notably `XWF_AddEvent` / `XWF_GetEvent`, which require C++). Patterns drawn from
   public community X-Tensions (CrowdStrike's YARA scanner, Polito's extensions) —
   see [NOTICE](../../NOTICE).

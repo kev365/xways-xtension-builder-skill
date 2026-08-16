@@ -158,8 +158,12 @@ entry is kept for numbering stability.
   test as shipped. (b) the template's banner prints `nVersion / 100.0` as
   "X-Ways build %.2f" — correct only if the parameter is a bare build number;
   if the packed-word decode (entry 4) is confirmed, this prints garbage
-  (142868737 / 100 for 21.8 SR-1). Both are template *edits* deferred to the
-  post-probe pass.
+  (142868737 / 100 for 21.8 SR-1). **Both fixed 2026-08-15** — after the
+  packed-word decode was confirmed live, all three templates (cpp, wrapper,
+  python) gained the QUICKCHECK guard and the correct version decode, the
+  wrapper's UI init moved behind the guard, and the Python README's version
+  claim and script-registration path were corrected against the bridge
+  findings. Compile-verified via fresh scaffolds of both C++ templates.
 
 ## 7. `xwf.GetHashValue` overflow on wide hashes
 

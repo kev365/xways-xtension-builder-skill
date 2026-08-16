@@ -217,7 +217,20 @@ All notable changes to this project are documented here. Versions follow
   selective-`.def`-export idiom and SDK corroboration of the version-word
   decode into the invocation page.
 
+
 ### Fixed
+
+- **All three templates fixed against the probe findings** (the deferred
+  post-probe pass): `XT_Init` now guards `XT_INIT_QUICKCHECK` before any work
+  (the cpp and python templates logged during compatibility probes; the
+  wrapper even initialised common controls), and the version banner decodes
+  the packed `nVersion` word (v/SR) instead of printing `nVersion / 100.0`,
+  which produced garbage like `1435238.41` on real hosts. The Python README's
+  version claim now cites the PE-verified `python312.dll`, and its
+  script-registration steps describe the real mechanism (the bridge's About
+  gesture writing `Python.cfg`). Compile-verified via fresh scaffolds of both
+  C++ templates; scaffold gates pass.
+
 
 - **`XWF_VSPROP_RESET` is property 90 — and the 2026-05-03 sweep called it
   blind.** It forces a new volume snapshot and discards the previous one without
