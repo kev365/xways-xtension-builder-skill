@@ -7,6 +7,21 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- **Full skill review + repair sweep (2026-08-16)** — two parallel reviewers
+  over the whole repo surfaced 45 findings; all are resolved or dispositioned
+  in [docs/skill-review-roadmap.md](docs/skill-review-roadmap.md) (the
+  register, with per-item status and an empirical-test queue for the four
+  questions only a live X-Ways run can answer). Highlights fixed: the last
+  surviving "AddComment 2 = PREPEND" claim; op=0 no-callback propagation to
+  four pages; the always-on guardrail's two-revisions-stale coverage counts
+  and missing routing rows; the python scaffold generating un-importable
+  hyphenated module names (locked in by its own test); the event-subcode
+  tables' duplicated copies disagreeing on a range boundary; the search
+  page's field naming drifting from the header (`iSize`); ~350 lines of
+  duplicated convention text collapsed to single owners. New CI gates:
+  template-convention parity, a C++ compile job, a zero-NO-MATCH scaffold
+  assertion, and a decimal-form stale-guidance rule.
+
 - **Forum sweep of the 21.8 and 21.9 announcement threads** (read in full
   2026-08-12), which surfaced three API facts the knowledge base did not have:
   - **`XWF_GetCellText` return codes and its multi-threading restriction.**
