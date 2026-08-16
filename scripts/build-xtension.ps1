@@ -61,7 +61,9 @@ $ErrorActionPreference = 'Stop'
 # Helpers
 # ---------------------------------------------------------------------------
 function Fail([string]$msg) {
-    Write-Error "ERROR: $msg"
+    # Write-Host, not Write-Error: under EAP=Stop, Write-Error throws and the
+    # exit below never runs - the user gets a stack trace instead of this line.
+    Write-Host "ERROR: $msg" -ForegroundColor Red
     exit 1
 }
 
@@ -119,6 +121,15 @@ $buildBat = Join-Path $xtDir 'build.bat'
 # 3. Verify build.bat exists
 # ---------------------------------------------------------------------------
 if (-not (Test-Path $buildBat)) {
+    # Python X-Tensions ship no build.bat by design - say so instead of
+    # sending the user back to new-xtension.ps1 for an X-Tension that exists.
+    $pyEntry = Get-ChildItem -Path $xtDir -Filter '*.py' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($pyEntry) {
+        Write-Host "'$Name' is a Python X-Tension - there is nothing to build." -ForegroundColor Yellow
+        Write-Host "Deploy the .py files (entry script + helpers.py) into the X-Ways MAIN folder"
+        Write-Host "and register via XT_Python.dll's About gesture. See templates/x-tensions/python/README.md."
+        exit 0
+    }
     Fail "build.bat not found: $buildBat`n  Does the X-Tension exist? Run new-xtension.ps1 first."
 }
 

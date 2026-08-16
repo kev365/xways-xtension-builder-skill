@@ -112,6 +112,9 @@ def XT_Init(nVersion, nFlags, hMainWnd, lpReserved):
     """First call. Set up console/logging. Return 1 to continue, <0 to abort."""
     # XT_INIT_QUICKCHECK (0x20): X-Ways is only probing compatibility --
     # answer without side effects (no console, no config load, no logging).
+    # Unconditional 1 is correct here (unlike the C++ templates, which refuse
+    # when GetProcAddress left exports unresolved): the bridge supplies the
+    # whole xwf module, so there is nothing to probe for.
     if nFlags & 0x20:
         return 1
     OutputRedirector.install()
@@ -137,8 +140,11 @@ def XT_Prepare(hVolume, hEvidence, nOpType, lpReserved):
     Return value is a bitmask; common values:
       -1  = abort
        0  = no per-item callbacks
-       1  = call XT_ProcessItem for each item
-       4  = call XT_ProcessItemEx (receives a read handle)
+       1  = call the per-item callback(s) you export -- whichever of
+             XT_ProcessItem / XT_ProcessItemEx exist (BOTH fire if both
+             are exported; do the work in exactly one)
+    (0x04 is EXPECTMOREITEMS -- an item-creation flag, NOT "call Ex";
+     see the note in XT_Prepare's body below.)
     """
     _state["hVolume"] = hVolume
     _state["opType"] = nOpType

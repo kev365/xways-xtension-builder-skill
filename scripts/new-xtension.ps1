@@ -67,7 +67,7 @@
     .\new-xtension.ps1 -Name myscanner -Exemplar xways-yourtool -DryRun
 #>
 
-[CmdletBinding(SupportsShouldProcess)]
+[CmdletBinding()]
 param(
     [Parameter(Mandatory)]
     [string]$Name,
@@ -113,7 +113,9 @@ function Write-DryOp([string]$tag, [string]$msg) {
 }
 
 function Fail([string]$msg) {
-    Write-Error "ERROR: $msg"
+    # Write-Host, not Write-Error: under EAP=Stop, Write-Error throws and the
+    # exit below never runs - the user gets a stack trace instead of this line.
+    Write-Host "ERROR: $msg" -ForegroundColor Red
     exit 1
 }
 
@@ -190,16 +192,9 @@ function Get-Replacements {
                 Replacement = "static const wchar_t* DESCRIPTION  = L`"$Desc`";"
                 Description = "DESCRIPTION -> L`"$Desc`""
             })
-            # descriptor display_name  L"My X-Tension",   — present in BOTH templates
-            $displayName = (($DestStem -replace '^xways-', '') -replace '[-_]', ' ')
-            $displayNameTitle = ($displayName -split ' ' | ForEach-Object {
-                if ($_.Length -gt 0) { $_.Substring(0,1).ToUpper() + $_.Substring(1) } else { $_ }
-            }) -join ' '
-            $reps.Add(@{
-                Pattern     = '(?m)L"My X-Tension",([ \t]*//[ \t]*display_name)'
-                Replacement = "L`"$displayNameTitle`",`$1"
-                Description = "descriptor display_name -> L`"$displayNameTitle`""
-            })
+            # (A display_name descriptor rule lived here until 2026-08-16; the
+            # L"My X-Tension" literal it targeted exists in no template, so it
+            # printed a NO MATCH on every wrapper scaffold. Removed.)
 
             # The wrapper's descriptor references the already-patched NAME and
             # DESCRIPTION constants rather than string literals, so no separate
@@ -466,7 +461,10 @@ if (-not $ReportTable) {
     $ReportTable = "$titleName Findings"
 }
 if (-not $Author) {
-    $Author = (& git config user.name 2>$null)
+    # try/catch: under $ErrorActionPreference='Stop' a missing git binary is a
+    # terminating CommandNotFoundException - the documented 'Your Name'
+    # fallback must survive that, not abort the scaffold.
+    try { $Author = (& git config user.name 2>$null) } catch { $Author = $null }
     if (-not $Author) { $Author = 'Your Name' }
 }
 if (-not $Year)   { $Year   = (Get-Date).Year.ToString() }

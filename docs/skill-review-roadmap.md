@@ -53,19 +53,19 @@ Status vocabulary: `open` → `in-progress` → `done` (or `deferred` /
 
 | # | Item | Where | Status |
 | --- | --- | --- | --- |
-| M1 | Python template docstring still teaches "4 = call XT_ProcessItemEx" — contradicted 27 lines later in the same file (0x04 = EXPECTMOREITEMS). Fix the docstring. | `templates/x-tensions/python/xtension.py:141` | open |
-| M2 | QUICKCHECK guard differs: wrapper returns `(missing>0) ? -1 : 1`; cpp + python return unconditional 1 (cpp never re-checks `missing`). Harmonize (cpp checks resolution failures on the quickcheck path too; python has no pointers to check — document that). | `templates/.../wrapper/my_xtension.cpp:2227`; `cpp/my_xtension.cpp:188`; `python/xtension.py:115` | open |
-| M3 | `.def` files advise selective exports while shipping the anti-pattern (export ProcessItem+Ex+SearchHit, two of which are stubs). Align shipped exports with implemented callbacks; compile-verify after. | `cpp/my_xtension.def`; `wrapper/my_xtension.def` | open |
-| M4 | cpp template's `GetCaseRootDir`/`DefaultOutputDir` are dead code (defined, never called). Wire into the demo or annotate as opt-in helpers. | `cpp/my_xtension.cpp:134-145` | open |
-| M5a | `backfill-standards.ps1` has no `-DestRoot` and writes only into the skill install; SKILL.md:56 + references/scripts.md:17-20 claim otherwise. Fix the claims (adding `-DestRoot` optional). | `scripts/backfill-standards.ps1`; `SKILL.md:56`; `references/scripts.md` | open |
-| M5b | `build-xtension.ps1` misdiagnoses python scaffolds ("run new-xtension.ps1 first" for a no-build X-Tension). Detect python kind, say so. | `scripts/build-xtension.ps1:121-123` | open |
-| M5c | Dead replacement rule (`L"My X-Tension"` descriptor — matches nothing in any template) prints a NO MATCH warning on every wrapper scaffold; the identity test tautologically asserts the string absent. Remove rule + fix test (see G3). | `scripts/new-xtension.ps1:198-202`; `tests/test-scaffold-identity.ps1:120` | open |
-| M5d | `SupportsShouldProcess` declared but never used in new-xtension.ps1 — `-WhatIf` half-works then dies on raw .NET I/O. Remove the declaration (`-DryRun` is the real preview). | `scripts/new-xtension.ps1:70` | open |
-| M5e | git-missing fallback broken in new-xtension.ps1 (runs `git config` after EAP=Stop, so no git = abort instead of the documented `'Your Name'` default). | `scripts/new-xtension.ps1:468` | open |
-| M5f | `Fail()` dead-ends under EAP=Stop in two scripts (Write-Error throws; `exit 1` unreachable; user sees stack trace not the one-liner). | `scripts/new-xtension.ps1:115-118`; `build-xtension.ps1:63-66` | open |
-| M6a | README says the SDK header is required "to build C++ X-Tensions" — both templates are GetProcAddress-based and need no header (and say so). Reword: SDK optional (reference/manuals), not a build prerequisite. | `README.md:124-126` | open |
-| M6b | README "What's inside" omits `tests/` + `evals/`; scripts row drops api-coverage.ps1. | `README.md:29-38` | open |
-| M6c | CHANGELOG Unreleased contradicts itself: Added section says the two cpp defects were "recorded (not fixed)"; Fixed section says fixed in all three templates. Reconcile (they WERE fixed, later). | `CHANGELOG.md:149-152` vs `:252-261` | open |
+| M1 | Python template docstring still teaches "4 = call XT_ProcessItemEx" — contradicted 27 lines later in the same file (0x04 = EXPECTMOREITEMS). Fix the docstring. | `templates/x-tensions/python/xtension.py:141` | done |
+| M2 | QUICKCHECK guard differs: wrapper returns `(missing>0) ? -1 : 1`; cpp + python return unconditional 1 (cpp never re-checks `missing`). Harmonize (cpp checks resolution failures on the quickcheck path too; python has no pointers to check — document that). | `templates/.../wrapper/my_xtension.cpp:2227`; `cpp/my_xtension.cpp:188`; `python/xtension.py:115` | done |
+| M3 | `.def` files advise selective exports while shipping the anti-pattern (export ProcessItem+Ex+SearchHit, two of which are stubs). Align shipped exports with implemented callbacks; compile-verify after. | `cpp/my_xtension.def`; `wrapper/my_xtension.def` | done |
+| M4 | cpp template's `GetCaseRootDir`/`DefaultOutputDir` are dead code (defined, never called). Wire into the demo or annotate as opt-in helpers. | `cpp/my_xtension.cpp:134-145` | done |
+| M5a | `backfill-standards.ps1` has no `-DestRoot` and writes only into the skill install; SKILL.md:56 + references/scripts.md:17-20 claim otherwise. Fix the claims (adding `-DestRoot` optional). | `scripts/backfill-standards.ps1`; `SKILL.md:56`; `references/scripts.md` | done |
+| M5b | `build-xtension.ps1` misdiagnoses python scaffolds ("run new-xtension.ps1 first" for a no-build X-Tension). Detect python kind, say so. | `scripts/build-xtension.ps1:121-123` | done |
+| M5c | Dead replacement rule (`L"My X-Tension"` descriptor — matches nothing in any template) prints a NO MATCH warning on every wrapper scaffold; the identity test tautologically asserts the string absent. Remove rule + fix test (see G3). | `scripts/new-xtension.ps1:198-202`; `tests/test-scaffold-identity.ps1:120` | done |
+| M5d | `SupportsShouldProcess` declared but never used in new-xtension.ps1 — `-WhatIf` half-works then dies on raw .NET I/O. Remove the declaration (`-DryRun` is the real preview). | `scripts/new-xtension.ps1:70` | done |
+| M5e | git-missing fallback broken in new-xtension.ps1 (runs `git config` after EAP=Stop, so no git = abort instead of the documented `'Your Name'` default). | `scripts/new-xtension.ps1:468` | done |
+| M5f | `Fail()` dead-ends under EAP=Stop in two scripts (Write-Error throws; `exit 1` unreachable; user sees stack trace not the one-liner). | `scripts/new-xtension.ps1:115-118`; `build-xtension.ps1:63-66` | done |
+| M6a | README says the SDK header is required "to build C++ X-Tensions" — both templates are GetProcAddress-based and need no header (and say so). Reword: SDK optional (reference/manuals), not a build prerequisite. | `README.md:124-126` | done |
+| M6b | README "What's inside" omits `tests/` + `evals/`; scripts row drops api-coverage.ps1. | `README.md:29-38` | done |
+| M6c | CHANGELOG Unreleased contradicts itself: Added section says the two cpp defects were "recorded (not fixed)"; Fixed section says fixed in all three templates. Reconcile (they WERE fixed, later). | `CHANGELOG.md:149-152` vs `:252-261` | done |
 
 ## Phase 3 — CI gates
 

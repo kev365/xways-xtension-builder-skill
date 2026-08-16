@@ -2300,6 +2300,9 @@ LONG __stdcall XT_ProcessItem(LONG nItemID, void*) {
     return 0;
 }
 
+// Stubs — NOT exported by default (commented out in the .def) so only
+// XT_ProcessItem receives items. Uncomment their .def lines to enable, and
+// dedup by item ID if you export both per-item callbacks (both fire per item).
 LONG __stdcall XT_ProcessItemEx(LONG, HANDLE, void*) { return 0; }
 LONG __stdcall XT_ProcessSearchHit(void*) { return 0; }
 

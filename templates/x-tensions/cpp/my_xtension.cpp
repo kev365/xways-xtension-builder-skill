@@ -130,6 +130,10 @@ static int RetrieveFunctionPointers() {
 //   on demand (SHCreateDirectoryExW) when the analyst hits Run. Don't
 //   override an existing saved output_dir in cfg — only seed this default
 //   when the field is empty.
+//   NOTE: these two helpers are intentionally unreferenced in the shipped
+//   template — the demo writes no output files. Call DefaultOutputDir(
+//   GetCaseRootDir()) when you add report/export writing (the wrapper
+//   template shows the full wiring in ResolveDefaultOutputBase).
 //   See docs/conventions/output-dir.md.
 static std::wstring GetCaseRootDir() {
     if (!XWF_GetCaseProp) return {};
@@ -183,9 +187,10 @@ extern "C" {
 LONG __stdcall XT_Init(DWORD nVersion, DWORD nFlags, HWND hMainWnd, void* lpReserved) {
     int missing = RetrieveFunctionPointers();
     // XT_INIT_QUICKCHECK (0x20): X-Ways is only probing compatibility.
-    // Return 1 to accept (-1 to refuse) and do nothing else — no logging,
-    // no side effects. See docs/xtension-invocation.md.
-    if (nFlags & 0x20) return 1;
+    // Answer from the resolution result (-1 refuses the host) and do
+    // nothing else — no logging, no side effects. Same guard as the
+    // wrapper template. See docs/xtension-invocation.md.
+    if (nFlags & 0x20) return (missing > 0) ? -1 : 1;
     // nVersion is a packed word: version*10 in the high 16 bits, service
     // release in byte 1, GUI language in byte 0. Confirmed live on 21.9
     // Beta 1 (0x088E0001 -> v21.9 SR-0). See docs/xtension-invocation.md.
@@ -237,19 +242,20 @@ LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, LONG nOpType, void* 
             L"directory-browser selection, or add self-enumeration here");
 
     // 0x01 (CALLPI): X-Ways calls your per-item callback(s) — whichever of
-    // XT_ProcessItem / XT_ProcessItemEx you export. We export BOTH, so BOTH fire
-    // for every item (RVS delivers each item to both, on a worker pool).
-    // We therefore do the work in ONE place (XT_ProcessItemEx — it also gives an
-    // hItem) and leave XT_ProcessItem a no-op, so each item is handled once.
+    // XT_ProcessItem / XT_ProcessItemEx you EXPORT. This template exports only
+    // XT_ProcessItemEx (see the .def — XT_ProcessItem's line is commented out),
+    // so each item is delivered exactly once. If you export BOTH, both fire per
+    // item (the "2N" trap) — do the work in one, or dedup.
     // (0x04 would be EXPECTMOREITEMS — "I'll create items" — not a callback knob.)
     // See docs/conventions/item-collection.md.
     return 0x01;
 }
 
-// Non-Ex callback. It DOES fire under 0x01 (X-Ways calls both exported callbacks
-// per item) — we keep it a no-op so each item is handled exactly once, in
-// XT_ProcessItemEx below. Do the work here instead if you don't need an hItem;
-// if you work in BOTH, dedup by item ID or you'll double-count.
+// Non-Ex callback — NOT exported by default (commented out in the .def), so it
+// never fires as shipped; the work happens in XT_ProcessItemEx below. Uncomment
+// its .def line if you need it (zero-byte items are only ever delivered here,
+// per the TARGETZEROBYTEFILES quirk) — and then dedup by item ID, because both
+// exported callbacks fire for every ordinary item.
 LONG __stdcall XT_ProcessItem(LONG nItemID, void* lpReserved) {
     return 0;
 }

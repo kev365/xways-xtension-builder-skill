@@ -156,7 +156,7 @@ entry is kept for numbering stability.
 - **Risk:** comment writes are **mutating** — throwaway case.
 - **Resolution target:** template README edits (deferred by decision — this
   pass documents, a later pass fixes the README against the probe result).
-- **Extended 2026-08-14 (cpp template, found by dogfooding a probe scaffold):**
+- **Extended 2026-08-14 (cpp template, found while scaffolding a real probe from it):**
   two more template claims now in tension with the conventions/SDK:
   (a) the cpp template's `XT_Init` **logs before checking
   `XT_INIT_QUICKCHECK`** — it has no `nFlags & 0x20` guard at all, violating
@@ -249,7 +249,7 @@ the mutating and crash-risk tier.
 
 **Probe status (2026-08-14):** a read-only probe X-Tension covering entries
 1, 3 and 4 exists — scaffolded *with the authoring skill* (its first end-to-end
-dogfood) and verified under a **mock host**: a console EXE that exports stub
+first real-world use) and verified under a **mock host**: a console EXE that exports stub
 `XWF_*` functions, exploiting the fact that X-Tensions resolve the API against
 the host EXE's export table. All entry points sequence correctly, QUICKCHECK
 stays quiet, the mismatch classifier buckets engineered deviances, 0 failures.

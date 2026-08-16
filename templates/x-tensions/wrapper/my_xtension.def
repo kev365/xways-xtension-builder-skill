@@ -8,7 +8,9 @@ EXPORTS
     XT_About
     XT_Prepare
     XT_ProcessItem
-    XT_ProcessItemEx
-    XT_ProcessSearchHit
+;   XT_ProcessItemEx     ; stub in the .cpp — the wrapper collects IDs in
+;                        ; XT_ProcessItem. Uncomment only if you need hItem
+;                        ; per item, then dedup — both fire when both exported.
+;   XT_ProcessSearchHit  ; stub — uncomment when you implement search hits.
     XT_Finalize
     XT_Done

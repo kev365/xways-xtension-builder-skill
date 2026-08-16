@@ -14,10 +14,12 @@ two always-on rules (`-DryRun` first; the build gate) — everything else is her
 
 ## Where output goes (`-DestRoot`)
 
-The scripts read templates and assets **from the installed skill** and write
-scaffold/build output **under the current directory**, or under a project passed
-via `-DestRoot`. They refuse to write into an installed plugin/marketplace cache,
-which Claude Code manages and overwrites on update.
+The scaffold/build scripts read templates and assets **from the installed
+skill** and write output **under the current directory**, or under a project
+passed via `-DestRoot`. They refuse to write into an installed
+plugin/marketplace cache, which Claude Code manages and overwrites on update.
+(`backfill-standards.ps1` has no `-DestRoot` — it edits a repo working copy in
+place and is meant to be run from a clone, not a plugin install.)
 
 Installed as a plugin, the scripts are at `${CLAUDE_PLUGIN_ROOT}/scripts/`. Run
 them with `-DestRoot <the user's project>`, or from that project directory.

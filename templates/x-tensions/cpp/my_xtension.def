@@ -11,8 +11,11 @@ EXPORTS
     XT_Init
     XT_About
     XT_Prepare
-    XT_ProcessItem
+;   XT_ProcessItem       ; stub in the .cpp — this template does its work in
+;                        ; XT_ProcessItemEx. Uncomment to also receive items
+;                        ; here (zero-byte items only ever reach this one),
+;                        ; then dedup — both callbacks fire when both exported.
     XT_ProcessItemEx
-    XT_ProcessSearchHit
+;   XT_ProcessSearchHit  ; stub — uncomment when you implement search hits.
     XT_Finalize
     XT_Done
