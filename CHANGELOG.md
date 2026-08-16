@@ -31,7 +31,7 @@ All notable changes to this project are documented here. Versions follow
 
 - **Full skill review + repair sweep (2026-08-16)** — two parallel reviewers
   over the whole repo surfaced 45 findings; all are resolved or dispositioned
-  in [docs/skill-review-roadmap.md](docs/skill-review-roadmap.md) (the
+  in the review roadmap that shipped with the v0.6.0 tag (the
   register, with per-item status and an empirical-test queue for the four
   questions only a live X-Ways run can answer). Highlights fixed: the last
   surviving "AddComment 2 = PREPEND" claim; op=0 no-callback propagation to
