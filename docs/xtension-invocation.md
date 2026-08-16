@@ -68,6 +68,14 @@ LONG __stdcall XT_Init(DWORD info, DWORD nFlags, HANDLE hMainWnd, void* lpReserv
 in the older Pascal binding `XT_API.pas` — treat it as reserved and mask it out
 rather than asserting on it.
 
+Live flag words observed 2026-08-15, a clean differential across hosts: 21.9
+**Beta 1** delivered `0x89` (`XWF | BETA | ALTERED_SEARCH_PATH`); 21.8 SR-5
+release delivered `0x81` (no BETA bit) — and, when the DLL was loaded for a
+simultaneous search, an initial `0xC1` (**`ABOUTONLY` set**, matching its
+documented "About *or* XT_PrepareSearch" meaning) followed by `XT_Done` and a
+fresh `0x81` init for the search itself. Expect that unload/reload cycle in
+the search lifecycle.
+
 #### Decoding the first parameter
 
 The first argument (`info`, named `nVersion` in most bindings) is a packed

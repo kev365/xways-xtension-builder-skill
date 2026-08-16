@@ -70,9 +70,14 @@ marked **mutating** or **crash-risk** must never run against a real case.
   rule.) **GUI retest (same day): identical result** — active volume set,
   snapshot live, `rv=0`, zero callbacks; and the post-search runtime 217
   reproduced in the GUI session too. Both behaviours are
-  **context-independent on 21.9 Beta 1**. Remaining before tracker B9 is
-  post-ready: a 21.8 cross-check to separate Beta-1 regression from
-  long-standing behaviour.
+  **context-independent on 21.9 Beta 1**. **21.8 SR-5 partial cross-check
+  (2026-08-15): the callback mechanism itself works** — an analyst-driven
+  simultaneous search delivered `XT_ProcessSearchHit` per hit (op=2,
+  iSize=48). Still untested on 21.8: `XWF_Search` + `CALLPSH` themselves (the
+  probe's needle-picker found no plaintext in the BitLocker corpus, so the
+  searches were skipped — meaning the absence of a crash that session is not
+  evidence about B9(b) either). A text-bearing corpus on 21.8 completes the
+  comparison.
 - **Bonus findings from the same probes** (see
   [xways-search-api.md](xways-search-api.md)): a **NULL `pCPages` access
   violates inside `XWF_Search`** (0xC0000005 — CodePages is mandatory in
@@ -197,6 +202,10 @@ entry is kept for numbering stability.
   official page assigns `0x0040` two meanings back to back ("include in case
   report" / "in slack or uninitialised end portion"). `Luhn.cpp` doesn't touch
   it; no other source weighs in.
+- **Partial data (2026-08-15, 21.8 SR-5):** 16 plain in-content hits logged
+  via an analyst-driven search all carried `nFlags = 0x0000` — ordinary
+  content hits assert neither meaning. Discriminating the bit still needs a
+  slack hit and/or a report-flagged hit, per the original probe design below.
 - **Probe:** run a search guaranteed to hit both in-file content and slack
   (plant the needle in both), log `nFlags` per hit in `XT_ProcessSearchHit`,
   and separately toggle "include in report" on a hit in the GUI and re-read

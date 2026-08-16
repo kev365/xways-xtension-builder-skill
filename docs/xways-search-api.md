@@ -208,6 +208,16 @@ think you are running once may run once per evidence object.
   runtime error 217 at the same address. Tracked as a bug candidate; treat
   `XWF_Search` as hazardous on 21.9 Beta 1 regardless of context.
 
+**The analyst-driven side works (verified 2026-08-15, 21.8 SR-5):** with the
+X-Tension participating in a GUI simultaneous search, `XT_ProcessSearchHit`
+fired per hit (`nOpType = 2` at `XT_Prepare`), delivering `iSize = 48` (the
+full current struct), `nCodePage = 1252`, and `nFlags = 0x0000` on plain
+in-content hits — so ordinary hits carry *neither* documented meaning of the
+ambiguous `0x0040` bit. The search lifecycle also showed an undocumented
+shape: the DLL is first initialised with `XT_INIT_ABOUTONLY` (0x40) set —
+matching the documented "About or XT_PrepareSearch" semantics — then unloaded
+(`XT_Done`) and re-initialised for the actual search.
+
 **On the hit callback:** the official prose (missed in this page's first
 distillation) says *"Only if the XWF_SEARCH_CALLPSH flag is specified, X-Ways
 Forensics will call XT_ProcessSearchHit(), if exported, for each hit"* — i.e.
