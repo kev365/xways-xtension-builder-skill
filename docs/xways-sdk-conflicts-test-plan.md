@@ -178,12 +178,23 @@ entry is kept for numbering stability.
   `wchar_t[33]` but writes `hashBits/4` characters — 40 for SHA-1, 64 for
   SHA-256 — a stack overflow inside the bridge DLL
   ([xways-python-bridge.md](xways-python-bridge.md)).
-- **Probe:** throwaway case with the snapshot hash type set to SHA-256, hashes
-  computed; one Python script calling `xwf.GetHashValue(id, 1)` on one item.
-  Expected outcomes: crash, silent corruption of the returned string, or —
-  if the compiler's stack protector catches it — host termination.
-- **Risk:** **crash-risk** by design (that's the hypothesis). Throwaway case,
-  nothing else open. An MD5-typed control run first proves the call path.
+- **VERIFIED BY SOURCE 2026-08-15 — the overflow is unambiguous in
+  `Python.cpp`.** `hashStr` is `wchar_t[33]` (`:1157`) with the author's own
+  comment "256/8=32, plus zero-terminator" — that is the bug: 256 **bits** =
+  32 **bytes** = **64 hex chars**, so the buffer was sized as if bytes were
+  chars. The loop (`:1158`) iterates `i` over *bytes* and writes two chars per
+  byte at `hashStr[2i]`/`[2i+1]`; for SHA-256 that reaches index 63 in a
+  33-element buffer (a 62-byte stack overflow), and `:1165` reads 64 wchars
+  back. **Threshold: any hash type wider than 128 bits overflows** — SHA-1
+  (160) by 7 chars, SHA-256 (256) by 31; MD5/MD4/RIPEMD-128 are exactly safe,
+  which is why it went unnoticed. No runtime needed to establish the defect;
+  the code cannot do otherwise.
+- **Runtime confirmation (optional) is gated on a Python 3.12 install.** The
+  bundle's `python312.dll` needs a matching 3.12 environment for
+  `Py_Initialize`; this machine has 3.13/3.14 only. A probe script
+  (`reg7_hashprobe.py`) and the setup are staged for whenever a 3.12 install
+  exists — but the source proof is the stronger artifact for the report.
+- **Risk:** the runtime path is **crash-by-design**; throwaway case only.
 
 ## 8. `XWF_GetItemName` beyond MAX_PATH
 

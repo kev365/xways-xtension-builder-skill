@@ -220,6 +220,16 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- **Register 7 — the `xwf.GetHashValue` stack overflow — verified by source.**
+  `Python.cpp:1157` sizes `hashStr` as `wchar_t[33]` (comment: "256/8=32, plus
+  zero-terminator"), but 256 bits = 32 bytes = 64 hex chars: the buffer was
+  sized as if bytes were chars. The loop writes 2 chars per hash byte, reaching
+  index 63 for SHA-256 (a 62-byte overflow), and reads 64 wchars back at
+  `:1165`. Any hash wider than 128 bits overflows (SHA-1 by 7 chars, SHA-256 by
+  31); MD5/MD4/RIPEMD-128 are exactly safe. Runtime corroboration is staged
+  (`x-tensions/xways-sdk-probe/python-reg7/`) but gated on a Python 3.12
+  install — the source proof is the stronger artefact regardless.
+
 - **The templates' `COMMENT_PREPEND = 2` was an invented constant — no such
   mode exists.** The mutating probe on 21.8 SR-5 (2026-08-15) read back live:
   `AddComment` mode 0 replaces, mode 1 appends with a space, mode 2 appends
