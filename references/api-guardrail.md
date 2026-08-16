@@ -78,7 +78,7 @@ Select-String "XWF_GetCaseProp" `
 | Entry point lifecycle, threading model, return values, `nOpType` constants | `docs/xtension-invocation.md` |
 | `XT_Init` signature (note: fourth param is now `LicenseInfo*`) | `docs/xways-api-recency-research.md` §"TL;DR" + `docs/xtension-invocation.md` |
 | Events API (`XWF_AddEvent` / `XWF_GetEvent`, `EventInfo` struct, subcode tables) | `docs/xways-events-api.md` |
-| Empirical event behavior (subcode→Type-label tables, `nFlags` effects, lpDescr ceiling) | `docs/events-viewer-empirical-findings.md` |
+| Empirical event behavior (probe methodology, `XWF_SetItemType` semantics, FILETIME drift, Int. ID correlation) | `docs/events-viewer-empirical-findings.md` (the subcode/`nFlags`/lpDescr result tables live in `docs/xways-events-api.md`) |
 | `XWF_GetCaseProp` / `XWF_GetEvObjProp` / `XWF_GetVSProp` property numbers | `docs/xways-getprop-reference.md` |
 | `XWF_OpenItem` flag bits | `docs/xways-openitem-flags.md` |
 | Reading existing events and directory-browser items | `docs/xways-reading-events-and-items.md` |
