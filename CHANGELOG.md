@@ -220,6 +220,17 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- **The templates' `COMMENT_PREPEND = 2` was an invented constant — no such
+  mode exists.** The mutating probe on 21.8 SR-5 (2026-08-15) read back live:
+  `AddComment` mode 0 replaces, mode 1 appends with a space, mode 2 appends
+  with a **line break** — matching the official page exactly (`0x01` append,
+  `0x02` append + line break; no prepend). Renamed to `COMMENT_APPEND_LINEBREAK`
+  in all three templates. Register 6 closed.
+- **Register 8 (`XWF_GetItemName` MAX_PATH crash) does not reproduce on 21.8
+  SR-5.** The probe created a 304-char-named item and ran QTest's exact
+  crashing pattern; `XWF_GetItemName` returned all 304 chars with no crash. The
+  SDK-era warning is stale. Register 8 closed.
+
 - **Templates warn about the op=0 silent no-op.** All three templates now
   carry the confirmed gotcha (21.8 SR-5 + 21.9 Beta 1: `XT_ACTION_RUN`
   delivers no per-item callbacks despite a `0x01` return) as a comment *and*

@@ -80,7 +80,10 @@ enum : DWORD {
     XT_ACTION_SHC = 5,
 };
 
-enum : DWORD { COMMENT_REPLACE = 0, COMMENT_APPEND = 1, COMMENT_PREPEND = 2 };
+// XWF_AddComment nFlagsHowToAdd (official page, verified live 21.8 SR-5
+// 2026-08-15): 0 replaces, 1 appends with a space delimiter, 2 appends
+// with a line-break delimiter. There is NO prepend mode.
+enum : DWORD { COMMENT_REPLACE = 0, COMMENT_APPEND = 1, COMMENT_APPEND_LINEBREAK = 2 };
 
 // --- Dialog message IDs (worker -> dialog) ---------------------------------
 #define WM_APP_PROGRESS   (WM_APP + 1)  // wp = permille (0..1000)

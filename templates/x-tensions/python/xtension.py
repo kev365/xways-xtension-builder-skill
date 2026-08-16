@@ -46,9 +46,11 @@ XT_ACTION_SHC = 5  # Search Hit Context menu
 # --- AddComment howToAdd flags -----------------------------------------------
 # Values from the C-API page for XWF_AddComment; the bridge passes howToAdd
 # through uninspected, so only that page backs them (not the bridge source).
+# 0 replaces, 1 appends (space delimiter), 2 appends with a line-break
+# delimiter. There is NO prepend mode (verified live on 21.8 SR-5, 2026-08-15).
 COMMENT_REPLACE = 0
 COMMENT_APPEND = 1
-COMMENT_PREPEND = 2
+COMMENT_APPEND_LINEBREAK = 2
 
 # --- Sidecar config -----------------------------------------------------------
 # Optional JSON file next to this script; users can tweak behaviour without

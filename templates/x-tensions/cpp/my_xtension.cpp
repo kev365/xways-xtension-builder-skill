@@ -43,7 +43,10 @@ enum : DWORD {
 };
 
 // --- AddComment howToAdd flags (official API) -------------------------------
-enum : DWORD { COMMENT_REPLACE = 0, COMMENT_APPEND = 1, COMMENT_PREPEND = 2 };
+// XWF_AddComment nFlagsHowToAdd (official page, verified live 21.8 SR-5
+// 2026-08-15): 0 replaces, 1 appends with a space delimiter, 2 appends
+// with a line-break delimiter. There is NO prepend mode.
+enum : DWORD { COMMENT_REPLACE = 0, COMMENT_APPEND = 1, COMMENT_APPEND_LINEBREAK = 2 };
 
 // --- Function-pointer typedefs (trimmed — add more as you need them) --------
 typedef VOID   (__stdcall *pfn_XWF_OutputMessage)(const wchar_t* msg, DWORD nFlags);

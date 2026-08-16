@@ -193,9 +193,15 @@ entry is kept for numbering stability.
   announcement is about IDs, not name length. Our own pointer-lifetime testing
   ([xways-snapshot-mutation.md](xways-snapshot-mutation.md)) never used
   over-long names.
-- **Probe:** create an item via `XWF_CreateFile` with a >260-wchar name (or
-  add evidence containing one via `\\?\` paths), then call `XWF_GetItemName`
-  and concatenate into a `std::wstring` exactly as QTest does.
+- **RESOLVED 2026-08-15 (probe on 21.8 SR-5): does not reproduce.** Created an
+  item with a 304-char name via `XWF_CreateFile` (parent = 0 / root worked),
+  then ran QTest's exact crashing pattern — `XWF_GetItemName` returned all 304
+  chars into a `std::wstring` with **no crash**. QTest's SDK-era warning is
+  stale; the long-name path is safe on 21.8 SR-5. (Retest before relying on it
+  for names far beyond 304, or on much older hosts.)
+- **Probe (as run):** create an item via `XWF_CreateFile` with a >260-wchar
+  name, then call `XWF_GetItemName` and concatenate into a `std::wstring`
+  exactly as QTest does.
 - **Risk:** **crash-risk + mutating** (item creation). Throwaway case.
 
 ## 9. `0x0040` search-hit flag double-listing
