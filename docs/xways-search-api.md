@@ -204,9 +204,9 @@ think you are running once may run once per evidence object.
   `XT_Finalize` (with `nOpType = 2`, LSS) before returning — entry points must
   be re-entrancy-safe if you call `XWF_Search`.
 - **Post-search host instability**: every run in which `XWF_Search`
-  executed — even cleanly, CLI-launched *and* GUI-session alike — ended with
-  runtime error 217 at the same address. Tracked as a bug candidate; treat
-  `XWF_Search` as hazardous on 21.9 Beta 1 regardless of context.
+  executed — CLI-launched, GUI-session, on 21.9 Beta 1 **and shipping 21.8
+  SR-5** — ended with runtime error 217 at the same address. Not a beta
+  artefact; treat `XWF_Search` from an X-Tension as hazardous on both builds.
 
 **The analyst-driven side works (verified 2026-08-15, 21.8 SR-5):** with the
 X-Tension participating in a GUI simultaneous search, `XT_ProcessSearchHit`
@@ -222,10 +222,13 @@ matching the documented "About or XT_PrepareSearch" semantics — then unloaded
 distillation) says *"Only if the XWF_SEARCH_CALLPSH flag is specified, X-Ways
 Forensics will call XT_ProcessSearchHit(), if exported, for each hit"* — i.e.
 the trap stated at the top of this page is the *default*, and `CALLPSH`
-(`0x01000000`, observed from v16.8 SR-5) is the documented opt-in. **Empirically
-on 21.9 Beta 1 the opt-in did not work in any tested context**: CLI-launched
-and GUI-session runs both delivered **zero callbacks against a term with 2,658
-confirmed hits**. See the [conflicts register](xways-sdk-conflicts-test-plan.md)
+(`0x01000000`, observed from v16.8 SR-5) is the documented opt-in. **Empirically the opt-in does not deliver** — and not just on the beta:
+21.9 Beta 1 (CLI + GUI) and **shipping 21.8 SR-5** all returned **zero
+callbacks** for `CALLPSH` searches whose terms the GUI credited with real hits
+(2,658 and 4 respectively). The analyst-driven path (`XT_ProcessSearchHit`
+for X-Ways' *own* search) works fine on the same builds, so the fault is
+specific to `XWF_Search` + `CALLPSH`, not the callback itself. Every one of
+these `XWF_Search` runs also ended in a host crash (runtime error 217). See the [conflicts register](xways-sdk-conflicts-test-plan.md)
 entry 2 for caveats and status.
 
 ## The `XWF_SEARCH_*` flag family

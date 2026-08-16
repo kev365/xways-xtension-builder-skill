@@ -70,14 +70,16 @@ marked **mutating** or **crash-risk** must never run against a real case.
   rule.) **GUI retest (same day): identical result** — active volume set,
   snapshot live, `rv=0`, zero callbacks; and the post-search runtime 217
   reproduced in the GUI session too. Both behaviours are
-  **context-independent on 21.9 Beta 1**. **21.8 SR-5 partial cross-check
-  (2026-08-15): the callback mechanism itself works** — an analyst-driven
-  simultaneous search delivered `XT_ProcessSearchHit` per hit (op=2,
-  iSize=48). Still untested on 21.8: `XWF_Search` + `CALLPSH` themselves (the
-  probe's needle-picker found no plaintext in the BitLocker corpus, so the
-  searches were skipped — meaning the absence of a crash that session is not
-  evidence about B9(b) either). A text-bearing corpus on 21.8 completes the
-  comparison.
+  **context-independent on 21.9 Beta 1**. **CONFIRMED ON A RELEASE BUILD —
+  21.8 SR-5, 2026-08-15, text-bearing corpus:** the probe's own `XWF_Search`
+  with `CALLPSH` delivered **0 `XT_ProcessSearchHit` callbacks** for a term
+  the GUI term list credits with **4 hits** (`WebFetch(domain:r (4)`), and the
+  run ended with the same runtime 217 crash. **So neither B9(b) nor B9(c) is a
+  beta regression** — both reproduce on shipping 21.8 SR-5. Note the contrast
+  that isolates the flaw: the callback mechanism itself is healthy on 21.8
+  (an *analyst-driven* search delivers hits per-hit, verified same day) — it
+  is specifically the **`XWF_Search` + `CALLPSH`** path that returns hits to
+  the GUI but not to the X-Tension.
 - **Bonus findings from the same probes** (see
   [xways-search-api.md](xways-search-api.md)): a **NULL `pCPages` access
   violates inside `XWF_Search`** (0xC0000005 — CodePages is mandatory in
