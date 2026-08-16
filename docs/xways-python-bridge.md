@@ -74,7 +74,20 @@ Consequences that matter in practice:
 - The script list lives in **`Python.cfg` next to the X-Ways EXE**. It is
   written by the bridge's `XT_About` — the "About" gesture on `XT_Python.dll`
   *is* the script picker (a multi-select `.py` file dialog). That is what the
-  readme's cryptic "click …" instruction refers to.
+  readme's cryptic "click …" instruction refers to. Format: UTF-16LE,
+  NUL-separated full paths, double-NUL terminated, **no BOM** (the bridge
+  reads the file raw into a `wchar_t` buffer).
+- **Your `.py` must sit in the X-Ways main folder, not a subfolder** (verified
+  2026-08-16, Python 3.12). The bridge does **not** touch `sys.path`: it only
+  `SetCurrentDirectory`s into the script's directory and runs
+  `import <module>` (source comment: "Import module must be in the same
+  directory as XT_Python"). On Python 3.12 the current directory is not
+  importable, so a script listed in `Python.cfg` from any other folder fails
+  at `import` — the Messages window shows `Failed to execute import <name>`
+  for **every** entry point. Placing it in the main folder (where
+  `python312.dll` anchors the interpreter's path) is what makes `import`
+  resolve. This is the load-bearing meaning behind the readme's "all files in
+  the XWF main folder".
 - **Which Python version? Settled 2026-08-14 by the binary itself:** the
   shipped `XT_Python.dll`'s PE import table links **`python312.dll`**. The
   bundle readme's "requires Python 3.10" and the source drops' "3.11" are both
@@ -187,7 +200,7 @@ the SDK's `Python.cpp` at git HEAD c46a1bd2.
 
 | Call | Defect | Practical guidance |
 | --- | --- | --- |
-| `GetHashValue` | The hex-encode buffer is `wchar_t[33]` but the loop writes `hashBits/4` chars — **64 for SHA-256, 40 for SHA-1: a stack buffer overflow inside the bridge**. Only ≤128-bit hashes (MD5, MD4, ED2K, RIPEMD-128, Tiger128) fit. | Do not call on snapshots whose hash type is wider than 128 bits. If you need SHA-1/SHA-256 from Python, `xwf.Read` the file and hash it with `hashlib` instead. |
+| `GetHashValue` | **Stack buffer overflow** (source-verified 2026-08-15, `Python.cpp:1157-1165`). `hashStr` is `wchar_t[33]`, commented "256/8=32, plus zero-terminator" — but 256 **bits** = 32 **bytes** = 64 **hex chars**, so the buffer was sized as if bytes were chars. The loop writes 2 chars per hash byte at `hashStr[2i]`/`[2i+1]`, reaching index 63 for SHA-256 (a 62-byte overflow), and `PyUnicode_FromWideChar(hashStr, hashBits/4)` then reads 64 wchars back. **Any hash type wider than 128 bits overflows** (SHA-1/160 by 7 chars, SHA-256/256 by 31); MD5/MD4/RIPEMD-128 are exactly safe. | Do not call on snapshots whose hash type is wider than 128 bits. If you need SHA-1/SHA-256 from Python, `xwf.Read` the file and hash it with `hashlib` instead. |
 | `GetHashValue` (again) | The size/name lookup always queries `XWF_VSPROP_HASHTYPE1`, even for `hashType=2` — a differing secondary hash type gets the wrong length. | Treat `hashType=2` as unreliable whenever the two hash types differ. |
 | `Read` | The return value of `XWF_Read` is discarded; the bytearray is returned at the requested size regardless. **A short read hands you trailing garbage with no signal.** | Compare against `GetItemSize`/`GetLogicalSize` and treat the tail as suspect near end-of-file. |
 | `GetReportTableAssocs` | Fixed 2048-wchar buffer; the association count returned by the C call is discarded; overflow truncates silently. | Fine for normal label counts; do not build completeness-critical logic on it. |
