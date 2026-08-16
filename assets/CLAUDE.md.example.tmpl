@@ -5,9 +5,9 @@
 > `CLAUDE.md` as directory-level instructions. Keep this committed `.example`
 > **generic — no local paths, credentials, or case data.**
 >
-> Project-wide rules live in the repo-root `CLAUDE.md` and the authoring skill
-> (`.claude/skills/xways-xtension-authoring/`). This file captures only what is
-> specific to **{{NAME}}**.
+> Project-wide rules live in your project's `CLAUDE.md` and the
+> `xways-xtension-authoring` skill (installed as a Claude Code plugin, or a
+> clone/junction). This file captures only what is specific to **{{NAME}}**.
 
 ## What this X-Tension is
 
@@ -15,14 +15,15 @@
 
 - **Stem / DLL:** `{{NAME}}` → `{{NAME}}.dll`
 - **Version:** `{{VERSION}}` — beta until the first public release (see
-  `docs/conventions/versioning.md`).
+  the skill's `docs/conventions/versioning.md`).
 - **Identity constants** (top of `{{NAME}}.cpp`): `NAME`, `VERSION`,
   `DESCRIPTION`, `REPORT_TABLE`.
 
 ## Build
 
 ```powershell
-.claude/skills/xways-xtension-authoring/scripts/build-xtension.ps1 -Name {{NAME}}
+# Run from your project root; the script lives in the skill (plugin cache or clone).
+<skill>/scripts/build-xtension.ps1 -Name {{NAME}}
 ```
 
 Close X-Ways first — the DLL is locked while it runs (no hot reload).
@@ -31,7 +32,7 @@ Close X-Ways first — the DLL is locked while it runs (no hot reload).
 
 - _If this wraps an external CLI: name it, its `--version` identity needle, and
   the exact argument shape used. See
-  `docs/conventions/helper-exe-verification.md`._
+  the skill's `docs/conventions/helper-exe-verification.md`._
 
 ## Config & sidecar files
 
@@ -44,11 +45,11 @@ Close X-Ways first — the DLL is locked while it runs (no hot reload).
 
 ## Conventions in play
 
-- Output directory → `docs/conventions/output-dir.md`
-- Verbose logging → `docs/conventions/verbose-logging.md`
+- Output directory → the skill's `docs/conventions/output-dir.md`
+- Verbose logging → the skill's `docs/conventions/verbose-logging.md`
 - _Add others as wired (ctrl-to-save, manager-compatibility, …)._
 
 ## Don't commit
 
 - Compiled `{{NAME}}.dll`, live `.cfg`, local paths (`C:\Users\…`), or case
-  data. See `docs/conventions/repo-hygiene.md`.
+  data. See the skill's `docs/conventions/repo-hygiene.md`.

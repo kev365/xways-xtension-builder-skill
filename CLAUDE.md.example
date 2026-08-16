@@ -14,14 +14,14 @@ the X-Ways SDK, or the X-Ways manuals.
   distilled / empirical only and cite official sources by link. See
   [docs/getting-the-sdk.md](docs/getting-the-sdk.md).
 - **Don't commit binaries, secrets, local paths, or case data.** Run
-  `.claude/skills/xways-xtension-authoring/scripts/prepublish-scan.ps1 -Strict`
+  `scripts/prepublish-scan.ps1 -Strict`
   before any push.
 - **Templates are the read-only scaffold source** under
   [templates/x-tensions/](templates/x-tensions/). Scaffold new X-Tensions into
   your OWN project, not this repo.
 - **API correctness:** never invent `XWF_*` calls or flags. Verify against
   `docs/`, the live API page, or your locally-acquired SDK header — see the
-  [API guardrail](.claude/skills/xways-xtension-authoring/references/api-guardrail.md).
+  [API guardrail](references/api-guardrail.md).
 
 ## Conventions
 
