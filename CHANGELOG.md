@@ -5,13 +5,6 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
-### Added
-
-- `CONTRIBUTING.md` — ground rules (no copyrighted X-Ways material, evidence
-  for API claims), the local gate commands, and the junction-install setup for
-  live-editing the skill, moved out of the README (which keeps a one-line
-  pointer).
-
 ### Known issues / queued work
 
 - **Register policy decision pending** — the conflicts register
@@ -31,6 +24,13 @@ All notable changes to this project are documented here. Versions follow
   gate at authoring time against a runtime host bug.
 
 ## [0.6.0] — 2026-08-16
+
+### Community files
+
+- `CONTRIBUTING.md` — ground rules (no copyrighted X-Ways material, evidence
+  for API claims), the local gate commands, and the junction-install setup for
+  live-editing the skill, moved out of the README (which keeps a one-line
+  pointer).
 
 ### Added
 
