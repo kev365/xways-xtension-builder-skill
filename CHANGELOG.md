@@ -7,12 +7,7 @@ All notable changes to this project are documented here. Versions follow
 
 ### Known issues / queued work
 
-- **Register policy decision pending** — the conflicts register
-  ([docs/xways-sdk-conflicts-test-plan.md](docs/xways-sdk-conflicts-test-plan.md))
-  resolves entries in place while its preamble prescribes move-and-strike;
-  reconcile one way or the other (tracked as D5 in
-  [docs/skill-review-roadmap.md](docs/skill-review-roadmap.md)).
-- **Empirical queue** (needs a live X-Ways host; roadmap Phase E): off-thread
+- **Empirical queue** (needs a live X-Ways host): off-thread
   `XWF_*` semantics while the host thread is parked in a dialog pump (until
   then the threading danger box stays deliberately conservative — note the
   wrapper template's worker thread relies on the parked-host pattern);

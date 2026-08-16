@@ -172,8 +172,7 @@ If your X-Tension doesn't iterate items, omit `XT_ProcessItem`. If it doesn't ne
   mis-packed unrelated struct is a miserable bug to find.
 - **Vendor-recorded hazards in the SDK's `QTest.cpp`** (see
   [xways-sdk-source-notes.md](xways-sdk-source-notes.md)) — three comments from
-  X-Ways' own sample author, now re-tested (2026-08-15, 21.8 SR-5; see the
-  [test plan](xways-sdk-conflicts-test-plan.md), entries 3 and 8):
+  X-Ways' own sample author, now re-tested (2026-08-15, 21.8 SR-5):
   - `// Leads to a crash in WinHex for filenames that exceed MAX_PATH` — on
     `XWF_GetItemName` + string concatenation. **Does not reproduce on current
     builds**: a 304-character name created and read back on 21.8 SR-5 with no

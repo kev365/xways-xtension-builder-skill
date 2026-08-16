@@ -23,10 +23,8 @@ your own X-Tension started** with `XWF_Search`. The documented opt-in is the
 `XWF_SEARCH_CALLPSH` flag (*"Only if the XWF_SEARCH_CALLPSH flag is specified,
 X-Ways Forensics will call XT_ProcessSearchHit(), if exported, for each
 hit"* — official prose this page originally missed). **Empirically the opt-in
-delivered zero callbacks on 21.9 Beta 1 in a CLI-launched context** — see the
-`XWF_Search` section and the
-[conflicts register](xways-sdk-conflicts-test-plan.md) before designing around
-either behaviour.
+delivered zero callbacks on 21.8 SR-5 and 21.9 Beta 1** — see the
+`XWF_Search` section before designing around either behaviour.
 
 ## Contents
 
@@ -228,8 +226,7 @@ callbacks** for `CALLPSH` searches whose terms the GUI credited with real hits
 (2,658 and 4 respectively). The analyst-driven path (`XT_ProcessSearchHit`
 for X-Ways' *own* search) works fine on the same builds, so the fault is
 specific to `XWF_Search` + `CALLPSH`, not the callback itself. Every one of
-these `XWF_Search` runs also ended in a host crash (runtime error 217). See the [conflicts register](xways-sdk-conflicts-test-plan.md)
-entry 2 for caveats and status.
+these `XWF_Search` runs also ended in a host crash (runtime error 217).
 
 ## The `XWF_SEARCH_*` flag family
 
@@ -286,8 +283,7 @@ the rest of the list.
     invocation exists anywhere in the SDK — not in the C++ samples, not in the
     Python bridge (which doesn't expose it), and not in the C# tree (the
     project literally named "C# Search Test" never calls it) — so the vendor
-    has never demonstrated the flag either. Status tracked in
-    [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md).
+    has never demonstrated the flag either.
 
 ## Search terms — read and create
 

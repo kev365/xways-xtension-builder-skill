@@ -39,5 +39,5 @@ Exact command(s) or steps, plus output if available.
 
 If you're reporting that a `docs/` page states something the API doesn't
 actually do: please include what you observed (X-Ways version, the call, the
-result). Empirical evidence versus a live host is this repo's gold standard —
-see docs/xways-sdk-conflicts-test-plan.md for how claims get verified.
+result). Empirical evidence versus a live host is this repo's gold standard
+for API claims.
