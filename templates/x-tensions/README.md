@@ -12,10 +12,16 @@ Don't edit these in place — scaffold a copy with the skill's
   forensic-license-only features (e.g. the Events API). Self-contained: resolves
   `XWF_*` exports via `GetProcAddress`, so it compiles without the SDK header.
 - [`python/`](python/) — **Python** skeleton (for `XT_Python.dll`; the current
-  bundle links Python 3.12). Faster to iterate; use when you don't need APIs
+  bundle links Python 3.12 and needs a matching **system-wide** install).
+  Faster to iterate; use when you don't need APIs
   the Python bridge omits — the full 46-method inventory of what it *does*
   expose is in [xways-python-bridge.md](../../docs/xways-python-bridge.md)
-  (notably `XWF_AddEvent` / `XWF_GetEvent`, which require C++). Patterns drawn from
+  (notably `XWF_AddEvent` / `XWF_GetEvent`, which require C++). Two hard
+  constraints (verified live 2026-08-16, details in the
+  [python README](python/README.md)): the script's file stem must be a legal
+  module name (**underscores, never hyphens** — the bridge loads via
+  `import <filestem>`), and the `.py` files deploy into the **X-Ways main
+  folder**, not an `xtensions\` subfolder. Patterns drawn from
   public community X-Tensions (CrowdStrike's YARA scanner, Polito's extensions) —
   see [NOTICE](../../NOTICE).
 - [`wrapper/`](wrapper/) — C++ template for **wrapping an
@@ -35,6 +41,12 @@ Don't edit these in place — scaffold a copy with the skill's
 ## Entry points (all templates)
 
 `XT_Init` → `XT_About` → `XT_Prepare` → `XT_ProcessItem` / `XT_ProcessItemEx` / `XT_ProcessSearchHit` → `XT_Finalize` → `XT_Done`.
+
+All entry points are *implemented* in every template, but the C++ `.def` files
+**export selectively**: X-Ways drives behaviour off the export table (export
+both per-item callbacks and both fire for every item — the "2N" trap), so each
+template exports only the callback it does its work in, with the rest
+`;`-commented for one-line re-enable. See the notes inside each `.def`.
 
 For authoritative signatures, see the official
 [X-Ways function reference](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html)
