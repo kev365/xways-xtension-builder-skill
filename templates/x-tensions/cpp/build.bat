@@ -47,6 +47,8 @@ if errorlevel 1 (
 
 :have_toolchain
 
+rem Anchor to this script's own folder so a direct invocation from any cwd works.
+cd /d "%~dp0"
 set NAME=my_xtension
 set OUT=%NAME%.dll
 set CXXFLAGS=/nologo /std:c++17 /W3 /EHsc /O2 /utf-8 /DUNICODE /D_UNICODE

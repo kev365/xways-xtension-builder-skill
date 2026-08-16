@@ -43,10 +43,14 @@ XT_ACTION_PSS = 3  # Physical Simultaneous Search
 XT_ACTION_DBC = 4  # Directory Browser Context menu
 XT_ACTION_SHC = 5  # Search Hit Context menu
 
-# --- AddComment howToAdd flags (per official API docs) -----------------------
+# --- AddComment howToAdd flags -----------------------------------------------
+# Values from the C-API page for XWF_AddComment; the bridge passes howToAdd
+# through uninspected, so only that page backs them (not the bridge source).
+# 0 replaces, 1 appends (space delimiter), 2 appends with a line-break
+# delimiter. There is NO prepend mode (verified live on 21.8 SR-5, 2026-08-15).
 COMMENT_REPLACE = 0
 COMMENT_APPEND = 1
-COMMENT_PREPEND = 2
+COMMENT_APPEND_LINEBREAK = 2
 
 # --- Sidecar config -----------------------------------------------------------
 # Optional JSON file next to this script; users can tweak behaviour without
@@ -106,10 +110,22 @@ def _load_config():
 
 def XT_Init(nVersion, nFlags, hMainWnd, lpReserved):
     """First call. Set up console/logging. Return 1 to continue, <0 to abort."""
+    # XT_INIT_QUICKCHECK (0x20): X-Ways is only probing compatibility --
+    # answer without side effects (no console, no config load, no logging).
+    # Unconditional 1 is correct here (unlike the C++ templates, which refuse
+    # when GetProcAddress left exports unresolved): the bridge supplies the
+    # whole xwf module, so there is nothing to probe for.
+    if nFlags & 0x20:
+        return 1
     OutputRedirector.install()
     xwf.AllocConsole()
     _state["config"] = _load_config()
-    _log(f"{VERSION} — X-Ways build {nVersion / 100.0:.2f}")
+    # nVersion is a packed word: version*10 in the high 16 bits, service
+    # release in byte 1 (confirmed live on 21.9 Beta 1; see the authoring
+    # skill's docs/xtension-invocation.md).
+    ver = (nVersion >> 16) & 0xFFFF
+    sr = (nVersion >> 8) & 0xFF
+    _log(f"{VERSION} — X-Ways v{ver // 100}.{(ver % 100) // 10} SR-{sr}")
     return 1
 
 
@@ -124,8 +140,11 @@ def XT_Prepare(hVolume, hEvidence, nOpType, lpReserved):
     Return value is a bitmask; common values:
       -1  = abort
        0  = no per-item callbacks
-       1  = call XT_ProcessItem for each item
-       4  = call XT_ProcessItemEx (receives a read handle)
+       1  = call the per-item callback(s) you export -- whichever of
+             XT_ProcessItem / XT_ProcessItemEx exist (BOTH fire if both
+             are exported; do the work in exactly one)
+    (0x04 is EXPECTMOREITEMS -- an item-creation flag, NOT "call Ex";
+     see the note in XT_Prepare's body below.)
     """
     _state["hVolume"] = hVolume
     _state["opType"] = nOpType
@@ -138,6 +157,15 @@ def XT_Prepare(hVolume, hEvidence, nOpType, lpReserved):
                }.get(nOpType, f"#{nOpType}")
     vol_name = xwf.GetVolumeName(hVolume, 0) if hVolume else "(no volume)"
     _log(f"XT_Prepare [{op_name}] on volume: {vol_name}")
+
+    # GOTCHA (confirmed live on 21.8 SR-5 + 21.9 Beta 1): under nOpType 0
+    # (XT_ACTION_RUN -- Tools -> Run X-Tension, and the command-line XT:
+    # parameter) X-Ways delivers NO per-item callbacks even when you return 1,
+    # so this template silently processes zero items in that mode. Run under
+    # RVS or a directory-browser selection instead.
+    if nOpType == XT_ACTION_RUN:
+        _log("note: op=0 delivers no per-item callbacks -- run via RVS or a "
+             "directory-browser selection")
 
     # RVS is multi-threaded and high-volume — keep logging minimal there.
     # DBC runs on a user-selected handful of items — safe to be chatty.

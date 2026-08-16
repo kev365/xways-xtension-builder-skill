@@ -3,6 +3,360 @@
 All notable changes to this project are documented here. Versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Known issues / queued work
+
+- **Register policy decision pending** — the conflicts register
+  ([docs/xways-sdk-conflicts-test-plan.md](docs/xways-sdk-conflicts-test-plan.md))
+  resolves entries in place while its preamble prescribes move-and-strike;
+  reconcile one way or the other (tracked as D5 in
+  [docs/skill-review-roadmap.md](docs/skill-review-roadmap.md)).
+- **Empirical queue** (needs a live X-Ways host; roadmap Phase E): off-thread
+  `XWF_*` semantics while the host thread is parked in a dialog pump (until
+  then the threading danger box stays deliberately conservative — note the
+  wrapper template's worker thread relies on the parked-host pattern);
+  `XT_Init` return value `2` (thread-safe mode — nothing in the SDK ever
+  returns it); runtime corroboration of the Python bridge's wide-hash
+  overflow; the `0x0040` search-hit flag double-listing.
+- **`XWF_Search` remains hazardous on 21.8/21.9** (NULL-CodePages AV, zero
+  CALLPSH callbacks, post-run host crash) — the docs warn, but nothing can
+  gate at authoring time against a runtime host bug.
+
+## [0.6.0] — 2026-08-16
+
+### Added
+
+- **Full skill review + repair sweep (2026-08-16)** — two parallel reviewers
+  over the whole repo surfaced 45 findings; all are resolved or dispositioned
+  in [docs/skill-review-roadmap.md](docs/skill-review-roadmap.md) (the
+  register, with per-item status and an empirical-test queue for the four
+  questions only a live X-Ways run can answer). Highlights fixed: the last
+  surviving "AddComment 2 = PREPEND" claim; op=0 no-callback propagation to
+  four pages; the always-on guardrail's two-revisions-stale coverage counts
+  and missing routing rows; the python scaffold generating un-importable
+  hyphenated module names (locked in by its own test); the event-subcode
+  tables' duplicated copies disagreeing on a range boundary; the search
+  page's field naming drifting from the header (`iSize`); ~350 lines of
+  duplicated convention text collapsed to single owners. New CI gates:
+  template-convention parity, a C++ compile job, a zero-NO-MATCH scaffold
+  assertion, and a decimal-form stale-guidance rule.
+
+- **Forum sweep of the 21.8 and 21.9 announcement threads** (read in full
+  2026-08-12), which surfaced three API facts the knowledge base did not have:
+  - **`XWF_GetCellText` return codes and its multi-threading restriction.**
+    21.8 SR-5 added a new return code `-3` (exception, now caught by the
+    function rather than reaching the X-Tension) and, on the official page,
+    a restriction we had never recorded: the **Metadata** column and the columns
+    depending on it (generator signature, device type) may be inaccessible
+    during multi-threaded refinement, with X-Ways advising the call be made from
+    `XT_Finalize`. That is independent vendor corroboration of the shape
+    `item-collection` and `threading-model` already prescribe.
+  - **`XWF_OpenItem()` could fail from `XT_ProcessItem()` for files in nested
+    archives** under multi-threaded refinement — fixed in 21.8 SR-4, and absent
+    from the official page, so forum-only.
+  - **The host watchdogs refinement threads** since 21.8 Preview 5, terminating
+    and resuming ones unresponsive for ~15 minutes. Recorded with its scope
+    flagged unverified, and carried into `subprocess-stdio` as a caution about
+    the template's `WaitForSingleObject(..., INFINITE)`.
+
+  Also recorded that 21.9 Previews 2–6 and Beta 1 were read and contain nothing
+  API-facing, so the next sweep need not re-read them.
+
+- **Second forum sweep — the 21.5, 21.6 and 21.7 announcement threads**, none of
+  which had ever been read (the knowledge base cited every thread from 19.0 to
+  21.4, then jumped to 21.8). Four more facts:
+  - **Hash-type IDs changed in 21.5 Preview 3** — three changed value, six were
+    deprecated, with the current list in the `XWF_GetVSProp()` documentation.
+    Bears directly on the open `nParam` question in `xways-snapshot-mutation.md`:
+    a hash-type number taken from older material may now name a different
+    algorithm.
+  - **X-Ways prompts before loading an X-Tension since 21.5 Beta 5**, explicitly
+    including command-line-triggered runs — so an unattended script cannot assume
+    it starts unattended. Recorded against `XT:` in `xways-command-line.md`.
+  - **The `[XT]` log prefix could be separated from its message** when an
+    X-Tension logged from multiple threads, fixed in 21.6 Beta 4. A display
+    artefact on older hosts, not lost data.
+  - **The 21.7 SR-4 announcement lists the label-API rename pairs in a
+    misleading order**, which reads as a positional mapping and is not one. The
+    correct role-based pairing was already documented; the announcement is now
+    cited as the source of the trap.
+
+- **The forum's structure and access limits are recorded.** Of five boards only
+  Public Announcements is readable without credentials; the other four return
+  401, access being limited to users with active update maintenance. One of them
+  is the **X-Tension programming section** (announced 2021-03-26) — so the
+  forum's most directly relevant board has never been mined, and everything
+  distilled here comes from the public announcement threads alone.
+
+- **Review of two community bindings** — the `v2-develop` branch of
+  [xwf-api-rs](https://github.com/ThomasVogl/xwf-api-rs) (Rust, LGPL-3.0, read at
+  `4f14ef9`, 2026-07-14) and the vendored `XT_API.pas` inside
+  [XT_ExtractDocsMail](https://github.com/gaiacalamari/XT_ExtractDocsMail-)
+  (Free Pascal, Apache-2.0). Both are working code rather than documentation,
+  and between them they closed gaps the official pages had left open:
+  - **The `XWF_SEARCH_*` family** (23 flags) and the **`XWF_CTR_*` container
+    flags** (10) — the two constant groups the coverage map named as genuinely
+    unexplored. The container values were confirmed against the official page;
+    the search values are recorded as a lead, since the Pascal binding is a
+    v18-era snapshot.
+  - **`XWF_ITEM_INFO_FLAGS_SET` / `_REMOVE` are 64 / 65**, confirmed
+    independently by both bindings.
+  - **`XWF_GetItemName(nItemID | 0x80000000)` returns the alternative name**
+    (v19.9+), and `XWF_GetItemCount((LPVOID)1)` returns the selected-item count.
+  - **`ItemInfoFlags` extended from 14 bits to 33**, including the three above
+    bit 31 that a `DWORD` would silently drop.
+  - **Hash-type codes and their byte sizes** (1..19), needed to size every
+    buffer that receives a hash value — recorded as provisional, since 21.5
+    Preview 3 renumbered part of the list.
+  - **`XWF_SelectVolumeSnapshot` returns the item count from v20.9**, where it
+    previously returned nothing.
+  - **`XT_Init`'s first parameter is a packed version word**, not an opaque
+    token — major / minor / service release / GUI language.
+
+- **`docs/xways-evidence-containers.md`** — new page covering
+  `XWF_CreateContainer` / `XWF_CopyToContainer` / `XWF_CloseContainer`: the
+  `XWF_CTR_*` flags, the copy modes, the rule that creating a second container
+  silently closes the first, and the opposite success polarity of copy (`0`) and
+  close (`1`).
+
+- **Unattended BitLocker, in `xways-command-line.md`** — the `Passwords.txt`
+  requirements behind `Override:4` / `Override:5` (UTF-16 encoding, general vs
+  case-specific collection, one entry per line) and the ordering constraint that
+  `RVS:~` must precede `XT:`, because an X-Tension reading refinement output
+  cannot distinguish "no matches" from "nothing computed yet". Sourced from the
+  XT_ExtractDocsMail README.
+
+- **A parent-walk termination guard** in `build-and-iteration-gotchas.md`:
+  `XWF_GetItemParent` can return the item's own ID, so the documented
+  walk-until-`-1` loop needs a self-parent check and an iteration cap.
+
+- **Full review of the vendor SDK source drops** (the 2024-05-31 zip, git HEAD
+  `c46a1bd2`, and the XT_Python binary bundle) — the last unreviewed authority.
+  Three new pages:
+  - **`docs/xways-python-bridge.md`** — the `xwf` module's real surface,
+    distilled from reading the bridge's `Python.cpp` in full: the 46-method
+    table (only ~27 distinct `XWF_*` calls behind it), the 8 forwarded entry
+    points, the generated-source dispatch mechanism (handles as decimal ints,
+    ASCII-only call boundary, every configured script gets every callback), and
+    a verified bug table — `GetHashValue` stack overflow for hashes over
+    128 bits, `GetHashSetAssocs` ~1600-wchar cap plus a per-call leak,
+    silent short reads in `xwf.Read`, mangled UTF-16 search-hit text, and the
+    fixed `XT_Prepare → 1` that makes script return values unpropagatable.
+    Also: `XT_ProcessSearchHit` **is** bridged to Python (the vendor's own
+    spreadsheet says otherwise), and the readme's `import XWF` never worked —
+    the module is lowercase `xwf`.
+  - **`docs/xways-sdk-source-notes.md`** — the vendor's per-function status
+    spreadsheets (binary vocabulary: 24 functions `tested`, 52 merely
+    `provided` — the vendor's samples never exercised three quarters of the
+    API), the drop divergence (git HEAD's XT_Python project cannot compile —
+    `Python.cpp` still uses the `CallerInfo` struct the same drop's header
+    deleted), three inconsistent vendor models of `XT_Init`'s first parameter,
+    a vendor-sample bug catalog, the C# facts (the official binding wraps
+    exactly 3 functions; "C# Search Test" never calls `XWF_Search`), and the
+    file-system-ID table from `Sample.py`.
+  - **`docs/xways-sdk-conflicts-test-plan.md`** — a 9-entry register of claims
+    where trusted sources disagree, each with a probe design and risk class:
+    `GetProp(hVolume, 0)` bytes-vs-MB, `XWF_SEARCH_CALLPSH` (no code anywhere
+    has ever called `XWF_Search`), `GetItemSize` vs `GetSize` "deviant sizes",
+    the version-word decode, the Python-DLL version contradiction, template
+    README tensions, the `GetHashValue` overflow, the `MAX_PATH` name crash,
+    and the carried-over `0x0040` flag ambiguity.
+
+- **First register entry closed the same day — and a new binary-only finding.**
+  A PE-import read of the shipped `XT_Python.dll` (hash-verified against the
+  official SourceForge zip) settled the Python-version contradiction: it links
+  **`python312.dll`**; both readmes are wrong. The same read found an
+  **undocumented load-time dependency on `ins.dll`** — the vendor's private
+  instrumentation library, absent from the bundle but shipped with X-Ways
+  itself — which is why the DLL only loads from the XWF main folder and fails
+  with `ERROR_MOD_NOT_FOUND` anywhere else, and why an out-of-process bridge
+  harness needs an `ins.dll` beside the host EXE. The binary's export table
+  was also verified: exactly the 8 entry points, `XT_ProcessSearchHit`
+  included.
+
+- **First end-to-end real-world exercise of the skill, via a probe X-Tension and a mock
+  host.** `new-xtension.ps1` and `build-xtension.ps1` ran clean end to end
+  (scaffold → identity → build gate, `-NoDeploy`). The probe covers register
+  entries 1/3/4 and was verified under a **mock host** — a console EXE that
+  exports stub `XWF_*` functions, which works because X-Tensions resolve the
+  API against the host EXE's export table. 0 failures. This first real-world use of the
+  probe surfaced two cpp-template defects, initially recorded (not fixed)
+  per the conflicts-register decision: `XT_Init` logs before checking
+  `XT_INIT_QUICKCHECK` (no `0x20` guard, violating the skill's own
+  convention), and the version banner's `nVersion / 100.0` arithmetic is
+  wrong if the packed-word decode is confirmed. **Both were subsequently
+  fixed in all three templates once the live 21.9 run confirmed the decode
+  (see the Fixed section below)** — the register's do-not-fix rule applied
+  only while the conflict was unresolved. Also re-read from the official page: `XWF_GetSize` is
+  **deprecated**, with `NULL` = physical / `1` = logical / `2` = valid data
+  length — reframing QTest's "deviant sizes" as physical-vs-logical by design.
+
+- **First live X-Ways runs — headless, on 21.9 Beta 1 — close four register
+  entries and two adjacent unknowns.** Two 13-second command-line runs
+  (`NewCase: AddImage: Override:1 XT:… auto`) against a 64 MiB E01:
+  - **Register 1:** `XWF_GetProp(hVolume, 0)` returns **bytes** (equal to the
+    exact image size and to `GetEvObjProp(hEv,16)`); QTest's `" MB"` label is
+    wrong. `GetProp(hVol, 2)` returns `-1` on a volume handle.
+  - **Register 3 (first corpus):** across 310 items, all five size views were
+    identical on 309; the sole deviant is the virtual "Free space" item, where
+    `GetItemSize` says `-1` (unknown) and `GetSize` says `0` — the two APIs
+    disagree only on how to spell "no size". Resident/compressed corpora still
+    untested.
+  - **Register 4:** the version word decodes exactly as predicted —
+    `0x088E0001` → v21.9 SR-0 lang 1 on a host banner-identified as 21.9
+    Beta 1 — and `nFlags = 0x89` matched `XWF | BETA | ALTERED_SEARCH_PATH`.
+    The cpp template's `nVersion / 100.0` banner is therefore confirmed wrong.
+  - **Corrected the same day:** the X-Tension-execution prompt was in fact
+    clicked by the operator, yet msglog recorded `Prompt | … | Override: OK` —
+    so that msglog line is **not** evidence of auto-confirmation, and whether
+    `Override:1` covers the prompt unattended remains open. A UAC elevation
+    prompt also precedes each launch on this host. The runs were
+    operator-assisted, not fully unattended.
+  - **`XT_ACTION_RUN` (op 0) delivers no per-item callbacks under `0x01`** —
+    confirmed live; the probe grew a self-driving enumeration
+    (`SelectVolumeSnapshot` → `GetItemCount` → `OpenItem`/`Close`) for
+    command-line use, which also **confirmed the v20.9+ claim that
+    `XWF_SelectVolumeSnapshot` returns the item count** (310 == 310).
+  - Also recorded: `RVS:~` fails on a fresh install (`Error #9 Cannot load "?"`
+    — the `~` needs stored refinement settings).
+
+- **The search probes ran — `XWF_Search` behaves very differently from its
+  documentation.** Findings from six live runs on 21.9 Beta 1, folded into the
+  search page and the conflicts register: **NULL `pCPages` access-violates
+  inside X-Ways** (CodePages is mandatory in practice; the crash surfaces as
+  Delphi runtime error 217 and kills the host); `hVolume` must be 0; the SDK
+  C header's `SearchInfo` is wrong twice (missing the two v20.0 alphabet
+  members, and unpacked where the official layout is `#pragma pack(2)`); the
+  alphabet pointers permanently overwrite the analyst's alphabet settings;
+  each `XWF_Search` call **re-enters the calling X-Tension's own
+  `XT_Finalize`** (op=2); every CLI-context run that executed `XWF_Search`
+  ended with a reproducible runtime error 217 at shutdown; and
+  `XWF_SEARCH_CALLPSH` — whose official prose ("will call
+  XT_ProcessSearchHit for each hit") was itself recovered this pass after
+  being missed in the original distillation — **delivered zero callbacks**
+  with a needle guaranteed present (caveats tracked in the register).
+- **The CLI snapshot-visibility rule, mapped across nine runs:** an `XT:`
+  X-Tension sees a volume snapshot only when refinement ran **in the same
+  session** — fresh `AddImage:` evidence and reopened cases (even with a
+  saved 137k-item snapshot) both report `GetItemCount = 0`, `XWF_OpenEvObj`
+  notwithstanding. The unlock is a preceding no-op `RVS:~` with stored
+  all-unchecked settings. Recorded in `xways-command-line.md`.
+- **Register #3 quantified on NTFS:** 5,000-item sweep — 1,353 deviants,
+  every one a directory (`GetItemSize` > `GetSize` by a varying margin);
+  `GetProp(0/1)` matched `GetSize(NULL/1)` on all 5,000.
+
+- **Vendor-sample findings folded into existing pages:** `Luhn.cpp`'s hit-
+  mutation idioms (the `0x0008` discard flag confirmed in vendor code, in-place
+  `nLength` rewrite, the `iSize` version gate, and the `nCodePage == 1200` ⇒
+  UTF-16LE byte-count convention) into the search page; the
+  `#pragma pack(2)`-without-push/pop hazard, QTest's crash/perf warnings, and
+  the vendor's NULL-probe version-compat pattern into the gotchas page; the
+  selective-`.def`-export idiom and SDK corroboration of the version-word
+  decode into the invocation page.
+
+
+### Fixed
+
+- **Register 7 — the `xwf.GetHashValue` stack overflow — verified by source.**
+  `Python.cpp:1157` sizes `hashStr` as `wchar_t[33]` (comment: "256/8=32, plus
+  zero-terminator"), but 256 bits = 32 bytes = 64 hex chars: the buffer was
+  sized as if bytes were chars. The loop writes 2 chars per hash byte, reaching
+  index 63 for SHA-256 (a 62-byte overflow), and reads 64 wchars back at
+  `:1165`. Any hash wider than 128 bits overflows (SHA-1 by 7 chars, SHA-256 by
+  31); MD5/MD4/RIPEMD-128 are exactly safe. A runtime probe is staged
+  (outside this repo) but gated on a Python 3.12 environment the embedded
+  bridge accepts — the source proof is the stronger artefact regardless.
+
+- **The templates' `COMMENT_PREPEND = 2` was an invented constant — no such
+  mode exists.** The mutating probe on 21.8 SR-5 (2026-08-15) read back live:
+  `AddComment` mode 0 replaces, mode 1 appends with a space, mode 2 appends
+  with a **line break** — matching the official page exactly (`0x01` append,
+  `0x02` append + line break; no prepend). Renamed to `COMMENT_APPEND_LINEBREAK`
+  in all three templates. Register 6 closed.
+- **Register 8 (`XWF_GetItemName` MAX_PATH crash) does not reproduce on 21.8
+  SR-5.** The probe created a 304-char-named item and ran QTest's exact
+  crashing pattern; `XWF_GetItemName` returned all 304 chars with no crash. The
+  SDK-era warning is stale. Register 8 closed.
+
+- **Templates warn about the op=0 silent no-op.** All three templates now
+  carry the confirmed gotcha (21.8 SR-5 + 21.9 Beta 1: `XT_ACTION_RUN`
+  delivers no per-item callbacks despite a `0x01` return) as a comment *and*
+  a runtime log hint, so a scaffold run via Tools → Run X-Tension explains
+  its empty result instead of silently doing nothing. Both `.def` files gained
+  the selective-export guidance (comment exports out rather than stubbing
+  them — the SDK's own `New.def` idiom).
+
+- **All three templates fixed against the probe findings** (the deferred
+  post-probe pass): `XT_Init` now guards `XT_INIT_QUICKCHECK` before any work
+  (the cpp and python templates logged during compatibility probes; the
+  wrapper even initialised common controls), and the version banner decodes
+  the packed `nVersion` word (v/SR) instead of printing `nVersion / 100.0`,
+  which produced garbage like `1435238.41` on real hosts. The Python README's
+  version claim now cites the PE-verified `python312.dll`, and its
+  script-registration steps describe the real mechanism (the bridge's About
+  gesture writing `Python.cfg`). Compile-verified via fresh scaffolds of both
+  C++ templates; scaffold gates pass.
+
+
+- **`XWF_VSPROP_RESET` is property 90 — and the 2026-05-03 sweep called it
+  blind.** It forces a new volume snapshot and discards the previous one without
+  the usual warning about losing tags, search hits and refinement results. The
+  sweep had recorded it as *"live, returns 1 zero byte, identity unknown,
+  probably status flag"*. Now documented with the danger it carries, and the
+  whitelist-not-range lesson stated where the sweep lives.
+
+- **`XWF_GetItemType`'s return value was documented with the wrong legend.**
+  The page listed the four write-side `XWF_SetItemType` status values against a
+  read-side call whose official legend has seven — read-side `2` is *totally
+  unknown* where write-side `2` is *confirmed*, so the old table inverted the
+  meaning of the field. Also corrected: the buffer length lives in the lower
+  **word**, not the low 24 bits.
+
+- **`rv = 256` under `XWF_GetItemType`'s `0x80000000` flag was misread** as
+  "matches the `nBufferLen` we passed". It decodes as consistency `1` (OK) and
+  status `0` (not verified) — the flag packs file-format consistency into the
+  second-lowest byte. The two values collided because the test buffer happened
+  to be 256 characters.
+
+- **The `XWF_SetHashValue` / `XWF_GetHashValue` round-trip that "did not work"
+  was two malformed calls.** `nParam` is a slot selector (`1` primary, `2`
+  secondary), never a hash type, and `0` is undefined; `XWF_GetHashValue`'s
+  buffer is an in/out parameter that must open with a `DWORD` naming what you
+  want. The v21.5 hash-renumbering lead cited for months was unrelated. Both
+  calls now documented, with the general point that a zeroed buffer is not a
+  neutral input to this API.
+
+- **`XWF_GetEvObjProp` 30 / 31 were recorded as "(TBC) likely time-zone
+  related".** They are the reference and display time-zone biases, in minutes,
+  in the low 16 bits, with three sentinel values and an optional
+  `DaylightSavingsDefinition` struct. Noted that `xwf-api-rs` maps the two the
+  wrong way round.
+
+- **`xwf-api-rs` was attributed as MIT in two pages.** It is **LGPL-3.0**.
+
+- **Two resolved leads closed out** in `xways-api-recency-research.md`: the
+  proposed `XWF_AddToReportTable` flag-bit sweep is unnecessary (`0x0100` and
+  `0x1000` are documented as GUI-application defaults, and the sweep would have
+  mutated report-table state to learn something already written down), and the
+  `EvObjPropType` / `GetItemType` cross-references are done.
+
+- **Two more citations to a document that doesn't say it.** The claims that the
+  Python bridge lacks `AddEvent`/`GetEvent` and `XWF_GetUserInput` were
+  attributed to "the XT_Python readme shipped with the SDK"; the readme is a
+  positive list and never addresses either. Both conclusions are true and now
+  cite the bridge's actual method table. The user-input page also gains the two
+  file dialogs the bridge *does* ship (`xwf.GetOpenFileName` /
+  `xwf.GetSaveFileName`), which the tkinter advice had overlooked.
+- **The threading page never mentioned Python.** It now states that a Python
+  X-Tension is single-threaded by construction — the bridge hard-returns `1`
+  from `XT_Init` with the vendor's own "not thread-safe" comment, and the
+  script's return value is not propagated.
+- The external-tool page's "just embed Python via the XT_Python bridge" is now
+  qualified with the bridge's install requirements and API gaps.
+- Coverage map regenerated: **72/27/0 → 73/26/0**, plus a pointer to the
+  per-language exposure dimension the map deliberately does not carry.
+
 ## [0.5.0] — 2026-08-12
 
 ### Changed

@@ -2,7 +2,7 @@
 source: X-Ways 21.6 manual §3.10 + empirical
 type: official-doc + empirical-finding
 last_updated: 2026-06-06
-author: project notes
+author: project
 ---
 
 # `X-Tensions.txt` — remembered X-Tension list

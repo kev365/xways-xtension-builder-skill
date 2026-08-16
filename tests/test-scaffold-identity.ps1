@@ -138,11 +138,13 @@ $cases = @(
        Reject = @()
        Expect = @()
        Sidecars = @(
-         @{ File   = 'xways-idpy.config.json'
+         # Underscore stem: python files rename to xways_<name>.* because the
+         # bridge imports by file stem (hyphens are un-importable).
+         @{ File   = 'xways_idpy.config.json'
             # The scaffold renames this file now, so telling the analyst to
             # rename it by hand is stale instruction.
             Reject = @(@{ S = 'Rename to <NAME>.config.json'; W = 'stale manual-rename instruction' })
-            Expect = @('xways-idpy') }
+            Expect = @('xways_idpy') }
        ) }
 )
 
@@ -158,6 +160,20 @@ try {
         $dry = (& $scaffold -Name $c.Name -Template $c.Template -DestRoot $proj -DryRun *>&1 |
                 Out-String)
         $promised = ([regex]::Matches($dry, '(?m)^\s*\[DRY\]\s+REPLACE\s')).Count
+
+        # (3b) Zero NO MATCH rules. Both counters above exclude non-matching
+        #      rules by construction, so a rule that can never fire is
+        #      invisible to the promised==applied comparison — the dead
+        #      display_name rule survived that way for months. A registered
+        #      rule that matches nothing is always a defect in the rule set.
+        $noMatch = ([regex]::Matches($dry, 'NO MATCH')).Count
+        if ($noMatch -eq 0) {
+            Write-Host "  PASS  -DryRun reports zero NO MATCH rules" -ForegroundColor Green
+            $script:pass++
+        } else {
+            Write-Host "  FAIL  -DryRun reports $noMatch NO MATCH rule(s) — a registered rule matches nothing in the template" -ForegroundColor Red
+            $script:fail++
+        }
 
         $exec = (& $scaffold -Name $c.Name -Template $c.Template -DestRoot $proj *>&1 | Out-String)
         $applied = ([regex]::Matches($exec, '(?m)^\s*Replace\s+\[')).Count

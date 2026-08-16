@@ -1,6 +1,6 @@
 ---
 type: empirical-finding
-last_updated: 2026-06-06
+last_updated: 2026-08-12
 author: project
 ---
 
@@ -23,6 +23,7 @@ First empirical map of the **item-creation / snapshot-mutation** API region.
 - XWF_FindItem1 nFlags — `0x01` = case-sensitive
 - XWF_GetItemName pointer lifetime — more stable than assumed
 - Created-item interop — mostly first-class
+- The hash round-trip that never worked — both calls were malformed
 - nOpType read-only bit
 - Still open
 - Multi-volume invocation note
@@ -96,7 +97,57 @@ persistent name pool. Revisit if a future build/context shows clobbering.
 | `XWF_AddToReportTable(0x0002\|0x0020\|0x8000)` | **rv=1** (the label triplet is accepted; rv = table number) |
 | `XWF_SetItemInformation` CREATIONTIME/MODIFICATIONTIME | `set=TRUE`, read-back differs from the set value by **+512** (×100 ns ≈ 51 µs) — sticks, with a small transform worth a follow-up |
 | `XWF_SetItemType` | `set` returned without error but `XWF_GetItemType` gave rv=2 + empty description — **inconclusive** |
-| `XWF_SetHashValue` (nParam=0) | returned **TRUE**, but `XWF_GetHashValue` read back zeros (`FALSE`) — **unconfirmed**; `nParam` (hash type) semantics unknown |
+| `XWF_SetHashValue` (nParam=0) | returned **TRUE**, but `XWF_GetHashValue` read back zeros (`FALSE`) — **resolved 2026-08-13, see below. Both calls were malformed.** |
+
+## The hash round-trip that never worked — both calls were malformed
+
+The `XWF_SetHashValue` / `XWF_GetHashValue` row above sat unexplained for months
+under the heading *"`nParam` (hash type) semantics unknown"*, with a lead
+pointing at v21.5's hash-type renumbering. **The lead was a red herring.**
+Reading the official page (2026-08-13) shows neither call was well-formed, and
+`nParam` was never a hash type.
+
+**`XWF_SetHashValue(nItemID, lpHash, nParam)`** — `nParam` selects the *slot*,
+not the algorithm:
+
+| `nParam` | Meaning |
+| ---: | --- |
+| `1` | set the item's **primary** hash value |
+| `2` | set the item's **secondary** hash value |
+
+`0` is not a defined value. The hash *type* is never passed here at all — it is
+implied by the volume snapshot, and the length of `lpHash` follows from it.
+Call `XWF_GetVSProp` with `XWF_VSPROP_HASHTYPE1` / `_HASHTYPE2` to learn it.
+The `TRUE` return only meant no I/O error occurred taking the value over.
+
+**`XWF_GetHashValue(nItemID, lpBuffer)`** — the buffer is an **in/out
+parameter**, and that is the part that is easy to miss. On entry it must begin
+with a `DWORD` that says what you want; on return the same buffer holds the
+hash:
+
+| Leading `DWORD` | Effect |
+| --- | --- |
+| `0x01` | retrieve the primary hash value |
+| `0x02` | retrieve the secondary hash value (v18.0 SR-12 / v18.1 SR-7 / v18.2 SR-5 / v18.3 SR-4+) |
+| `0x10` | compute the value now if the snapshot has not stored one (**v19.7+**) — requires an `hItem` handle written into the buffer at **offset 4**, directly after the `DWORD` |
+| `≥ 0x0100` | retrieve a pre-computed **PhotoDNA** hash: `0x0100` = 1st, `0x0101` = 2nd, `0x0102` = 3rd, `0x0103` = 4th, one at a time (v18.8+). The page marks this "subject to change at any time (yes, literally)" |
+
+Flags combine: only v19.7 and later can fetch both hashes in one call, and then
+the buffer must hold both — the first at offset 0, the second immediately after
+it, at an offset that depends on the *type* of the first. Size the buffer from
+the hash type, with a **4-byte floor** so the leading `DWORD` always fits even
+for a short hash.
+
+So the "read back zeros" result was a buffer whose first four bytes were zero —
+a request for nothing — and the write beforehand used an undefined slot number.
+X-Ways behaved correctly in both directions.
+
+**Worth generalising:** this API has more than one function where the buffer you
+pass in carries a request, not just space for a reply — `XWF_GetHashValue` here,
+`XWF_GetEvObjProp` 30/31 with its zeroed daylight-savings struct, and the
+write-side `XWF_GetVSProp` properties. A zeroed buffer is not a neutral input.
+Before concluding that a call is broken, check whether it wanted something from
+you on the way in.
 
 ## nOpType read-only bit
 

@@ -30,11 +30,13 @@ or zipped for upload.
 | --- | --- |
 | [`SKILL.md`](SKILL.md) | The skill — flow router, hard gates, convention index |
 | [`references/`](references/) | Per-flow guides (new / wrap / port / audit / guardrail / docs-loop) |
-| [`scripts/`](scripts/) | PowerShell scaffold / build / hygiene / backfill tooling |
+| [`scripts/`](scripts/) | PowerShell tooling: scaffold (`new-xtension`), build (`build-xtension`), pre-publish hygiene scan, standards backfill, API-coverage report |
 | [`assets/`](assets/) | `LICENSE` / `README` / `CLAUDE.md.example` file templates |
 | [`commands/xtension.md`](commands/xtension.md) | The `/xtension` slash command |
 | [`templates/x-tensions/`](templates/x-tensions/) | Starter templates: `cpp`, `python`, and a rich CLI-wrapper `wrapper` template |
 | [`docs/`](docs/INDEX.md) | Distilled X-Tension API reference notes + the [convention library](docs/conventions/index.md) |
+| [`tests/`](tests/) | CI gates: link/ToC/cited-path/cited-symbol/stale-guidance/version-sync checks + scaffold round-trip tests (the badge above reports these) |
+| [`evals/`](evals/) | Behavior-eval harness + scenario baselines for the skill itself |
 | [`CHANGELOG.md`](CHANGELOG.md) | Release history + known issues queued for the next release |
 
 ## Install (as a Claude Code plugin)
@@ -121,9 +123,11 @@ See [Prerequisites](#prerequisites) for the build toolchain and SDK.
 - **X-Ways Forensics 21.x+** (Windows x64) to run the X-Tensions you build.
 - **MSVC (x64)** — the "x64 Native Tools Command Prompt for VS 2022" (VS 2019
   Build Tools also work; `build.bat` auto-bootstraps either) — to compile.
-- **The X-Ways X-Tension SDK** (the `X-Tension.h` header) to build C++
-  X-Tensions. This repo does **not** ship the SDK — it is copyright X-Ways AG.
-  See [docs/getting-the-sdk.md](docs/getting-the-sdk.md) to acquire your own copy.
+- **No SDK header required to build** — both C++ templates resolve the API via
+  `GetProcAddress` and compile without `X-Tension.h` (deliberately: the SDK is
+  copyright X-Ways AG and is not shipped here). Acquiring your own SDK copy is
+  still recommended as *reference* material (canonical signatures, samples,
+  manuals) — see [docs/getting-the-sdk.md](docs/getting-the-sdk.md).
 
 ## Usage
 

@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XWF_functions.html (official) + empirical testing against X-Ways 21.7–21.8
 type: official-doc + empirical-finding
 fetched: 2026-04-19
-last_updated: 2026-06-05
+last_updated: 2026-08-16
 author: X-Ways Software Technology AG; empirical updates from testing against X-Ways 21.7 and 21.8
 ---
 
@@ -296,7 +296,12 @@ When events are anchored to an item via `nItemID`, several other XWF_ APIs surfa
 | `XWF_AddSearchTerm(name, 0)` | **Search Terms** list (case-level, not per-item) | wide string | ✓ |
 | `XWF_SetItemType(item, label, status)` | **Type** column conditionally; **Type status** column always | wide string | renders with fallback glyph for SMP chars |
 
-`XWF_AddComment` and `XWF_AddExtractedMetadata` use a `nFlagsHowToAdd` parameter: `0 = REPLACE`, `1 = APPEND`, `2 = PREPEND`.
+`XWF_AddComment` and `XWF_AddExtractedMetadata` use a `nFlagsHowToAdd` parameter:
+`0 = REPLACE`, `1 = APPEND` (space delimiter), `2 = APPEND with a line-break
+delimiter`. There is **no prepend mode** — an earlier revision of this page
+called mode 2 "PREPEND", which was an invented reading; the append-with-line-break
+behaviour was verified live on 21.8 SR-5 (2026-08-15) by writing with each mode
+and reading the comment back via `XWF_GetComment`.
 
 ## `XWF_SetItemType` and `nTypeStatus`
 
@@ -350,7 +355,7 @@ If you want de-duplication, compare `(nEvtType, TimeStamp, nItemID, nOfs)` tuple
 
 ## Python exposure
 
-`XT_Python.dll`'s embedded `xwf` module (per the XT_Python readme shipped with the SDK) does **not** expose `AddEvent`/`GetEvent`. Event-emitting X-Tensions must be written in **C++** (or Delphi/C#), not Python with the stock bridge.
+`XT_Python.dll`'s embedded `xwf` module does **not** expose `AddEvent`/`GetEvent` — verified against the bridge's own method table in the SDK's `Python.cpp` (see [xways-python-bridge.md](xways-python-bridge.md) for the full 46-method inventory; an earlier revision of this note cited "the XT_Python readme", which never actually says this — the readme is a positive list only). Event-emitting X-Tensions must be written in **C++** (or Delphi), not Python with the stock bridge.
 
 ## Threading
 

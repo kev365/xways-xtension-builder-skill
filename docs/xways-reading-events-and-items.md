@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XWF_functions.html (official) + the X-Ways SDK header (see getting-the-sdk.md) + project empirical
 type: official-doc + empirical-finding
 fetched: 2026-04-27
-last_updated: 2026-04-27
+last_updated: 2026-08-12
 author: X-Ways Software Technology AG; project synthesis from xways-events-api.md and xtension-invocation.md
 ---
 
@@ -17,6 +17,7 @@ The short answer: **yes, both surfaces are readable from C++**, via stable APIs 
 - Reading existing events (`XWF_GetEvent`)
 - Reading the Directory Browser (volume snapshot items)
 - Combining: events × items × content
+- Three more readers worth knowing
 - What you cannot read
 - See also
 
@@ -95,8 +96,8 @@ The directory browser is the rendered view of the **volume snapshot** — the li
 
 | API | Returns |
 | --- | --- |
-| `XWF_GetItemCount(NULL)` | Total number of items in the current snapshot. |
-| `XWF_GetItemName(nItemID)` | UTF-16 wide name (filename only, not path). |
+| `XWF_GetItemCount(NULL)` | Total number of items in the current snapshot. **Pass `(LPVOID)1` instead** to get the number of items *selected in the directory browser* (v20.3 and later) — the DBC case; see [item-collection](conventions/item-collection.md). |
+| `XWF_GetItemName(nItemID)` | UTF-16 wide name (filename only, not path). **OR the ID with `0x80000000` to get the item's *alternative* name** (v19.9+) — which of two available filenames counts as the alternative depends on the analyst's settings. `NULL` if unavailable. |
 | `XWF_GetItemSize(nItemID)` | Logical size in bytes. |
 | `XWF_GetItemOfs(nItemID, &defOfs, &startSector)` | File-system offset and starting sector. |
 | `XWF_GetItemParent(nItemID)` | Parent item ID, or `-1` for root. Walk recursively to build the full path. |
@@ -104,9 +105,76 @@ The directory browser is the rendered view of the **volume snapshot** — the li
 | `XWF_GetItemInformation(nItemID, nInfoType, &success)` | Attributes, deletion status, hash status, timestamps, flags. `nInfoType` is an enum — see the SDK header. |
 | `XWF_GetHashSetAssocs` / `XWF_GetReportTableAssocs` / `XWF_GetComment` | Hash-set membership, Labels (Report Tables), free-text Comments. **`XWF_GetReportTableAssocs` was renamed `XWF_GetLabels`** (backported to the 21.4–21.7 SRs; old name still callable, deprecated) — see the label-API note below. |
 | `XWF_GetProp(hVolumeOrItem, nPropType, buf)` | Generic property accessor — see [xways-getprop-reference.md](xways-getprop-reference.md) for the property numbers. |
-| `XWF_GetCellText(nItemID, ..., nColIndex, buf, len)` | Reads the **rendered cell text** for a given column — i.e., the exact string the directory browser is displaying for that column on that item. Useful when you want to consume what the analyst sees rather than reconstructing it. **`nFlags` low bits (0x00..0x80) appear to be inert** — empirical testing (observed 2026-05-03) shows the Size column emits identical text for every flag value 0x00..0x80 across 5 sample items. If flags can change notation (decimal vs hex sizes, ISO vs locale dates), the relevant bits are higher than 0x80 — not yet tested. Pass `nFlags=0` for predictable output. |
+| `XWF_GetCellText(nItemID, lpPointer, nFlags, nColIndex, buf, len)` | Reads the **rendered cell text** for a given column — the exact string the directory browser would display for that item, whether or not the item is currently listed or the column visible. See the dedicated section below: it has a real multi-threading restriction. |
 
 **Empirical column count:** the directory browser exposes **62 columns** (indices 0..61) on X-Ways 21.7. Past 61, `XWF_GetColumnTitle` returns `FALSE` but **leaks string-table garbage** in the buffer — see [build-and-iteration-gotchas.md](build-and-iteration-gotchas.md). Trust only `rv=1` rows when iterating columns.
+
+### `XWF_GetCellText` — return codes and the Metadata-column restriction
+
+Available since **v20.3**. Text is language-specific and follows the current
+GUI notation settings, so it is what the analyst sees rather than a canonical
+form.
+
+| Return | Meaning |
+| --- | --- |
+| `0` or positive | success |
+| `-1` | unknown column index |
+| `-2` | a specific error while retrieving the text (e.g. I/O) |
+| `-3` | an exception occurred — **v21.8 SR-5 and later** |
+
+**Do not call it for Metadata-derived columns during multi-threaded
+refinement.** Per the official page, cell text from the **Metadata** column and
+the columns that internally depend on it (**generator signature**, **device
+type**) may be inaccessible while volume snapshot refinement is running with
+multiple threads. X-Ways' own guidance is to call the function **after** the
+multi-threaded file-examination phase is over — from `XT_Finalize`.
+
+That is the same shape as [item-collection](conventions/item-collection.md) and
+[threading-model](conventions/threading-model.md) prescribe for other reasons:
+accumulate item IDs in the per-item callbacks, do the work in `XT_Finalize`.
+Useful corroboration — the convention was derived here empirically, and the
+vendor arrived at the same advice independently.
+
+**Exceptions are contained from v21.8 SR-5.** Before that release an exception
+raised inside `XWF_GetCellText` could reach the X-Tension uncontrolled; the
+function now catches its own and reports `-3` instead. On older hosts, treat a
+call on a Metadata-derived column during refinement as genuinely hazardous
+rather than merely unreliable.
+
+**`nFlags` low bits appear inert** — empirical testing (observed 2026-05-03)
+shows the Size column emits identical text for every flag value `0x00..0x80`
+across 5 sample items. If flags can change notation (decimal vs hex sizes, ISO
+vs locale dates), the relevant bits are above `0x80` — untested. Pass
+`nFlags=0` for predictable output.
+
+Source: live [XWF_functions.html](https://www.x-ways.net/forensics/x-tensions/XWF_functions.html)
+(re-checked 2026-08-12, after the 21.8 SR-5 note was added).
+
+### Reading labels in bulk — `XWF_GetEvObjReportTableAssocs`
+
+Available **v17.7+**. On a large snapshot this is the difference between a fast
+pass and an unusable one: instead of calling the per-item label getter for every
+item, it hands back **one internal list covering the whole evidence object**.
+
+```c
+LPVOID XWF_GetEvObjReportTableAssocs(HANDLE hEvidence, LONG nFlags, PLONG lpValue);
+```
+
+The buffer is a flat run of **(16-bit report-table ID, 32-bit item ID)** pairs
+stored back to back; `*lpValue` receives the number of pairs. Set `nFlags` bit
+`0x01` to get the list sorted by item ID — no other flags are permitted. NULL
+means unavailable.
+
+Note the return is a pointer into X-Ways' own structure, and the page warns it
+may cease to be available in a future version, so treat it as read-only and
+short-lived: copy what you need rather than holding the pointer.
+
+**`XWF_GetReportTableInfo(pReserved, nReportTableID, lpOptional)`** — v17.7+ —
+turns an ID from that list into a name. Pass `nReportTableID = -1` to learn the
+maximum number of labels the running version supports (written to `*lpOptional`);
+valid IDs are then `0 … max-1`. `pReserved` must be NULL and `*lpOptional` must
+be `0` on entry. From **v18.1** the same out-parameter also returns flags on a
+real lookup — `0x0001` marks a hint shown to the user by the application.
 
 ### Label / Report-Table API renames (backported to 21.4–21.7 SRs) + remove-label (v21.8)
 
@@ -127,12 +195,36 @@ For the bytes of a file:
 HANDLE hItem = XWF_OpenItem(hVolume, nItemID, 0x01);  // open for reading
 if (hItem) {
     INT64 size = XWF_GetSize(hItem, nullptr);  // or XWF_GetProp
+
+    // nNumberOfBytesToRead is a DWORD, so one call cannot express >= 4 GiB --
+    // casting the size straight into it silently truncates. Chunk instead.
+    // X-Ways states plainly that XWF_Read has to be called multiple times for
+    // files of 4 GB or more.
+    constexpr DWORD kChunk = 8u * 1024 * 1024;
     std::vector<BYTE> buf(static_cast<size_t>(size));
-    DWORD got = XWF_Read(hItem, 0, buf.data(), static_cast<DWORD>(size));
+    INT64 off = 0;
+    while (off < size) {
+        DWORD want = static_cast<DWORD>(std::min<INT64>(kChunk, size - off));
+        DWORD got  = XWF_Read(hItem, off, buf.data() + off, want);
+        if (got == 0) break;      // read error or EOF -- do not spin
+        off += got;
+    }
     XWF_Close(hItem);
-    // analyze buf[0..got]
+    // analyze buf[0..off]
 }
 ```
+
+Two things behind that loop, both from the vendor on the X-Tension board:
+
+- **`XWF_Read` must be called repeatedly for files of 4 GB or more.** A single
+  call cannot cover them, and the naive `static_cast<DWORD>(size)` wraps.
+- **The return value was always `0` for data sizes between 2 and 4 GB** until it
+  was fixed (2021-01-07). On an older host, a `0` from a 2–4 GB read is not
+  necessarily a failure — which is another reason to drive the loop from the
+  offset rather than trusting a single returned count.
+
+Do not try to detect failure by inspecting your own handle after `XWF_Close`:
+the function takes the handle **by value**, so your copy cannot change.
 
 Open flags and the full set of `XWF_OpenItem` modes are in the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)). For text content of supported types, `XWF_PrepareTextAccess` + `XWF_GetText` route through X-Ways' viewer component / OCR pipeline.
 
@@ -201,6 +293,35 @@ LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void*
     return 0;
 }
 ```
+
+## Three more readers worth knowing
+
+**`XWF_GetSectorContents(hVolume, nSectorNo, lpDescr, lpItemID)`** — answers
+"what is this sector for?". Returns FALSE when the sector belongs to an unused
+or free cluster, TRUE otherwise. `lpDescr` receives a textual description — a
+file name and path, or something like `FAT 1` — so **size the buffer for 511
+characters plus a terminating NUL**, and expect it to be language-specific
+(do not parse it). The optional `lpItemID` receives the snapshot item the sector
+is allocated to, or `-1`. This is the natural way to attribute a raw offset back
+to a file without walking the snapshot yourself.
+
+**`XWF_GetRasterImage(RasterImageInfo*)`** — v18.0+, **not in WinHex Lab
+Edition**. Decodes any picture type X-Ways supports internally (JPEG, GIF, PNG,
+…) into a standardised **24-bit true-colour RGB raster**, returning a buffer
+pointer or NULL when the type is unsupported or the file too corrupt. Fill
+`nSize`, `nItemID` and `hItem`; the call returns `nWidth`, `nHeight` and
+`nResSize`. **You own the buffer and must free it with `VirtualFree(ptr, 0,
+MEM_RELEASE)`** — not `XWF_ReleaseMem`, and not `free`. Getting that wrong leaks
+per picture, which on a snapshot of images adds up quickly.
+
+**`XWF_GetBlock` / `XWF_SetBlock(hVolume, …)`** — v17.7+, read or set the
+selected block in the volume's window. `XWF_GetBlock` returns FALSE when no
+block is defined; `XWF_SetBlock` returns FALSE if the offsets exceed the volume,
+and **`nEndOfs = -1` clears the block**. The block *is* applied immediately, but
+**the hex display does not repaint by itself** — a developer reported exactly
+that confusion and X-Ways confirmed the block was set and only the display was
+stale. Refresh with *View | Refresh View*, or call `InvalidateRect` on the data
+window's hex window.
 
 ## What you cannot read
 

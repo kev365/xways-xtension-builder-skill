@@ -2,7 +2,7 @@
 source: X-Ways SDK header (see getting-the-sdk.md) + https://www.x-ways.net/forensics/x-tensions/api.html + empirical
 type: official-doc + empirical-finding
 fetched: 2026-04-19
-last_updated: 2026-08-09
+last_updated: 2026-08-16
 author: X-Ways Software Technology AG; empirical research notes from testing + CLI-wrapper X-Tension runs
 ---
 
@@ -14,6 +14,7 @@ How X-Ways calls into an X-Tension DLL: the entry points, the invocation modes, 
 
 - Entry points
 - Invocation modes (`nOpType` values)
+- Viewer X-Tensions — a separate class with different rules
 - Threading
 - Invocation flow examples
 - Common patterns
@@ -25,6 +26,8 @@ How X-Ways calls into an X-Tension DLL: the entry points, the invocation modes, 
 
 X-Ways calls these by name (no decoration — exported via the `.def` file). Only `XT_Init` is mandatory; the rest are optional and only invoked if you've exported them.
 
+The SDK's own samples model the corollary: **implement everything, export selectively**. `New.cpp` defines all eight entry points but its `.def` exports only `XT_Init` (the rest `;`-commented); `QTest` implements `XT_ProcessItem` and `XT_ProcessSearchHit` yet exports neither. Since X-Ways drives behaviour off the export table — including the both-callbacks-fire trap below — commenting an export out in the `.def` is the correct way to turn a callback off, not stubbing it to return 0.
+
 | Function | When it's called | Threading |
 | --- | --- | --- |
 | `XT_Init` | Once when the DLL is loaded. Resolve `XWF_*` function pointers here, refuse to load if anything required is missing (return `-1`). | Single-threaded, X-Ways main thread |
@@ -34,7 +37,14 @@ X-Ways calls these by name (no decoration — exported via the `.def` file). Onl
 | `XT_ProcessItemEx` | Same as `XT_ProcessItem` but receives an `hItem` for `XWF_Read` access. **Also driven by `0x01`** — *not* a separate flag (`0x04` is unrelated); X-Ways calls whichever per-item callback(s) you export. Export **both** and **both fire per item** (verified — see the return-value note below). | Multi-threaded under RVS |
 | `XT_ProcessSearchHit` | Per search hit — only when invoked from a search-hit context menu or as a search-refinement step. | Single-threaded |
 | `XT_Finalize` | Once after all per-item callbacks complete. Mirrors `XT_Prepare` — both get the same `nOpType`. | Single-threaded |
-| `XT_Done` | Once when X-Ways is about to unload the DLL. | Single-threaded |
+| `XT_Done` | Once when X-Ways is about to unload the DLL. **Do not let this throw** — an exception here cancels the `FreeLibrary` that would otherwise release your DLL (see [build-and-iteration-gotchas.md](build-and-iteration-gotchas.md)). | Single-threaded |
+| `XT_PrepareSearch` | Before a simultaneous search, to inspect/alter the search terms and code pages. Part of the search-X-Tension surface these notes do **not** cover — see the [coverage map](xways-api-coverage-map.md). | Single-threaded |
+| `XT_View` | Per file to be rendered, if the X-Tension is loaded as a **Viewer X-Tension** (v17.6+). See the section below — the ordinary callbacks do not fire in that mode. | Single-threaded |
+| `XT_ReleaseMem` | Frees a buffer returned by `XT_View`. **Mandatory if `XT_View` is exported.** | Single-threaded |
+
+X-Ways also defines the disk-I/O entry points `XT_SectorIOInit` / `XT_SectorIO` /
+`XT_SectorIODone` / `XT_FileIO` — a distinct X-Tension class with its own,
+much narrower API surface (see [forum-xtensions-distilled.md](forum-xtensions-distilled.md)).
 
 ### `XT_Init` arguments
 
@@ -51,7 +61,49 @@ LONG __stdcall XT_Init(DWORD info, DWORD nFlags, HANDLE hMainWnd, void* lpReserv
 | `0x04` | `XT_INIT_XWI` | Caller is X-Ways Investigator |
 | `0x08` | `XT_INIT_BETA` | Beta build |
 | `0x20` | `XT_INIT_QUICKCHECK` | Just probing whether the X-Tension accepts this caller (since v16.5) — return `1` to accept, `-1` to refuse. No further calls follow. |
-| `0x40` | `XT_INIT_ABOUTONLY` | About to call `XT_About` only (since v16.5) — no real work happens this run |
+| `0x40` | `XT_INIT_ABOUTONLY` | About to call `XT_About` **or `XT_PrepareSearch`** only (since v16.5) — no real work happens this run |
+| `0x80` | `XT_INIT_ALTERED_SEARCH_PATH` | The DLL was loaded with `LOAD_WITH_ALTERED_SEARCH_PATH`, so statically-linked dependent DLLs beside the X-Tension resolve. Set from **v20.8 SR-9, v20.9 SR-11, v21.0 SR-8, v21.1 SR-4** and later; the analyst can switch the behaviour off, so **test this bit rather than assuming it** — see [naming-deployment](conventions/naming-deployment.md). |
+
+`0x10` is unassigned in the current header but appears as `XT_INIT_UNDOCUMENTED`
+in the older Pascal binding `XT_API.pas` — treat it as reserved and mask it out
+rather than asserting on it.
+
+Live flag words observed 2026-08-15, a clean differential across hosts: 21.9
+**Beta 1** delivered `0x89` (`XWF | BETA | ALTERED_SEARCH_PATH`); 21.8 SR-5
+release delivered `0x81` (no BETA bit) — and, when the DLL was loaded for a
+simultaneous search, an initial `0xC1` (**`ABOUTONLY` set**, matching its
+documented "About *or* XT_PrepareSearch" meaning) followed by `XT_Done` and a
+fresh `0x81` init for the search itself. Expect that unload/reload cycle in
+the search lifecycle.
+
+#### Decoding the first parameter
+
+The first argument (`info`, named `nVersion` in most bindings) is a packed
+version word, not an opaque token. `xwf-api-rs` unpacks it as:
+
+```c
+WORD  v     = (info & 0xFFFF0000) >> 16;
+BYTE  major =  v / 100;          // e.g. 2170 -> 21
+BYTE  minor = (v % 100) / 10;    //             -> 7
+BYTE  sr    = (info & 0x0000FF00) >> 8;   // service release
+BYTE  lang  =  info & 0x000000FF;         // GUI language
+```
+
+Worth capturing when your X-Tension has a version floor: several API behaviours
+in these notes differ by service release, and this is the only place you are
+told which host you are running under. The crate treats `info == 0`, or a zero
+high word, as invalid and refuses to load.
+
+**Confirmed live (2026-08-15).** On a host banner-identified as X-Ways
+Forensics 21.9 Beta 1, `XT_Init` received `nVersion = 0x088E0001`: hi16 `2190`
+→ v21.9, byte1 `0` → SR-0, byte0 `1` → language 1 — exactly the decode above.
+`nFlags` arrived as `0x89` = `XT_INIT_XWF | XT_INIT_BETA |
+XT_INIT_ALTERED_SEARCH_PATH`, matching the flag table for a beta build with
+the altered-search-path default. (Previously corroborated by the 2024-05-31
+SDK's `CallerInfo` struct, the SDK's C# manager, and xwf-api-rs — but never a
+live host; the official page still calls the parameter a bare `nVersion`.)
+Watch the arithmetic all the same: a version check that misparses is worse
+than none — it refuses to run on the hosts it was written for.
 
 Most X-Tensions that use the Events API or other forensic-license-only features should refuse to load on `WHX`/`XWI` callers:
 
@@ -100,16 +152,29 @@ Negative `XT_Prepare` returns (distinct, not interchangeable):
 
 ## Invocation modes (`nOpType` values)
 
+!!! note "Which gesture produces which op — two conflicting observations"
+    On **21.9 Beta 1** (2026-08-15), both the command-line `XT:` parameter and
+    the GUI **Tools → Run X-Tension** gesture delivered `nOpType = 0`
+    (`XT_ACTION_RUN`) — under which a `0x01` return produces **no per-item
+    callbacks**. An earlier empirical note from **21.8 SR-1** (2026-06-06, in
+    [xways-snapshot-mutation.md](xways-snapshot-mutation.md)) recorded "Run
+    X-Tension on Volume Snapshot → `nOpType = 0x1`". Either the gesture's op
+    changed between builds or the two tests used different gestures
+    (Tools menu vs the RVS dialog's "Run X-Tensions" operation, which runs
+    under refinement and does deliver per-item callbacks). Log `nOpType` and
+    branch on it rather than assuming the gesture→op mapping.
+
 `XT_Prepare` and `XT_Finalize` both receive an `nOpType` (`DWORD`) that tells you which UI gesture invoked the X-Tension. Constants from the X-Ways SDK header (see [getting-the-sdk.md](getting-the-sdk.md)):
 
 | Value | Symbol | Triggered by | What you typically get |
 | ---: | --- | --- | --- |
-| `0` | `XT_ACTION_RUN` | **Tools → Run X-Tension…** on a volume snapshot | One `XT_Prepare`. No per-item callbacks unless requested. |
+| `0` | `XT_ACTION_RUN` | **Tools → Run X-Tension…** on a volume snapshot | One `XT_Prepare`, then `XT_Finalize`. **No per-item callbacks — even when you return `0x01`** (confirmed live on 21.8 SR-5 + 21.9 Beta 1; see the note above). Do snapshot-wide work directly in `XT_Prepare`, or run under RVS/DBC instead. |
 | `1` | `XT_ACTION_RVS` | X-Tension included as a **Refine Volume Snapshot** step | `XT_Prepare`, then `XT_ProcessItem(Ex)` for every snapshot item (multi-threaded), then `XT_Finalize` |
 | `2` | `XT_ACTION_LSS` | A **logical simultaneous search** is starting | Search-hit callbacks, not item callbacks |
 | `3` | `XT_ACTION_PSS` | A **physical simultaneous search** is starting | Same as LSS, search-level |
 | `4` | `XT_ACTION_DBC` | **Directory-browser context menu** → Run X-Tension on the selected items | `XT_Prepare`, then `XT_ProcessItem(Ex)` for **each selected item only** (not the whole snapshot), then `XT_Finalize` |
 | `5` | `XT_ACTION_SHC` | **Search-hit-list context menu** | `XT_ProcessSearchHit` per hit |
+| `6` | `XT_ACTION_EVT` | **Event-list context menu** (since v20.3 SR-3) | as for DBC, but launched from the Events list |
 | `6` | (no symbol in 2024-05-31 header) | **Events viewer context menu** — added v20.3 SR-3 (2021-08-23, see [xways-api-history-19-to-21_4.md](xways-api-history-19-to-21_4.md)). xwf-api-rs names this `XtPrepareOpType::EventListContextMenu`. | `XT_Prepare` plus the analyst-selected event(s); the per-event callback shape is undocumented and unverified — confirm empirically before relying on it. |
 
 > **Note:** the DBC/SHC values are easy to misremember as 3 and 4 — the header values are 4 and 5 respectively. Use the `XT_ACTION_*` symbols defined here directly to avoid off-by-one confusion.
@@ -125,6 +190,41 @@ Negative `XT_Prepare` returns (distinct, not interchangeable):
 **`XT_ACTION_DBC`** — fires when the analyst right-clicks a selection in the directory browser and picks "Run X-Tension" from the context menu. Critically: `XT_ProcessItem(Ex)` is called **only for the selected items**, not the whole snapshot. Useful for "process this one file" or "process these N selected items" gestures. To honor the selection, return `0x01` (`XT_PREPARE_CALLPI`) from `XT_Prepare` so the per-item callbacks fire (X-Ways calls whichever you export — both `XT_ProcessItem` and `XT_ProcessItemEx` if you export both). Returning `0x04` alone is `EXPECTMOREITEMS` and fires **no** per-item callbacks.
 
 **`XT_ACTION_SHC`** — fires from the search-hit-list context menu. You get `XT_ProcessSearchHit` callbacks. Most X-Tensions can ignore.
+
+## Viewer X-Tensions — a separate class with different rules
+
+An X-Tension that exports **`XT_View`** becomes a *Viewer X-Tension* (v17.6+,
+X-Ways Forensics only — not WinHex Lab Edition). X-Ways calls it for each file
+shown in a separate window, in Preview mode, or included in a case report, and
+the X-Tension returns a human-readable rendering — plain text, HTML, or a
+converted image.
+
+**The part that surprises people: none of the ordinary callbacks fire.** When
+your X-Tension is loaded for viewing purposes, `XT_Prepare`, `XT_Finalize`,
+`XT_ProcessItem`, `XT_ProcessItemEx`, `XT_PrepareSearch` and
+`XT_ProcessSearchHit` are **not called even if exported**. A DLL can serve both
+roles, but a given *load* is one or the other — the same trap as ordinary
+vs disk-I/O X-Tensions (see [forum-xtensions-distilled.md](forum-xtensions-distilled.md)).
+
+Mechanics worth knowing before starting one:
+
+- You allocate the output buffer yourself (any allocator) and return its
+  address; **`XT_ReleaseMem` is mandatory when `XT_View` is exported** and is
+  where X-Ways hands the buffer back to be freed.
+- `*lpResSize` is the real signal: **`-1`** "not my file type, ask someone
+  else", **`-2`** an error worth reporting, **`0`** render as no data, positive
+  = success and the byte length.
+- HTML returned as UTF-16 **must** carry a `0xFF 0xFE` BOM or the viewer will
+  not treat it as HTML.
+- Only the first viewer X-Tension that claims a file gets to render it — later
+  ones in the list are skipped for that file.
+- For full control of the display, return a buffer containing just a NUL byte so
+  the viewer renders nothing, then get the preview window with
+  `XWF_GetWindow(6)` and parent your own controls onto it.
+
+None of this is covered further in these notes — see the
+[coverage map](xways-api-coverage-map.md) for what else is missing, and work
+from the official page.
 
 ## Threading
 
@@ -378,61 +478,16 @@ static std::wstring GetSelfDirectory() {
 
 `GetSelfDirectory() + L"\\<sidecar_name>"` gives the canonical path for cfg files, helper binaries, etc. — matches whatever folder the analyst actually deployed the DLL to.
 
-### Helper binary lookup
+### Helper binaries and Browse dialogs
 
-Bare filenames in cmdlines that get passed to `CreateProcessW` are resolved per Windows' standard search order, **starting with the directory of the application that loaded the helper** — meaning the X-Ways install dir, NOT the X-Tension DLL's directory. So if the X-Tension wants a helper binary deployed *next to itself* (in `xtensions\`), it needs to either:
-
-1. **Existence-check + rewrite.** If the helper's bare name exists at `<dll_dir>\<helper>`, rewrite the cmd to use the full path before calling `CreateProcessW`. Leave the original cmd alone if the file isn't there (so Windows' standard PATH search still fires for things like `python` from a global Python install). Quote the rewritten path in case the directory contains spaces.
-2. **Always full path.** Require absolute paths in the X-Tension's config. Simpler but less portable across analyst machines.
-3. **PATH-based.** Require the helper to be on the user's `PATH`. Simplest setup but requires extra configuration step on each analyst's machine.
-
-The `wrapper` template (`templates/x-tensions/wrapper/`) uses approach (1) — see `ResolveDefaultTool`, with the cfg override applied by the caller and Browse... offered in the dialog (it does not search PATH). A bare-filename helper resolves correctly wherever the analyst drops the per-tension subfolder, and if it doesn't, the X-Tension prompts once and remembers the choice in a sidecar cfg.
-
-### Recursive partner-binary lookup
-
-The fixed-path probes in `ResolveHelperPath` only catch the layouts the X-Tension author thought of (`<dll-dir>\<name>.exe`, `<dll-dir>\tools\<name>.exe`, `<dll-dir>\tools\<name>\<name>.exe`). Analysts often drop the partner binary somewhere reasonable that isn't on the list. A bounded recursive scan under the DLL's own folder is a cheap last resort:
-
-```cpp
-// Breadth-first scan under `root` for `targetName`. Returns the shallowest
-// match (a copy directly next to the DLL beats one nested under tools\). Caps
-// scan depth and total directories visited so an accidental scan over a huge
-// case-output subtree stays cheap. Skips well-known nuisance dirs (.git,
-// .vs, node_modules, __pycache__) and anything hidden / dotted.
-static std::wstring FindSiblingFile(const std::wstring& root,
-                                    const wchar_t* targetName,
-                                    int maxDepth = 4,
-                                    int maxDirsVisited = 256);
-```
-
-Use it AFTER the fixed-path probes so a deliberately-placed binary always wins over the scan. Reference implementation: the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) — `FindSiblingFile`, the bounded-BFS fallback used by `ResolveDefaultTool`.
-
-### Anchor `GetOpenFileNameW` to the X-Tension folder
-
-The `OPENFILENAMEW` common dialog is anchored, in order:
-
-1. The directory in `lpstrFile` (if it contains one).
-2. `lpstrInitialDir` (if set and the directory exists).
-3. The **process-wide most-recently-used common-dialog folder** — set as a side effect of the *previous* `GetOpenFileNameW` call in this process, no matter which DLL made it.
-
-Step 3 is the gotcha: if the analyst just used another X-Tension's Browse button (e.g. one pointed at `xtensions\xways-mytool\mytool.exe`), the next X-Tension's Browse dialog opens in *that* folder unless we override. Always set `lpstrInitialDir`:
-
-```cpp
-std::wstring initDir;
-if (!current.empty()) {
-    size_t slash = current.find_last_of(L"\\/");
-    if (slash != std::wstring::npos) initDir = current.substr(0, slash);
-}
-if (initDir.empty()) initDir = GetSelfDirectory();  // anchor on the DLL's own folder
-
-OPENFILENAMEW ofn = {};
-// ...
-ofn.lpstrInitialDir = initDir.empty() ? nullptr : initDir.c_str();
-ofn.Flags          |= OFN_NOCHANGEDIR;  // dialog mustn't mutate process CWD
-```
-
-Add `OFN_NOCHANGEDIR` on the same line of thinking — the dialog can change the process current directory as a side effect, which can break later relative-path lookups inside the host.
-
-Reference implementation: the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) — `BrowseForFile`. Apply the same `lpstrInitialDir` + `OFN_NOCHANGEDIR` pattern in any X-Tension that calls `GetOpenFileNameW`.
+Everything about resolving a helper exe deployed next to the DLL — the
+`CreateProcessW` search-order trap (bare names resolve against the X-Ways
+install dir, not the DLL's), the fixed-path probes + bounded-BFS
+`FindSiblingFile` fallback, and anchoring `GetOpenFileNameW` with
+`lpstrInitialDir` + `OFN_NOCHANGEDIR` — is owned by
+[tool-resolution.md](conventions/tool-resolution.md). Reference
+implementation: the `wrapper` template (`ResolveDefaultTool`,
+`FindSiblingFile`, `BrowseForFile`).
 
 ## See also
 

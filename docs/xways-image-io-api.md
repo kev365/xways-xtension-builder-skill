@@ -3,7 +3,7 @@ source: https://www.x-ways.net/forensics/x-tensions/Image_IO_API.html (doc last 
 type: api-reference
 fetched: 2026-05-13
 last_updated: 2026-05-13
-author: project notes
+author: project
 ---
 
 # X-Ways Image I/O API

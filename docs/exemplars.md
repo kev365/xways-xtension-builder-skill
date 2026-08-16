@@ -71,6 +71,7 @@ rest are findable by name on GitHub.
 | [XT_XWF-AutoCTR](https://github.com/hmrc/XT_XWF-AutoCTR) | Delphi | Apache-2.0 + OGL-3.0 |
 | [XT_XWF-CaseSummaryGenerator](https://github.com/hmrc/XT_XWF-CaseSummaryGenerator) | Delphi | Apache-2.0 + OGL-3.0 |
 | [XT_XWF-OCR](https://github.com/hmrc/XT_XWF-OCR) | Delphi/FPC | Apache-2.0 + OGL-3.0 |
+| [XT_ExtractDocsMail](https://github.com/gaiacalamari/XT_ExtractDocsMail-) | Free Pascal | Apache-2.0 |
 | XTension_template | C# | None |
 | [xtv_asl](https://github.com/a5hlynx/xtv_asl) | C++ | AGPL-3.0 |
 | xways-audiotranslate | C++ | MIT |
@@ -103,5 +104,28 @@ Adjacent projects worth knowing about when building or automating X-Tensions:
   2026-05-31); the bridge X-Tension is a scaffold (fixed-size path-segment
   array, uneven evidence-handle cleanup on error paths) — review robustness
   before deploying, and read it for patterns and the API dataset.
+
+- [XT_ExtractDocsMail](https://github.com/gaiacalamari/XT_ExtractDocsMail-)
+  (Free Pascal / Lazarus, Apache-2.0) — exports every file in a snapshot into
+  `<Root>\<Evidence>\<Category>\<original path>`, driven entirely from the
+  command line. Reviewed 2026-08-13. Modest as an X-Tension, but useful for two
+  things. First, it vendors **`XT_API.pas`** from
+  [hmrc/XT_XWF-AutoCTR](https://github.com/hmrc/XT_XWF-AutoCTR) — a v18-era
+  Pascal binding that is nonetheless the only community source found so far for
+  the complete `XWF_SEARCH_*` and `XWF_CTR_*` constant families (now transcribed
+  into [xways-search-api.md](xways-search-api.md) and
+  [xways-evidence-containers.md](xways-evidence-containers.md)), and which
+  independently confirms `XWF_ITEM_INFO_FLAGS_SET/REMOVE` as 64/65. Second, its
+  README documents the **unattended BitLocker** path (`Override:5` +
+  `Passwords.txt`) and the ordering constraint that makes category-based export
+  work at all: file-type verification must have run, so `RVS:~` has to precede
+  `XT:` — otherwise the run completes and exports nothing. See
+  [xways-command-line.md](xways-command-line.md).
+  *Caveats:* the vendored binding predates `XT_ACTION_EVT`, the 21.x
+  `XT_PREPARE_*` additions and the current `XWF_GetReportTableInfo` signature —
+  read it as a historical snapshot, not a current header.
+- [rds4xways](https://github.com/patatetom/rds4xways) — NSRL RDS hash-set
+  conversion for X-Ways. Not an X-Tension and not API-related; listed so it is
+  not re-discovered from scratch. **Not reviewed.**
 
 See also the official [X-Ways third-party X-Tensions list](https://www.x-ways.net/forensics/x-tensions.html).

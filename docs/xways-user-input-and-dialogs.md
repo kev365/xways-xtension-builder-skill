@@ -22,6 +22,7 @@ These compose: load defaults from a sidecar, prompt with `XWF_GetUserInput` for 
 - Win32 dialog parented to `hMainWnd`
 - Sidecar config file
 - `XWF_OutputMessage` for status / errors
+- The progress-indicator API
 - Caveats
 - See also
 
@@ -178,9 +179,49 @@ Not a prompt, but the natural counterpart for surfacing results back to the anal
 
 Convention: use the `Log` helper in the C++ template for one-line summary messages, `LogVerbose` for per-item diagnostics gated on the `VERBOSE` constant.
 
+## The progress-indicator API
+
+Four calls, plus `XWF_ShouldStop`, give an X-Tension the host's own progress
+window rather than a home-made one:
+
+| Call | Effect |
+| --- | --- |
+| `XWF_ShowProgress(lpCaption, nFlags)` | create the progress window |
+| `XWF_SetProgressPercentage(nPercent)` | move the bar |
+| `XWF_SetProgressDescription(lpStr)` | set the descriptive line |
+| `XWF_HideProgress()` | close it |
+
+`nFlags` on `XWF_ShowProgress`:
+
+| Bit | Meaning |
+| --- | --- |
+| `0x01` | window only, no actual progress bar |
+| `0x02` | do not let the analyst interrupt |
+| `0x04` | show the window immediately |
+| `0x08` | double-confirm an abort |
+| `0x10` | prevent logging |
+
+!!! danger "Never call these from a per-item callback"
+    The official page is explicit: do **not** use any progress-indicator
+    function while implementing `XT_ProcessItem` / `XT_ProcessItemEx`, or while
+    calling `XWF_*` functions that raise a progress bar of their own. X-Ways is
+    already driving a progress indicator for the operation that is calling you;
+    a second one fights it.
+
+    That is another argument for the collect-then-run shape in
+    [item-collection](conventions/item-collection.md): the per-item callbacks
+    only accumulate IDs, and the long work — with its progress window — happens
+    in `XT_Finalize`, where you own the operation.
+
+Pair the window with `XWF_ShouldStop`, which reports whether the analyst has
+asked to abort. Since **v19.3** it also pumps the message queue, so calling it
+regularly keeps the GUI repainting and lets the host notice an attempt to close
+the progress window. X-Ways' own guidance is that making the calls is worth it
+even if you ignore the result.
+
 ## Caveats
 
-- `XWF_GetUserInput` is **not exposed by `XT_Python.dll`'s embedded `xwf` module** (per the XT_Python readme shipped with the SDK). Python X-Tensions can prompt via `tkinter` or similar instead — but with no parenting to `hMainWnd`, the dialog can be hidden behind X-Ways.
+- `XWF_GetUserInput` is **not exposed by `XT_Python.dll`'s embedded `xwf` module** — verified against the bridge's method table in the SDK's `Python.cpp` (see [xways-python-bridge.md](xways-python-bridge.md); an earlier revision cited the XT_Python readme, which doesn't actually address it). For file/folder input the bridge *does* ship two dialogs of its own — **`xwf.GetOpenFileName()` and `xwf.GetSaveFileName()`**, zero-argument native pickers — reach for those before `tkinter`. For free-text input it's `tkinter` or similar; either way there is no parenting to `hMainWnd`, so the dialog can end up hidden behind X-Ways.
 - The dialog is **modal to the calling thread**. Calling it from a multi-threaded `XT_ProcessItem(Ex)` is wrong — prompt once in `XT_Prepare`, store the answer in a global, consume it during item iteration.
 - **Cancel returns `-1`.** Treat that as "abort the operation" and return `-1` from `XT_Prepare` so X-Ways skips the rest of the run cleanly.
 - The "password hint" flag (`0x10`) is documented as **not yet implemented** — don't rely on it for actual secret-handling.

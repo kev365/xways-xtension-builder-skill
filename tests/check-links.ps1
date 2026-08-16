@@ -48,11 +48,18 @@ $broken = [System.Collections.Generic.List[string]]::new()
 $checked = 0
 $files = 0
 
-Get-ChildItem $Root -Recurse -File -Filter '*.md' | Where-Object {
+$targets = @(Get-ChildItem $Root -Recurse -File -Filter '*.md' | Where-Object {
     $rel = $_.FullName.Substring($Root.Length).TrimStart('\', '/')
     $first = ($rel -split '[\\/]')[0]
     $skipDirs -notcontains $first
-} | ForEach-Object {
+})
+# CLAUDE.md.example ends in .example so the *.md filter misses it — but its
+# relative links must resolve in THIS repo (a dead .claude/skills/ link
+# survived two releases that way). assets/*.tmpl stay excluded: their content
+# is written for the scaffolded project's context, not this repo's.
+$example = Join-Path $Root 'CLAUDE.md.example'
+if (Test-Path $example) { $targets += Get-Item $example }
+$targets | ForEach-Object {
     $files++
     $text = Remove-CodeSpans (Get-Content $_.FullName -Raw)
     $dir  = $_.DirectoryName

@@ -68,8 +68,11 @@ $cases = @(
                   'xways-wraptest.cfg.example')
        Reject = @('my_xtension.cfg.example', 'my_xtension.cpp') }
     @{ Template = 'python';  Name = 'pytest'
-       Expect = @('xways-pytest.py', 'xways-pytest.config.json')
-       Reject = @('xtension_template.config.json', 'xtension.config.json', 'xtension.py') }
+       # Underscore stem: the bridge imports by file stem, so hyphens can never
+       # load (import xways-pytest = syntax error). Folder keeps the hyphen.
+       Expect = @('xways_pytest.py', 'xways_pytest.config.json')
+       Reject = @('xways-pytest.py', 'xways-pytest.config.json',
+                  'xtension_template.config.json', 'xtension.config.json', 'xtension.py') }
     @{ Template = 'cpp';     Name = 'cpptest'
        Expect = @('xways-cpptest.cpp', 'xways-cpptest.def')
        Reject = @('my_xtension.cpp') }

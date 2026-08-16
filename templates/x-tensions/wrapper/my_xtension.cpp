@@ -80,7 +80,10 @@ enum : DWORD {
     XT_ACTION_SHC = 5,
 };
 
-enum : DWORD { COMMENT_REPLACE = 0, COMMENT_APPEND = 1, COMMENT_PREPEND = 2 };
+// XWF_AddComment nFlagsHowToAdd (official page, verified live 21.8 SR-5
+// 2026-08-15): 0 replaces, 1 appends with a space delimiter, 2 appends
+// with a line-break delimiter. There is NO prepend mode.
+enum : DWORD { COMMENT_REPLACE = 0, COMMENT_APPEND = 1, COMMENT_APPEND_LINEBREAK = 2 };
 
 // --- Dialog message IDs (worker -> dialog) ---------------------------------
 #define WM_APP_PROGRESS   (WM_APP + 1)  // wp = permille (0..1000)
@@ -2217,16 +2220,25 @@ static void ShowDialogAndRun(const Collected& c) {
 // =============================================================================
 extern "C" {
 
-LONG __stdcall XT_Init(DWORD nVersion, DWORD /*nFlags*/, HWND hMainWnd, void*) {
+LONG __stdcall XT_Init(DWORD nVersion, DWORD nFlags, HWND hMainWnd, void*) {
+    int missing = RetrieveFunctionPointers();
+    // XT_INIT_QUICKCHECK (0x20): compatibility probe only — answer and get
+    // out before any UI init or logging. See docs/xtension-invocation.md.
+    if (nFlags & 0x20) return (missing > 0) ? -1 : 1;
+
     g_hMainWnd = hMainWnd;
     INITCOMMONCONTROLSEX icc = {};
     icc.dwSize = sizeof(icc);
     icc.dwICC  = ICC_PROGRESS_CLASS | ICC_STANDARD_CLASSES | ICC_BAR_CLASSES;
     InitCommonControlsEx(&icc);
 
-    int missing = RetrieveFunctionPointers();
-    Log(FormatW(L"%s %s \x2014 X-Ways build %.2f, %d missing exports",
-                NAME, VERSION, nVersion / 100.0, missing));
+    // nVersion is a packed word: version*10 in the high 16 bits, service
+    // release in byte 1, GUI language in byte 0. Confirmed live on 21.9
+    // Beta 1 (0x088E0001 -> v21.9 SR-0). See docs/xtension-invocation.md.
+    const DWORD ver = (nVersion >> 16) & 0xFFFF;
+    const DWORD sr  = (nVersion >>  8) & 0xFF;
+    Log(FormatW(L"%s %s \x2014 X-Ways v%u.%u SR-%u, %d missing exports",
+                NAME, VERSION, ver / 100, (ver % 100) / 10, sr, missing));
     if (missing > 0) {
         Log(L"required XWF_* exports are missing \x2014 refusing to load");
         return -1;
@@ -2254,6 +2266,16 @@ LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void*
     g_collected.hEvidence      = hEvidence;
     g_collected.invocationMode = (nOpType == XT_ACTION_DBC)
         ? InvocationMode::Selection : InvocationMode::Run;
+
+    // GOTCHA (confirmed live on 21.8 SR-5 + 21.9 Beta 1): under nOpType 0
+    // (XT_ACTION_RUN — Tools -> Run X-Tension, and the command-line XT:
+    // parameter) X-Ways delivers NO per-item callbacks, so the collector
+    // stays empty in that mode. Run under RVS or a directory-browser
+    // selection, or self-enumerate. See docs/xtension-invocation.md.
+    if (nOpType == 0)
+        Log(L"note: op=0 delivers no per-item callbacks \x2014 the item "
+            L"collector will stay empty; run via RVS or a selection instead");
+
     return 0x01;  // request XT_ProcessItem callbacks
 }
 
@@ -2278,6 +2300,9 @@ LONG __stdcall XT_ProcessItem(LONG nItemID, void*) {
     return 0;
 }
 
+// Stubs — NOT exported by default (commented out in the .def) so only
+// XT_ProcessItem receives items. Uncomment their .def lines to enable, and
+// dedup by item ID if you export both per-item callbacks (both fire per item).
 LONG __stdcall XT_ProcessItemEx(LONG, HANDLE, void*) { return 0; }
 LONG __stdcall XT_ProcessSearchHit(void*) { return 0; }
 

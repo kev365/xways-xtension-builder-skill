@@ -29,6 +29,13 @@ capture the decision logic, not a hardcoded inventory.
 | Rich Python libraries (ML/parsers/RE frameworks), no Events API | **python** |
 | Rapid prototyping where C++ iteration cost is high | **python** |
 
+Python-track constraints (verified live 2026-08-16 — details in
+`docs/xways-python-bridge.md`): the script's file stem must be a legal module
+name (underscores, never hyphens — the bridge loads via `import <filestem>`);
+the `.py` files deploy into the **X-Ways main folder**, not an `xtensions\`
+subfolder; and the host needs a matching **system-wide** Python install
+(currently 3.12) for the embedded interpreter's standard library.
+
 **Step 2 — within the C++ track, pick the template:**
 
 | The C++ X-Tension is… | Template |

@@ -43,7 +43,10 @@ enum : DWORD {
 };
 
 // --- AddComment howToAdd flags (official API) -------------------------------
-enum : DWORD { COMMENT_REPLACE = 0, COMMENT_APPEND = 1, COMMENT_PREPEND = 2 };
+// XWF_AddComment nFlagsHowToAdd (official page, verified live 21.8 SR-5
+// 2026-08-15): 0 replaces, 1 appends with a space delimiter, 2 appends
+// with a line-break delimiter. There is NO prepend mode.
+enum : DWORD { COMMENT_REPLACE = 0, COMMENT_APPEND = 1, COMMENT_APPEND_LINEBREAK = 2 };
 
 // --- Function-pointer typedefs (trimmed — add more as you need them) --------
 typedef VOID   (__stdcall *pfn_XWF_OutputMessage)(const wchar_t* msg, DWORD nFlags);
@@ -127,6 +130,10 @@ static int RetrieveFunctionPointers() {
 //   on demand (SHCreateDirectoryExW) when the analyst hits Run. Don't
 //   override an existing saved output_dir in cfg — only seed this default
 //   when the field is empty.
+//   NOTE: these two helpers are intentionally unreferenced in the shipped
+//   template — the demo writes no output files. Call DefaultOutputDir(
+//   GetCaseRootDir()) when you add report/export writing (the wrapper
+//   template shows the full wiring in ResolveDefaultOutputBase).
 //   See docs/conventions/output-dir.md.
 static std::wstring GetCaseRootDir() {
     if (!XWF_GetCaseProp) return {};
@@ -179,9 +186,20 @@ extern "C" {
 
 LONG __stdcall XT_Init(DWORD nVersion, DWORD nFlags, HWND hMainWnd, void* lpReserved) {
     int missing = RetrieveFunctionPointers();
+    // XT_INIT_QUICKCHECK (0x20): X-Ways is only probing compatibility.
+    // Answer from the resolution result (-1 refuses the host) and do
+    // nothing else — no logging, no side effects. Same guard as the
+    // wrapper template. See docs/xtension-invocation.md.
+    if (nFlags & 0x20) return (missing > 0) ? -1 : 1;
+    // nVersion is a packed word: version*10 in the high 16 bits, service
+    // release in byte 1, GUI language in byte 0. Confirmed live on 21.9
+    // Beta 1 (0x088E0001 -> v21.9 SR-0). See docs/xtension-invocation.md.
+    const DWORD ver = (nVersion >> 16) & 0xFFFF;
+    const DWORD sr  = (nVersion >>  8) & 0xFF;
     wchar_t buf[128];
-    swprintf_s(buf, L"%s — X-Ways build %.2f (%d missing exports)",
-               VERSION, nVersion / 100.0, missing);
+    swprintf_s(buf, L"%s — X-Ways v%lu.%lu SR-%lu (%d missing exports)",
+               VERSION, (unsigned long)(ver / 100), (unsigned long)((ver % 100) / 10),
+               (unsigned long)sr, missing);
     Log(buf);
     return 1;
 }
@@ -192,7 +210,7 @@ LONG __stdcall XT_About(HWND hParentWnd, void* lpReserved) {
     return 0;
 }
 
-LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, LONG nOpType, void* lpReserved) {
+LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void* lpReserved) {
     g.hVolume = hVolume;
     g.opType  = nOpType;
     g.processed = g.flagged = 0;
@@ -212,20 +230,32 @@ LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, LONG nOpType, void* 
     //   std::wstring tempBase = GetTempBase(hEvidence);
     //   Log(L"temp base: " + tempBase);
 
+    // GOTCHA (confirmed live on 21.8 SR-5 + 21.9 Beta 1): under nOpType 0
+    // (XT_ACTION_RUN — Tools -> Run X-Tension, and the command-line XT:
+    // parameter) X-Ways delivers NO per-item callbacks even when you return
+    // 0x01, so this template silently processes zero items in that mode.
+    // Run under RVS/DBC instead, or self-enumerate the snapshot
+    // (XWF_SelectVolumeSnapshot -> XWF_GetItemCount -> XWF_OpenItem).
+    // See docs/xtension-invocation.md + docs/xways-command-line.md.
+    if (nOpType == 0)
+        Log(L"note: op=0 delivers no per-item callbacks — run via RVS or a "
+            L"directory-browser selection, or add self-enumeration here");
+
     // 0x01 (CALLPI): X-Ways calls your per-item callback(s) — whichever of
-    // XT_ProcessItem / XT_ProcessItemEx you export. We export BOTH, so BOTH fire
-    // for every item (RVS delivers each item to both, on a worker pool).
-    // We therefore do the work in ONE place (XT_ProcessItemEx — it also gives an
-    // hItem) and leave XT_ProcessItem a no-op, so each item is handled once.
+    // XT_ProcessItem / XT_ProcessItemEx you EXPORT. This template exports only
+    // XT_ProcessItemEx (see the .def — XT_ProcessItem's line is commented out),
+    // so each item is delivered exactly once. If you export BOTH, both fire per
+    // item (the "2N" trap) — do the work in one, or dedup.
     // (0x04 would be EXPECTMOREITEMS — "I'll create items" — not a callback knob.)
     // See docs/conventions/item-collection.md.
     return 0x01;
 }
 
-// Non-Ex callback. It DOES fire under 0x01 (X-Ways calls both exported callbacks
-// per item) — we keep it a no-op so each item is handled exactly once, in
-// XT_ProcessItemEx below. Do the work here instead if you don't need an hItem;
-// if you work in BOTH, dedup by item ID or you'll double-count.
+// Non-Ex callback — NOT exported by default (commented out in the .def), so it
+// never fires as shipped; the work happens in XT_ProcessItemEx below. Uncomment
+// its .def line if you need it (zero-byte items are only ever delivered here,
+// per the TARGETZEROBYTEFILES quirk) — and then dedup by item ID, because both
+// exported callbacks fire for every ordinary item.
 LONG __stdcall XT_ProcessItem(LONG nItemID, void* lpReserved) {
     return 0;
 }
@@ -257,7 +287,7 @@ LONG __stdcall XT_ProcessSearchHit(void* info) {
     return 0;
 }
 
-LONG __stdcall XT_Finalize(HANDLE hVolume, HANDLE hEvidence, LONG nOpType, void* lpReserved) {
+LONG __stdcall XT_Finalize(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void* lpReserved) {
     wchar_t buf[128];
     swprintf_s(buf, L"done — processed %llu, flagged %llu",
                (unsigned long long)g.processed, (unsigned long long)g.flagged);

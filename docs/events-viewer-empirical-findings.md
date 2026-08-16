@@ -2,8 +2,8 @@
 source: X-Ways Events Viewer — Empirical Findings
 type: empirical-finding
 fetched: 2026-04-26
-last_updated: 2026-04-26
-author: empirical testing + analyst inspection of UI
+last_updated: 2026-08-16
+author: project
 ---
 
 # X-Ways Events Viewer — Empirical Findings (21.7)
@@ -42,162 +42,43 @@ Authoritative API header: the X-Ways SDK header (see [getting-the-sdk.md](gettin
 
 ## 1. Complete `nEvtType` → Type label map (dense sweep)
 
-Each row below is empirically verified: the X-Tension emitted exactly one event with that `nEvtType`, and the column values are what the Events viewer displays. Labels match X-Ways' internal lookup table 1:1 with the order shown in the Type-column filter dropdown.
+Each labelled subcode was verified by emitting exactly one event with that
+`nEvtType` and reading the rendered Category/Type off the Events viewer. The
+**full per-subcode tables live in
+[xways-events-api.md](xways-events-api.md)** ("`nEvtType` — full lookup map") —
+they were originally duplicated here verbatim, and the two copies drifted
+(this page's OS table once said `15000+` where the correct unlabelled range is
+`14015+`; 15000 is the Event-log range base). One owner now.
 
-### `Category = "File system"` (range 100..)
+Sweep summary — the 9-bucket category map with each range's last labelled
+subcode (labels increment by 1 from the range base; everything past the last
+labelled subcode renders `?` with the correct Category):
 
-| Subcode | Type label | Subcode | Type label |
-| ---: | --- | ---: | --- |
-| 100 | Creation | 110 | Permission change |
-| 101 | Modification | 111 | Ext attr modification |
-| 102 | Access | 112 | Ext attr deletion |
-| 103 | Record change | 113 | Document revision |
-| 104 | Deletion | 114 | Exchange |
-| 105 | Recycle bin | 115 | Metadata modification |
-| 106 | Added | 116 | Hard link |
-| 107 | Rename | 117 | Symbolic link |
-| 108 | Mount | 118 | End of transaction |
-| 109 | Unmount | 119+ | `?` (no built-in label) |
+| Range | Category | Last labelled |
+| ---: | --- | ---: |
+| 100.. | File system | 118 (End of transaction) |
+| 1000.. | Internal file metadata | 1015 (BPList Date Type) |
+| 8000.. | Internet | 8007 (Modified) |
+| 10000..11999 | Messaging | 10010 (Instant message) |
+| 12000..13999 | **Social networks** (undocumented sub-bucket) | none labelled |
+| 14000..14999 | Operating system | 14014 (Quarantine) |
+| 15000..19999 | Event log | 15034 (Windows Powershell) |
+| 20000..29999 | Registry | 20013 (Device attached) |
+| 30000+ | **Other** (undocumented) | none labelled |
 
-### `Category = "Internal file metadata"` (range 1000..)
-
-| Subcode | Type label | Subcode | Type label |
-| ---: | --- | ---: | --- |
-| 1000 | Other | 1008 | Restore point |
-| 1001 | Creation | 1009 | Start indexing |
-| 1002 | Modification | 1010 | OLE2 creation |
-| 1003 | Access | 1011 | OLE2 modification |
-| 1004 | Record change | 1012 | Last saved |
-| 1005 | Deletion | 1013 | Attached |
-| 1006 | Printed | 1014 | Content created (Exif) |
-| 1007 | GPS datum | 1015 | BPList Date Type |
-| — | — | 1016+ | `?` |
-
-### `Category = "Internet"` (range 8000..)
-
-| Subcode | Type label |
-| ---: | --- |
-| 8000 | Other |
-| 8001 | Visited |
-| 8002 | Cookie |
-| 8003 | Remote |
-| 8004 | Fetch |
-| 8005 | Sign-on created |
-| 8006 | Sign-on last used |
-| 8007 | Modified |
-| 8008+ | `?` |
-
-### `Category = "Messaging"` (range 10000..)
-
-| Subcode | Type label |
-| ---: | --- |
-| 10000 | Sent |
-| 10001 | Received |
-| 10002 | Created |
-| 10003 | Record change |
-| 10004 | Account created |
-| 10005 | Last online |
-| 10006 | Last activity |
-| 10007 | File transfer |
-| 10008 | VoIP call |
-| 10009 | Chat |
-| 10010 | Instant message |
-| 10011..11999 | `?` |
-| 12000..13999 | `?` (with **`Category = "Social networks"`** instead of Messaging) |
-
-The `Social networks` category is undocumented in the public API but exists empirically as a sub-bucket inside the Messaging range. No specific Type labels were found for it during the sweep.
-
-### `Category = "Operating system"` (range 14000..)
-
-Bolded rows are typical picks for an Operating-system-category Events-API X-Tension.
-
-| Subcode | Type label |
-| ---: | --- |
-| 14000 | Other |
-| 14001 | Program started |
-| 14002 | Program ended |
-| 14003 | OS shutdown |
-| 14004 | OS startup |
-| 14005 | Session start |
-| 14006 | OS update |
-| 14007 | Encrypted volume creation |
-| 14008 | Encryption key modification |
-| 14009 | Network connection |
-| 14010 | Network data |
-| 14011 | Windows network data |
-| 14012 | Application resource |
-| 14013 | Energy usage |
-| 14014 | Quarantine |
-| 15000+ | `?` |
-
-### `Category = "Event log"` (range 15000..) — UAL alternative range
-
-| Subcode | Type label | Subcode | Type label |
-| ---: | --- | ---: | --- |
-| 15000 | Interactive log-on | 15018 | Audit success |
-| 15001 | Log-off | 15019 | Audit failure |
-| 15002 | Failed log-on | 15020 | Log-on |
-| 15003 | User account created | 15021 | Start |
-| 15004 | User account deleted | 15022 | Stopped |
-| 15005 | System time changed | 15023 | Boot |
-| 15006 | User account enabled | 15024 | System standby |
-| 15007 | User account disabled | 15025 | System reactivated |
-| 15008 | User account changed | 15026 | Eventlog deleted |
-| 15009 | Password change attempt | 15027 | Resources exhausted |
-| 15010 | Password reset attempt | 15028 | Windows event |
-| 15011 | Workstation locked | 15029 | Linux/Unix system |
-| 15012 | Workstation unlocked | 15030 | An account logged off |
-| 15013 | Application error | 15031 | Terminal service connection |
-| 15014 | Application hang | 15032 | Timezone changed |
-| 15015 | Information | 15033 | MSI Windows installer |
-| 15016 | Warning | 15034 | Windows Powershell |
-| 15017 | Error | 15035+ | `?` |
-
-### `Category = "Registry"` (range 20000..)
-
-| Subcode | Type label |
-| ---: | --- |
-| 20000 | Key changed |
-| 20001 | Value changed |
-| 20002 | Other |
-| 20003 | Clean-up |
-| 20004 | StartMenu start |
-| 20005 | Timestamp |
-| 20006 | Default |
-| 20007 | Log-on |
-| 20008 | Failed log-on |
-| 20009 | MRU list |
-| 20010 | Profile loaded |
-| 20011 | SlowInfoCache |
-| 20012 | AppCompatCache |
-| 20013 | Device attached |
-| 20014+ | `?` |
-
-### Outside any documented range
-
-| Subcode | Type | Category |
-| ---: | --- | --- |
-| 0 | `Unknown` | `Unknown` |
-| 1..99 | `?` | `Unknown` |
-| 30000+ | `?` | `Other` |
+Outside any range: `0` renders `Unknown`/`Unknown`; `1..99` renders `?` with
+Category `Unknown`.
 
 ## 2. `nFlags` semantics (empirical)
 
-| Bit | Documented meaning | Observed effect |
-| ---: | --- | --- |
-| `0x00` | (no flags, full UTC precision) | Full date+time, converted to case TZ for display |
-| `0x04` | seconds only | No visible textual difference vs `0x00` |
-| `0x08` | even seconds only | No visible textual difference vs `0x00` |
-| `0x10` | date only | Time portion dropped from display |
-| `0x20` | local time, not UTC | No conversion applied — value displayed as-is |
-| `0x40` | outdated | No visible color or text marker |
-| `0x14` | combo (date-only + local time) | Date only, no conversion |
-
-For an Events-API X-Tension:
+The per-bit results table lives in
+[xways-events-api.md](xways-events-api.md) ("`nFlags` — empirical semantics").
+Practical upshot for an Events-API X-Tension:
 
 - Date-only rows (e.g. a daily bucket at midnight UTC) → set `0x10`.
 - Timestamps with full UTC precision → `0x00`.
-- Don't expect `0x40` to make outdated rows visually distinct.
+- Don't expect `0x40` (outdated) to make rows visually distinct — no flag
+  value produces any colour or marker.
 
 ## 3. `lpDescr` capacity
 
@@ -432,14 +313,22 @@ Verified against **X-Ways Forensics 21.8 (BYOD `xwb64.exe`)** on a logs snapshot
 
 ### `nVersion` decoding
 
-The `XT_Init` `nVersion` argument is **`HIWORD = version × 100`, `LOWORD = service-release/build word`** — *not* a single number to divide by 100. Decoded correctly:
+The `XT_Init` `nVersion` argument is a **packed word**: `HIWORD = version × 10`
+(2170 → 21.7), **byte 1 = service release, byte 0 = GUI language** — *not* a
+single number to divide by 100. The LOWORD is *two* packed bytes, which
+resolves the "SR vs internal build" question this section originally left
+open. Decoded correctly, the two observations recorded here:
 
-| X-Ways | `nVersion` (dec) | `HIWORD` | `HIWORD/100` | `LOWORD` |
-| --- | ---: | ---: | ---: | ---: |
-| 21.7 | 142213889 | 2170 | **21.70** | 769 |
-| 21.8 | 142868737 | 2180 | **21.80** | 257 |
+| X-Ways | `nVersion` (dec) | `HIWORD` | version | `LOWORD` (hex) | SR (byte 1) | lang (byte 0) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 21.7 | 142213889 | 2170 | **21.7** | `0x0301` | **3** | 1 |
+| 21.8 | 142868737 | 2180 | **21.8** | `0x0101` | **1** | 1 |
 
-The `nVersion` DWORD decodes as `X-Ways v%.2f (…)` via `HIWORD(nVersion)/100.0`. (The `LOWORD` semantics — SR number vs. internal build — are not pinned down; both observed values are recorded above for future reference.)
+The packed decode was confirmed live on 21.9 Beta 1 and 21.8 SR-5
+(2026-08-15): raw `0x088E0001` → 21.9 SR-0 lang-1, raw `0x08840501` → 21.8
+SR-5 lang-1 — and the two rows above fit it exactly (the hosts were 21.7 SR-3
+and 21.8 SR-1). Canonical decode + code snippet:
+[xtension-invocation.md](xtension-invocation.md), "`XT_Init`".
 
 ### Event-Type taxonomy — unchanged from 21.7 (interim)
 

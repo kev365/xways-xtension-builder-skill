@@ -1,8 +1,8 @@
 ---
 source: synthesized from CLI-wrapper dialog implementations (see exemplars.md and the wrapper template)
-type: convention / template-companion
+type: convention
 fetched: 2026-05-14
-last_updated: 2026-08-09
+last_updated: 2026-08-16
 ---
 
 # X-Tension dialog conventions
@@ -606,30 +606,17 @@ longer than ~64 chars).
 
 ## Default output base = case directory
 
-Don't dump per-X-Tension artifacts under `%TEMP%` or the evidence working
-dir by default — analysts want them inside the case. Resolve via:
-
-```cpp
-// XWF_GetCaseProp(NULL, 6, ...)  -> case directory
-// XWF_GetEvObjProp(hEv, 12, ...) -> evidence "Internally used directory"
-// %TEMP%                          -> last-resort
-std::wstring ResolveDefaultOutputBase(HANDLE hEvidence,
-                                      std::wstring& sourceLabel) {
-    std::wstring caseDir = GetCaseDirectory();
-    if (!caseDir.empty()) { sourceLabel = L"X-Ways case directory"; return caseDir; }
-    std::wstring evDir = GetEvidenceWorkingDir(hEvidence);
-    if (!evDir.empty())   { sourceLabel = L"evidence working dir"; return evDir; }
-    wchar_t base[MAX_PATH] = {0};
-    DWORD n = GetTempPathW(MAX_PATH, base);
-    if (n > 0 && n <= MAX_PATH) { sourceLabel = L"%TEMP%"; return base; }
-    sourceLabel = L"C:\\Temp\\ (last-resort)";
-    return L"C:\\Temp\\";
-}
-```
-
-Per-run layout: `<outputBase>\<xtension-name>\run-YYYYMMDD-HHMMSS\`. The
-X-Tension-name subfolder is critical — without it, multiple X-Tensions
-would dump artifacts side-by-side in the case root.
+Don't dump per-X-Tension artifacts under `%TEMP%` or the evidence working dir
+by default — analysts want them inside the case. The resolution cascade
+(`XWF_GetCaseProp(NULL, 6, ...)` case dir → `XWF_GetEvObjProp(hEv, 12, ...)`
+evidence working dir → `%TEMP%` last-resort) and the
+`<outputBase>\<xtension-name>
+un-YYYYMMDD-HHMMSS\` layout are owned by
+[output-dir.md](conventions/output-dir.md) — the per-X-Tension subfolder is
+the critical part (without it multiple X-Tensions co-mingle in the case root).
+The dialog's job: pre-fill the edit field with the resolved default at
+`WM_INITDIALOG`, show the source label ("X-Ways case directory" / "%TEMP%")
+next to it, and never override a non-empty saved `output_dir` from cfg.
 
 ## Button label conventions
 
@@ -649,38 +636,10 @@ primary + modifier pairing you add:
 1. **Label flip** — change the button text in the WM_TIMER tick that polls the modifier key. See the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) (`Run` ↔ `Save`).
 2. **Color flip** — paint the button face in the Windows accent blue (`RGB(0, 120, 215)` / pressed `RGB(0, 90, 168)`) with white text so the analyst gets a strong visual cue that "clicking now does something different." Requires switching the button to `BS_OWNERDRAW` style at `WM_INITDIALOG` and handling `WM_DRAWITEM` to paint the alternate state. Force a `InvalidateRect` on the button each time the timer flips the label, so the new paint kicks in even when the mouse isn't over it.
 
-Owner-draw skeleton (drop into your X-Tension):
-
-```cpp
-// WM_INITDIALOG:
-for (int id : { IDC_BTN_RUN, (int)IDCANCEL }) {
-    HWND h = GetDlgItem(hDlg, id);
-    if (h) SetWindowLongPtrW(h, GWL_STYLE,
-                             GetWindowLongPtrW(h, GWL_STYLE) | BS_OWNERDRAW);
-}
-
-// WM_TIMER (label-flip path):
-SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : L"Run");
-InvalidateRect(GetDlgItem(hDlg, IDC_BTN_RUN), nullptr, TRUE);
-// Close button only flips when no worker is running, so the analyst
-// doesn't get a confusing "Cancel or save?" affordance mid-scan.
-bool closeSaveMode = ctrlDown && (g_workerThread == nullptr);
-SetDlgItemTextW(hDlg, IDCANCEL,
-                closeSaveMode ? L"Save as..." : L"Close");
-InvalidateRect(GetDlgItem(hDlg, IDCANCEL), nullptr, TRUE);
-
-// WM_DRAWITEM (one handler for BOTH buttons):
-DRAWITEMSTRUCT* dis = (DRAWITEMSTRUCT*)lp;
-bool isRunBtn    = (dis->CtlID == IDC_BTN_RUN);
-bool isCancelBtn = (dis->CtlID == IDCANCEL);
-if (!isRunBtn && !isCancelBtn) break;
-bool altMode = (isRunBtn && g_runCtrlDown) || (isCancelBtn && g_closeCtrlDown);
-bool isPressed = (dis->itemState & ODS_SELECTED) != 0;
-COLORREF bg = altMode ? (isPressed ? RGB(0,90,168) : RGB(0,120,215))
-                      : GetSysColor(COLOR_BTNFACE);
-COLORREF fg = altMode ? RGB(255,255,255) : GetSysColor(COLOR_BTNTEXT);
-// Fill, frame, focus rect, text via the dialog's WM_GETFONT.
-```
+The full implementation — timer declarations, `WM_TIMER` label swap,
+`WM_DRAWITEM` blue-tint block, resting-label capture — lives in
+[ctrl-to-save.md](conventions/ctrl-to-save.md); it applies unchanged to any
+other primary+modifier pairing.
 
 ### Ctrl+Close = "Save as..." (sister of Ctrl+Run)
 
@@ -691,41 +650,9 @@ experimenting, or for shipping a cfg to another analyst. The file written is an
 export — on next launch the X-Tension still auto-loads only the standard sidecar
 next to its DLL.
 
-```cpp
-if (id == IDCANCEL) {
-    bool ctrlHeld = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
-    if (ctrlHeld && !g_workerThread && s && ctx) {
-        if (!ReadDialogToSettings(hDlg, *s)) return TRUE;
-        wchar_t fileBuf[MAX_PATH];
-        swprintf_s(fileBuf, L"%s.cfg", NAME);
-        OPENFILENAMEW ofn = {};
-        ofn.lStructSize  = sizeof(ofn);
-        ofn.hwndOwner    = hDlg;
-        ofn.lpstrFilter  = L"Config Files (*.cfg)\0*.cfg\0All files (*.*)\0*.*\0";
-        ofn.nFilterIndex = 1;
-        ofn.lpstrFile    = fileBuf;      // doubles as the default filename
-        ofn.nMaxFile     = MAX_PATH;
-        ofn.lpstrTitle   = L"Save settings to...";
-        ofn.Flags        = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-        ofn.lpstrDefExt  = L"cfg";
-        if (!GetSaveFileNameW(&ofn)) return TRUE;   // user cancelled
-        if (SaveSettingsToCfg(fileBuf, *s)) EndDialog(hDlg, IDCANCEL);
-        return TRUE;
-    }
-    // ... existing cancel-worker-or-close logic
-}
-```
-
-`OFN_OVERWRITEPROMPT` is what makes an auto-numbered filename unnecessary — the
-common dialog asks before clobbering. `OFN_NOCHANGEDIR` matters more than it
-looks: without it the picker mutates the host process's current directory, and
-X-Ways keeps running long after your dialog closes.
-
-Gate on `g_workerThread == nullptr` — disabling save-as during an active scan is
-the right call (the cfg is in a meaningful state and the analyst shouldn't be
-context-switching mid-run). If the X-Tension wraps a helper exe, also refuse
-while a helper-identity rejection is outstanding, so a rejected path can't be
-persisted into an exported cfg.
+Implementation (`GetSaveFileNameW`, the `OFN_*` gotchas, the worker gate):
+[ctrl-to-save.md](conventions/ctrl-to-save.md), "Ctrl+Close save-as
+implementation".
 
 ## Folder pickers: prefer `IFileOpenDialog` over `SHBrowseForFolderW`
 
@@ -806,111 +733,27 @@ immediately running a scan. The button label live-flips between `Run` and
 `Save` while Ctrl is held. Full convention, including the blue owner-draw tint
 and the `DM_SETDEFID` caveat: [ctrl-to-save.md](conventions/ctrl-to-save.md).
 
-Implementation skeleton (usable verbatim in your X-Tension):
-
-```cpp
-// In SettingsDlgProc:
-static bool g_runCtrlDown   = false;
-static bool g_closeCtrlDown = false;
-constexpr UINT_PTR kCtrlPollTimerId = 0xAB10;
-constexpr UINT     kCtrlPollMs      = 100;
-
-case WM_INITDIALOG:
-    // ... existing setup ...
-    g_runCtrlDown = g_closeCtrlDown = false;
-    SetTimer(hDlg, kCtrlPollTimerId, kCtrlPollMs, nullptr);
-    return FALSE;
-
-case WM_DESTROY:
-    KillTimer(hDlg, kCtrlPollTimerId);
-    // ... existing cleanup ...
-    return FALSE;
-
-case WM_TIMER:
-    if (wp == kCtrlPollTimerId) {
-        // GetKeyState (not GetAsyncKeyState) reports the key state as of the
-        // message this thread is processing, so it is already scoped to our
-        // own message pump -- no GetFocus()/GA_ROOT gate needed to stop the
-        // label flickering while the analyst types Ctrl+key in another window.
-        bool ctrlDown = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
-        if (ctrlDown != g_runCtrlDown) {
-            g_runCtrlDown = ctrlDown;
-            SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : L"Run");
-            InvalidateRect(GetDlgItem(hDlg, IDC_BTN_RUN), nullptr, TRUE);
-        }
-        bool closeSaveMode = ctrlDown && (g_workerThread == nullptr);
-        if (closeSaveMode != g_closeCtrlDown) {
-            g_closeCtrlDown = closeSaveMode;
-            SetDlgItemTextW(hDlg, IDCANCEL, closeSaveMode ? L"Save as..." : L"Close");
-            InvalidateRect(GetDlgItem(hDlg, IDCANCEL), nullptr, TRUE);
-        }
-        return TRUE;
-    }
-    break;
-
-case WM_COMMAND:
-    if (LOWORD(wp) == IDC_BTN_RUN) {
-        if (!ReadDialogToSettings(hDlg, *s)) return TRUE;
-        SaveSettingsToCfg(cfgPath, *s);
-
-        // GetKeyState at click time -- not the cached g_runCtrlDown -- is the
-        // source of truth (the timer state is just a UI hint).
-        if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
-            // Ctrl+Run: saved, skip worker.
-            SetDlgItemTextW(hDlg, IDC_LABEL_PROGRESS_STATUS,
-                            L"Settings saved to cfg. (Ctrl+Run: scan NOT started.)");
-            return TRUE;
-        }
-        // ... spawn worker ...
-    }
-```
-
-**Capture the resting label; never hardcode the restore string.** The flip
-writes the resting label back with `SetDlgItemTextW`, so whatever literal you
-write on release is what the button keeps for the rest of the dialog's life.
-Hardcoding it silently drops anything the `.rc` carries that the literal does
-not — write `L"Run"` against an `.rc` that says `"&Run"` and the Alt+R
-accelerator is gone. Read the label out at `WM_INITDIALOG` instead, and the two
-cannot disagree:
-
-```cpp
-static wchar_t g_runRestLabel[64]   = L"Run";
-static wchar_t g_closeRestLabel[64] = L"Close";
-
-// WM_INITDIALOG:
-GetDlgItemTextW(hDlg, IDC_BTN_RUN, g_runRestLabel,   _countof(g_runRestLabel));
-GetDlgItemTextW(hDlg, IDCANCEL,    g_closeRestLabel, _countof(g_closeRestLabel));
-
-// WM_TIMER: swap in the transient label, restore the captured one.
-SetDlgItemTextW(hDlg, IDC_BTN_RUN, ctrlDown ? L"Save" : g_runRestLabel);
-```
-
-The transient labels (`Save`, `Save as...`) deliberately carry no `&` mnemonic:
-an accelerator that exists only while a modifier is held is worse than none.
-
-Give `IDCANCEL` its **resting** label in the `.rc` — `Close`, not `Cancel`. It
-reads `Cancel` only while a worker is running, where it performs a cooperative
-abort, so `SetDialogBusy` owns that swap and the timer's restore is
-busy-aware:
-
-```cpp
-SetDlgItemTextW(hDlg, IDCANCEL, closeSaveMode ? L"Save as..."
-                                : (g_workerThread ? L"Cancel" : g_closeRestLabel));
-```
-
-Owner-draw does not interfere: `WM_DRAWITEM` renders with `DrawTextW` and no
-`DT_NOPREFIX`, so `&` still underlines and the dialog manager still routes the
-Alt key by the button's window text.
-
-Tooltip the Run button so analysts discover the modifier without reading the README. See the `IDC_BTN_RUN` tooltip in the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) for the canonical text.
+Implementation — the full skeleton (timer, label swaps, resting-label
+capture, busy-aware restore, `WM_DRAWITEM`) plus the do/don't list lives in
+[ctrl-to-save.md](conventions/ctrl-to-save.md). Key rules: capture resting
+labels from the `.rc` at `WM_INITDIALOG` (never hardcode the restore string —
+a hardcoded `L"Run"` against an `.rc` that says `"&Run"` kills the Alt+R
+accelerator); transient labels carry no `&` mnemonic; give `IDCANCEL` its
+resting label (`Close`) in the `.rc` — it reads `Cancel` only while a worker
+runs.
 
 ## Filter-aware item collection (always-collect path)
 
 Don't drive enumeration yourself via `XWF_GetItemCount` + `XWF_OpenItem` —
 that ignores the X-Ways active filter and the right-click selection.
 Instead, return `0x01` from `XT_Prepare` to request `XT_ProcessItem`
-callbacks for BOTH `XT_ACTION_RUN` and `XT_ACTION_DBC`, collect IDs into
-a single struct, show the dialog from `XT_Finalize`:
+callbacks, collect IDs into a single struct, show the dialog from
+`XT_Finalize`. **Caveat (confirmed live, 21.8 SR-5 + 21.9 Beta 1):
+under `XT_ACTION_RUN` (op 0) X-Ways delivers no per-item callbacks at
+all, even with `0x01` returned** — this collector receives items only
+under `XT_ACTION_DBC` (the selection) and `XT_ACTION_RVS` (the whole
+snapshot). See [xtension-invocation.md](xtension-invocation.md),
+"Invocation modes".
 
 ```cpp
 LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void*) {
@@ -933,9 +776,12 @@ LONG __stdcall XT_Finalize(HANDLE, HANDLE, DWORD, void*) {
 }
 ```
 
-For `XT_ACTION_RUN` mode X-Ways calls `XT_ProcessItem` only for items
-visible under the active filter; for `XT_ACTION_DBC` only for the
-right-clicked selection. Same code path either way.
+For `XT_ACTION_DBC` X-Ways calls `XT_ProcessItem` only for the
+right-clicked selection; for `XT_ACTION_RVS`, for every snapshot item.
+`XT_ACTION_RUN` delivers none (see the caveat above) — if you need a
+"whole snapshot from the Tools menu" mode, enumerate explicitly in
+`XT_Prepare` via `XWF_GetItemCount` and accept that the active filter
+is bypassed.
 
 ## Template integration
 

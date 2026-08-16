@@ -24,6 +24,13 @@ verified in one of, **in this priority order**:
    **primary** check. These pages carry the project's vetted API surface,
    property numbers, flag bits, and behavior findings, and they ship in this
    repo.
+
+   **Silence in `docs/` proves little.** Of the 99 functions on the official
+   pages, 73 are explained here and 26 are only name-dropped (none are absent
+   any more — counts as of 2026-08-12; `docs/xways-api-coverage-map.md` lists
+   every bucket and how to regenerate them). If the symbol is on the
+   Named-only list, don't rely on step 1 alone — verify at step 2. Never
+   conclude a function does not exist because these notes describe it thinly.
 2. The live API HTML at
    `https://www.x-ways.net/forensics/x-tensions/XWF_functions.html` — the
    authoritative source for additions made after the SDK snapshot (21.5–21.8+),
@@ -71,10 +78,17 @@ Select-String "XWF_GetCaseProp" `
 | Entry point lifecycle, threading model, return values, `nOpType` constants | `docs/xtension-invocation.md` |
 | `XT_Init` signature (note: fourth param is now `LicenseInfo*`) | `docs/xways-api-recency-research.md` §"TL;DR" + `docs/xtension-invocation.md` |
 | Events API (`XWF_AddEvent` / `XWF_GetEvent`, `EventInfo` struct, subcode tables) | `docs/xways-events-api.md` |
-| Empirical event behavior (subcode→Type-label tables, `nFlags` effects, lpDescr ceiling) | `docs/events-viewer-empirical-findings.md` |
+| Empirical event behavior (probe methodology, `XWF_SetItemType` semantics, FILETIME drift, Int. ID correlation) | `docs/events-viewer-empirical-findings.md` (the subcode/`nFlags`/lpDescr result tables live in `docs/xways-events-api.md`) |
 | `XWF_GetCaseProp` / `XWF_GetEvObjProp` / `XWF_GetVSProp` property numbers | `docs/xways-getprop-reference.md` |
 | `XWF_OpenItem` flag bits | `docs/xways-openitem-flags.md` |
 | Reading existing events and directory-browser items | `docs/xways-reading-events-and-items.md` |
+| Search (`XWF_Search`, `SearchInfo`/`CodePages`, `XT_ProcessSearchHit`, `XWF_SEARCH_*` flags, search terms) | `docs/xways-search-api.md` — **read its warnings first: CodePages is mandatory, `CALLPSH` delivers nothing, and `XWF_Search` runs end in a host crash on 21.8/21.9** |
+| Python X-Tensions (the `xwf` module's 46 methods, bridge limits/bugs, deployment) | `docs/xways-python-bridge.md` |
+| Creating/mutating snapshot items (`XWF_CreateItem`/`XWF_CreateFile`, parent/size/ofs) | `docs/xways-snapshot-mutation.md` |
+| Evidence objects and containers (`XWF_OpenEvObj`, container API) | `docs/xways-evidence-containers.md` + `docs/xways-evobj-source-resolution.md` |
+| Command-line launch (`XT:`, `RVS:`, `NewCase:`, snapshot-visibility rules) | `docs/xways-command-line.md` |
+| Item Type / Metadata / extracted-text columns | `docs/xways-itemtype-metadata-text.md` |
+| Raw image/disk I/O from an X-Tension (`XWF_Read` on volumes, sector I/O) | `docs/xways-image-io-api.md` + `docs/xways-disk-io-xtension.md` |
 | Dialog hosting, `XWF_GetUserInput`, Win32 dialog patterns | `docs/xtension-dialog-conventions.md` + `docs/xways-user-input-and-dialogs.md` |
 | Wrapping external tools (extraction, subprocess, ID mapping, mount) | `docs/external-tool-integration.md` |
 | Build errors, DLL locking, rc.exe code-page mangling | `docs/build-and-iteration-gotchas.md` |
@@ -124,9 +138,16 @@ Source: `docs/xways-reading-events-and-items.md`.
 
 - `XT_PREPARE_TARGETZEROBYTEFILES` has no effect on `XT_ProcessItemEx`
   (zero-byte files only delivered to `XT_ProcessItem`). Acknowledged by X-Ways;
-  a fix is pending. Workaround: register both callbacks.
+  a fix is pending. Workaround: register both callbacks — **but** exporting
+  both means every ordinary item is delivered to BOTH (the verified 2N
+  double-count), so do the work in exactly one and dedup — see
+  `docs/conventions/item-collection.md`.
   Source: `docs/forum-xtensions-distilled.md` +
   `docs/xways-api-recency-research.md` §"Bugs / doc-vs-reality discrepancies".
+- `XT_ACTION_RUN` (op 0 — Tools → Run X-Tension, or the CLI `XT:`) delivers
+  **no per-item callbacks even when `XT_Prepare` returns `0x01`** (confirmed
+  live, 21.8 SR-5 + 21.9 Beta 1). Do snapshot-wide work in `XT_Prepare`, or
+  run under RVS/DBC. Source: `docs/xtension-invocation.md`.
 - Files in corrupt/incomplete archives deliver a size-0 (useless) handle to
   `XT_ProcessItemEx` since 21.7 Beta 4. Always check size before reading.
 - Under RVS, `XT_ProcessItem(Ex)` runs multi-threaded. Any shared state requires

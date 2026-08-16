@@ -1,10 +1,16 @@
+; X-Ways drives behaviour off this export table: an exported no-op still gets
+; called (export BOTH per-item callbacks and both fire per item - the "2N"
+; trap). To turn a callback off, comment its line out here with ';' rather
+; than stubbing it. See docs/xtension-invocation.md.
 LIBRARY my_xtension
 EXPORTS
     XT_Init
     XT_About
     XT_Prepare
     XT_ProcessItem
-    XT_ProcessItemEx
-    XT_ProcessSearchHit
+;   XT_ProcessItemEx     ; stub in the .cpp — the wrapper collects IDs in
+;                        ; XT_ProcessItem. Uncomment only if you need hItem
+;                        ; per item, then dedup — both fire when both exported.
+;   XT_ProcessSearchHit  ; stub — uncomment when you implement search hits.
     XT_Finalize
     XT_Done

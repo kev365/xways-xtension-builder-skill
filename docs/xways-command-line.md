@@ -1,8 +1,8 @@
 ---
 source: X-Ways 21.6 manual §3.10 + https://www.x-ways.net/forensics/x-tensions/api.html + empirical
 type: official-doc + empirical-finding
-last_updated: 2026-06-06
-author: project notes
+last_updated: 2026-08-12
+author: project
 ---
 
 # X-Ways Forensics — Command-Line Parameters
@@ -19,6 +19,7 @@ Synthesised reference for what `xwforensics64.exe` / `xwb64.exe` / `winhex64.exe
 
 - TL;DR — there is no `--help`
 - Documented parameters (21.6 manual § 3.10)
+- Unattended BitLocker — `Override:5` and `Passwords.txt`
 - End-to-end recipe (Polito blog)
 - Getting the version (no `--version`, but `GetLicID:` + msglog works)
 - Things to keep in mind
@@ -37,7 +38,7 @@ Synthesised reference for what `xwforensics64.exe` / `xwb64.exe` / `winhex64.exe
 | `<path>` (positional) | Open file or .xfc case file. First-position `.xfc` opens the case; later-position `.xfc` *imports* its evidence objects into the active case. |
 | `:N` (positional) | Open physical disk N (e.g. `:0` = hard disk 0). Combine with the `\|fmt\|path\|...` second arg below to image automatically. |
 | `<file>.whs` | Run the WinHex script instead of opening it. |
-| `XT:<path>` | Load the named X-Tension DLL (full path). |
+| `XT:<path>` | Load the named X-Tension DLL (full path). **Since v21.5 Beta 5 (2025-05-19) X-Ways prompts before actually executing/loading an X-Tension, explicitly including command-line-triggered runs.** **Correction (2026-08-15, 21.9 Beta 1): `Override:1` does NOT auto-confirm that prompt.** The dialog appeared on screen and a **human clicked OK** — yet msglog records `Prompt \| The script or DLL "…" is about to be executed. \| Override: OK`, which reads exactly as if Override had answered it. **Do not take msglog's `Override: OK` as evidence of an unattended run.** The dialog offers a "Do not display this message again" checkbox, which is the sanctioned route to genuinely unattended X-Tension execution (not yet exercised here). A second unattended blocker on this host: launching `xwb64.exe` raised a **UAC elevation prompt** before anything else. Also verified: `XT:` without a preceding `RVS:` runs the X-Tension **standalone with `nOpType = 0`** (`XT_ACTION_RUN`), in which returning `0x01` from `XT_Prepare` delivers **no per-item callbacks** — an X-Tension meant for unattended command-line use must either run under RVS or enumerate the snapshot itself (`XWF_SelectVolumeSnapshot` → `XWF_GetItemCount` → `XWF_OpenItem`). **And the snapshot itself is only visible when refinement ran in the same session** (verified across 9 runs, 2026-08-15): on a freshly `AddImage:`d evidence object *and* on a reopened case whose GUI shows a 137k-item snapshot, a bare `XT:` run sees `XWF_GetItemCount = 0` — even after `XWF_OpenEvObj`, which is documented to take the snapshot. The unlock is a preceding **`RVS:~` with stored settings, even all-unchecked**: a no-op refinement loads/creates the snapshot in seconds and the X-Tension then sees every item. Corollary: `RVS:~` needs *stored* refinement settings — on a fresh install it fails with `Error #9 Cannot load "?"` (run the RVS dialog once in the GUI to store them). Source: 21.5 announcement thread ([messages/1/5501](https://www.x-ways.net/winhex/forum/messages/1/5501.html)) + probe run. |
 | `XTParam:<id>:<value>` | **v19.4 SR-6+** (per the [X-Tensions API page](https://www.x-ways.net/forensics/x-tensions/api.html), even though the 21.6 manual doesn't list it). X-Ways itself **ignores** any parameter starting with `XTParam:` — no "file not found" error pops. The X-Tension fetches the full command line via `GetCommandLine`, parses it, and pulls out tokens whose `<id>` matches its own short identifier (a per-X-Tension string the X-Tension's docs declare). The `<value>` may contain colons. If `<id>` or `<value>` contains spaces, quote the entire `XTParam:...` token. Multiple `XTParam:` tokens may target different X-Tensions in the same launch. A common convention is to layer a `<key>=<value>` micro-format inside `<value>` (the X-Tension parses it after stripping the `<id>:` prefix). |
 | `NewCase:<path>` | Create a new case at the given path. **Overwrites** any existing case at that path *without prompt*. Supports relative paths and `%ENVVARS%`. |
 | `NewCase;<path>` | Same as above but **semicolon** = if the .xfc already exists, generate a unique filename instead of overwriting. |
@@ -45,7 +46,7 @@ Synthesised reference for what `xwforensics64.exe` / `xwb64.exe` / `winhex64.exe
 | `AddDir:<path>` | Add a directory tree to the case (single file path also accepted). `AddDir:*` adds the root of every available drive letter (network drives optional, gated by Volume Snapshot option). |
 | `AddDrive:<letter>` | Add a drive letter for **sector-level** access, e.g. `AddDrive:C` (admin required). `AddDrive:*` adds all letters. Without admin rights, `AddDrive:*` silently degrades to `AddDir:*`. |
 | `RVS:~` | Refine Volume Snapshot on **all** evidence objects in the case. Uses the most-recently-applied virgin-snapshot RVS settings from `WinHex.cfg`. The active settings dialog is screenshotted into the case activity log. |
-| `RVS:~+` | RVS on **only newly added** evidence objects. |
+| `RVS:~+` | RVS on **only newly added** evidence objects. **Fresh-install trap (observed 2026-08-15, 21.9 Beta 1):** the `~` means "with the stored refinement settings" — on a brand-new install with none stored, `RVS:~` fails with `Error #9 \| Cannot load "?"` and the refinement silently never runs (the rest of the command line continues). Configure RVS once in the GUI, or load settings via `Dlg:<path>`, before relying on `RVS:~` unattended. |
 | `LST:<file>` | Load a list of search terms (one per line). Must precede an RVS that triggers a simultaneous search; the listed terms get fed into that search. |
 | `Cfg:<name>` | Use an alternative `WinHex.cfg`-shaped config file. Name only (≤31 ASCII chars), not path. **Always processed first**, regardless of position. |
 | `Dlg:<path>` | Load a `.dlg` file (saved dialog selections) — overrides specific config bits at the moment the parameter is processed. v20.2+ `.dlg` files only. |
@@ -57,6 +58,50 @@ Synthesised reference for what `xwforensics64.exe` / `xwb64.exe` / `winhex64.exe
 | `\|e01\|<path>\|<desc>\|<name>` | (Second positional, paired with `:N` first) — automatic imaging recipe. Format = `e01` or `raw`. Two output copies allowed by separating paths with `/`: `\|e01\|Z:\First.e01/V:\Second.e01`. |
 | `GetLicID:[path]` | Print the license/dongle hash (`nLicID`) and exit. First 4 bytes returned as exit code; full 16 bytes + 8-byte FILETIME UTC written to the optional output path. Used by third-party tools that license against an X-Ways install. If first 4 bytes are `0x00`, install is unlocked or the file write failed. |
 | `auto` (positional, last) | Exit X-Ways automatically when finished. |
+
+## Unattended BitLocker — `Override:5` and `Passwords.txt`
+
+`Override:4` and `Override:5` consult an internal password collection. The file
+itself has requirements that are easy to get wrong and that fail *silently* —
+the run simply stalls or skips the volume. Distilled from the
+[XT_ExtractDocsMail](https://github.com/gaiacalamari/XT_ExtractDocsMail-) README
+(2026-08-13), which documents the automated path end to end:
+
+- **The file is `Passwords.txt`, and there are two collections.** A *general*
+  one, next to `xwforensics64.exe` or in the Windows user-profile folder, and a
+  *case-specific* one in the case directory (editable from Case Properties).
+- **For a single command that creates the case and adds the image**
+  (`NewCase:` + `AddImage:`), you must use the **general** collection — the
+  case-specific file does not exist yet at the moment the first `AddImage:` runs.
+- **The file must be UTF-16.** A UTF-8 or ANSI file may not be read at all. The
+  reliable way to create it is from the GUI once (Case Properties, or the
+  archive-processing options dialog), adding a single entry so X-Ways writes it
+  in the right place with the right encoding — then append the rest.
+- **One entry per line.** A BitLocker recovery password is 48 digits in 8
+  hyphen-separated groups of 6, with no spaces and no trailing space.
+
+X-Ways also tries keys from other already-unlocked BitLocker volumes in the same
+case first, and handles `.BEK` startup-key files found in the evidence. The key
+that worked is recorded in the evidence object's **Description** — reachable from
+an X-Tension as `XWF_GetEvObjProp` property 10.
+
+### Ordering: refinement must precede the X-Tension
+
+```bat
+set "XT_OUT=Y:\Export" && "C:\xwf21.7\xwforensics64.exe" "NewCase:W:\xways" "AddImage:Y:\Images\*.E01" Override:5 RVS:~ "XT:C:\xwf21.7\XTension\XT.dll" auto
+```
+
+The `RVS:~` before `XT:` is not cosmetic. Anything an X-Tension reads that is
+*produced by refinement* — file type, category, hashes, extracted metadata — is
+absent on an unrefined snapshot, and the X-Tension has no way to tell the
+difference between "no items match" and "nothing has been computed yet". The
+XT_ExtractDocsMail README names this as the most common cause of a run that
+"looks fine but produces no output".
+
+**Defensive shape for any X-Tension that depends on refinement output:** count
+how many items you skipped for missing input, and log that count. A run that
+reports *"exported 0, skipped 41,812 with no category"* diagnoses itself; one
+that reports *"exported 0"* does not.
 
 ## End-to-end recipe (Polito blog)
 

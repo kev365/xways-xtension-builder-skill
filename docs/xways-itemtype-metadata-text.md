@@ -1,9 +1,9 @@
 ---
-source: empirical testing (2026-05-03 against build 1422138.89) + the X-Ways SDK header (see getting-the-sdk.md)
-type: empirical-finding + official-doc
+source: empirical testing (2026-05-03 against build 1422138.89) + the X-Ways SDK header (see getting-the-sdk.md) + the official XWF_functions.html (verified 2026-08-13)
+type: official-doc + empirical-finding
 fetched: 2026-05-03
-last_updated: 2026-05-03
-author: project empirical sweep
+last_updated: 2026-08-13
+author: project
 ---
 
 # `XWF_GetItemType` flag bits, `XWF_GetMetadataEx`, `XWF_GetText` — empirical decoding
@@ -40,7 +40,7 @@ Empirical results from sweeping `nInfoType` 0..255 across 19 items spanning 14 d
 | 36, 37 | `DeletionTime`, `InternalCreationTime` | not observed live (no deleted items in sample; internal-creation often == creation) |
 | 48–51 | `*_DISPLAY_OFS` for the four 32–35 timestamps | live + ok=1 — confirms the 21.2 Beta 6 addition is present in 21.7 |
 | 52, 53 | `DeletionTimeDisplayOfs`, `InternalCreationTimeDisplayOfs` | not observed (same reason as 36/37) |
-| 64, 65 | `_FLAGS_SET`, `_FLAGS_REMOVE` | write-only (per header) — not exercised |
+| 64, 65 | `_FLAGS_SET`, `_FLAGS_REMOVE` | write-only. **Numbers confirmed 2026-08-13** by two independent community bindings — `XT_API.pas` (HMRC, Apache-2.0) declares them as constants, and `xwf-api-rs` calls `XWF_SetItemInformation(id, 64\|65, flags)` in `Item::set_item_info_flags`. Not exercised here. |
 
 **Practical takeaway:** when iterating items, you can request `nInfoType` 1..8, 10, 11, 32..37, 48..53 in one pass. Any other value `< 256` returns `ok=FALSE` (not live). `> 255` not yet tested.
 
@@ -52,18 +52,58 @@ The flags `INT64` returned from `XWF_GetItemInformation(id, 3, &ok)` carries mul
 | ---: | --- | --- |
 | `0x00000001` | `IsDirectory` | item is a directory (filter out before hashing/labeling per-file) |
 | `0x00000002` | `HasChildObjects` | container surfaces children (not the same as IsDirectory!) |
-| `0x00000004` | `HasSubDirectories` | |
-| `0x00000008` | `IsVirtualItem` | X-Ways pseudo-item (e.g., `[root]`) |
+| `0x00000004` | `HasSubDirectories` | directories only |
+| `0x00000008` | `IsVirtualItem` | X-Ways pseudo-item (e.g., `[root]`) — Pascal binding calls it `FICTITIOUSITEM` |
 | `0x00000010` | `HiddenByExaminer` | analyst tagged "hide" |
 | `0x00000020` | `Tagged` | |
+| `0x00000040` | `TaggedPartially` | |
 | `0x00000080` | `ViewedByExaminer` | |
+| `0x00000100` | `FilesystemTimestampsNotInUTC` | **read this before converting any file-system timestamp** |
+| `0x00000200` | `InternalCreationTimestampsNotInUTC` | same, for the internal-creation timestamp |
+| `0x00000400` | `FATTimestamps` | |
+| `0x00000800` | `OriginatesFromNTFS` | |
+| `0x00001000` | `UnixPermissionsInsteadWinAttr` | changes how `nInfoType=2` (`Attr`) decodes |
+| `0x00002000` | `HasExaminerComment` | cheap pre-check before `XWF_GetComment` |
+| `0x00004000` | `HasExtractedMetaData` | cheap pre-check before `XWF_GetExtractedMetadata` |
+| `0x00008000` | `FileContentsTotallyUnknown` | contents not readable from anywhere at all |
+| `0x00010000` | `FileContentsPartiallyUnknown` | contents partially unreadable |
 | `0x00040000` | `Hash1AlreadyComputed` | primary hash present (use with `XWF_GetHashValue`) |
+| `0x00080000` | `HasDuplicates` | |
 | `0x00100000` | `Hash2AlreadyComputed` | secondary hash present |
-| `0x00800000` | `FoundInVolumeShadowCopy` | item is from a VSC, not the live FS |
+| `0x00200000` | `CategorizedIrrelevant` / `KNOWN_GOOD` | the two bindings name this bit differently — see below |
+| `0x00400000` | `CategorizedNotable` / `KNOWN_BAAD` | ditto |
+| `0x00800000` | `FoundInVolumeShadowCopy` | item is from a VSC, not the live FS (on next3: a snapshot file or its parent) |
 | `0x01000000` | `DeletedFilesWithKnownOriginalContents` | |
 | `0x02000000` | `FileFormatConstistencyOk` | |
 | `0x04000000` | `FileFormatConstistencyNotOk` | |
+| `0x10000000` | `FileArchiveExplored` | |
+| `0x20000000` | `EmailArchiveProcessed` | Pascal binding: `EMAILARCHIVEORVIDEOPROCESSED` |
+| `0x40000000` | `EmbeddedDataUncovered` | |
+| `0x80000000` | `MetaDataExtractionApplied` | |
 | `0x100000000` | `FileEmbeddedinOtherFile` | (≥ 33-bit; use INT64) |
+| `0x200000000` | `FileContentsStoredExternally` | (≥ 33-bit) |
+| `0x400000000` | `AlternativeData` | alternative data available — pairs with `XWF_OpenItem` `0x08`/`0x10` |
+
+Everything above `0x80000000` is why this field is an **`INT64`**. Storing the
+result in a `DWORD` silently drops the three most interesting modern bits.
+
+!!! note "`0x200000` / `0x400000` — the bindings disagree on the name"
+    `xwf-api-rs` calls them `CategorizedIrrelevant` / `CategorizedNotable` and
+    additionally defines `Uncategorized = 0x00600000` (**both bits set**).
+    The older `XT_API.pas` calls the same two bits `KNOWN_GOOD` / `KNOWN_BAAD`.
+    Both readings are consistent with the underlying meaning — irrelevant/known-
+    good versus notable/known-bad — but the "both bits = uncategorized" encoding
+    only appears in the Rust binding. **Test the pair as a two-bit field, not as
+    two independent booleans**, and don't rely on either name until you have
+    confirmed the encoding on your own snapshot.
+
+The four **timestamp-origin bits** (`0x100`, `0x200`, `0x400`, `0x800`) are the
+per-item counterpart to the evidence-object reference time zone
+(`XWF_GetEvObjProp` 30/31, see
+[xways-getprop-reference.md](xways-getprop-reference.md)). An evidence object
+with no reference time zone can still contain files whose timestamps are known
+to be UTC — these flags are how you find out. Convert timestamps only after
+reading them.
 
 **Two common gotchas:** (1) some early X-Tensions had `XWF_ITEM_INFO_FLAGS = 0` and `IsDirectory = 0x02` — both wrong, the directory-skip silently no-ops. Use `3` for the info-type and `0x01` for IsDirectory. (2) the `0x02` value is `HasChildObjects`, *not* IsDirectory — easy to confuse.
 
@@ -85,20 +125,94 @@ Definitive mapping confirmed empirically (2026-05-03) across 19 items spanning 1
 | `0x10000000` (bit 28) | **empty** — buffer untouched | (no string) |
 | `0x20000000` (bit 29) | **type description** (file-format-specific label) | `JPEG`, `GZip`, `XML`, `True Type Fonts`, `Wave`, `Comma-separated values`, `Structured Query Language`, `LaTeX Auxiliary`, `Icon cache`, `Initialization`, `C/C++ Header`, `dns`, `NTFS system file`, `NTFS journal` |
 | `0x40000000` (bit 30) | **type category** (the X-Ways `FileTypeCategory` grouping) | `Pictures`, `Archives/Backup`, `Misc Documents`, `Source Code`, `Programs`, `Cryptography`, `Various Data`, `Spreadsheet`, `Thumbnails/Icons`, `Fonts`, `Database, Finance`, `Audio`, `Other/unknown type`, `Windows Internals` |
-| `0x80000000` (bit 31) | **same buffer content as bit 30** | Same category labels as bit 30, but `rv` differs: bit-30 returned `rv=0` for item 1043 (Pictures); bit-31 returned `rv=256` for the same item with the same buffer text. The 256 matches the `nBufferLen` we passed (`0x100`), so bit 31 may indicate "buffer length filled" rather than the type-status integer. Most uses should prefer bit 30; bit 31 is an apparent variant whose extra signal isn't yet decoded. |
+| `0x80000000` (bit 31) | **same buffer content as bit 30** | Changes the *return value*, not the buffer: type status stays in the lowest byte, and **file-format consistency is packed into the second-lowest byte**. See the correction below. |
 
-These match xwf-api-rs's `FileTypeCategory` enum exactly (Picture, Archive, Source Code, Program, etc.) — the buffer returned at bit 30 is the human-readable form of that enum.
+!!! warning "Correction (2026-08-13) — two things this page previously got wrong"
+    **1. The buffer length lives in the lower *word*, not the low 24 bits.**
+    The official page says `nBufferLenAndFlags` "contains the length of the
+    buffer that lpTypeDescr points to in the lower word, measured in
+    characters". 16 bits, not 24. A buffer longer than 65535 `wchar_t` cannot be
+    expressed — not a practical limit for a type label, but the OR-ing is only
+    safe because the flags sit in the top nibble.
 
-The **return value** (`LONG`, independent of the buffer flag) is the **type-status code** documented in [docs/events-viewer-empirical-findings.md](events-viewer-empirical-findings.md):
+    **2. `rv = 256` under bit 31 was not the buffer length.** This page used to
+    read the `rv=256` observed on item 1043 as "matches the `nBufferLen` we
+    passed (`0x100`)" and concluded bit 31 might mean "buffer length filled".
+    That was a coincidence: `0x0100` decodes as **consistency byte = 1 (OK),
+    status byte = 0 (not verified)** — exactly what the flag is documented to
+    produce. Two values happened to collide because the test buffer was 256
+    `wchar_t` long.
 
-The **return value** (`LONG`, independent of the buffer flag) is the **type-status code** documented in [docs/events-viewer-empirical-findings.md](events-viewer-empirical-findings.md):
+    The lesson is the cheap one to state and the expensive one to learn: a
+    single observation that fits a guess is not evidence for it. Reading the
+    official sentence for the flag would have settled it immediately.
 
-- `0` = not in list
-- `1` = not confirmed
-- `2` = confirmed
-- `3` = mismatch detected
+**Decoding the return value under bit 31** (`v19.3` and later):
 
-So `XWF_GetItemType` is really three queries in one — pick the buffer-flag bit for the label you need, the return value tells you the type-status independently.
+```c
+LONG rv = XWF_GetItemType(id, buf, bufLen | 0x80000000);
+if (rv >= 0) {
+    int status      =  rv        & 0xFF;   // type-detection status, table below
+    int consistency = (rv >> 8)  & 0xFF;   // file-format consistency
+}
+```
+
+| Consistency byte | Meaning |
+| ---: | --- |
+| `0` | unknown |
+| `1` | OK |
+| `2` | **until v20.4:** corrupt *or* irregular — **since v20.5:** corrupt only |
+| `3` | irregular (v20.5 and later) |
+
+The `2`/`3` split at v20.5 matters if you compare results across versions: a
+file reported `2` on v20.4 may report `3` on v20.5+ without anything about the
+file having changed.
+
+The **return value** (`LONG`, independent of the buffer flag) is the
+**type-detection status**. The official read-side legend has **seven** values,
+not the four this page used to list:
+
+| `rv` | Meaning |
+| ---: | --- |
+| `-1` | error |
+| `0` | not verified |
+| `1` | too small |
+| `2` | totally unknown |
+| `3` | confirmed |
+| `4` | not confirmed |
+| `5` | newly identified |
+| `6` | mismatch detected (v18.8 and later) |
+
+!!! danger "Do not use the `XWF_SetItemType` legend to read `XWF_GetItemType`"
+    This page previously listed `0 = not in list, 1 = not confirmed,
+    2 = confirmed, 3 = mismatch detected` for the return value. **That is the
+    write-side legend** — the `nTypeStatus` values `XWF_SetItemType` accepts —
+    and it disagrees with the read side on every number that matters: read-side
+    `2` is *totally unknown* where write-side `2` is *confirmed*.
+
+    The read/write asymmetry was already flagged as an open question in
+    [events-viewer-empirical-findings.md](events-viewer-empirical-findings.md);
+    the official page settles it. Reading a `2` as "confirmed" inverts the
+    meaning of the field.
+
+So `XWF_GetItemType` is really three queries in one — pick the buffer-flag bit
+for the label you need, the return value tells you type status (and, under bit
+31, consistency) independently.
+
+!!! note "Category strings are localized — don't key logic on them"
+    The bit-30 buffer is display text, and the official page says as much for
+    the sibling `XWF_GetColumnTitle`: it "depends on the currently active
+    language in the GUI". `xwf-api-rs` maps these strings to its
+    `FileTypeCategory` enum by lowercase match — and carries exactly one German
+    string (`"anderer/unbek. typ"` → `Unknown`) as evidence of the problem. On a
+    German-language X-Ways every other category falls through to
+    `Other(String)`.
+
+    That crate's table also maps `"fonts"` to `UnixLinux` rather than `Font`
+    (a copy-paste slip at `impl_conversions.rs`), which this page's own observed
+    values would hit — `Fonts` is in the bit-30 list above. **Match categories
+    by the numeric enum where you can, and treat any category-string comparison
+    as English-locale-only.**
 
 ## `XWF_GetMetadata` — undocumented export, likely deprecated
 

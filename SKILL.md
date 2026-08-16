@@ -4,7 +4,7 @@ description: This skill should be used when the user asks to "create/scaffold a 
 license: MIT
 compatibility: Authoring flows need Claude Code on Windows (PowerShell scaffold/build scripts; MSVC x64 for C++ builds; X-Ways Forensics 21.x to run the result). Guidance/API-reference flows work anywhere.
 metadata:
-  version: 0.5.0
+  version: 0.6.0
   author: Kevin Stokes (kev365)
   category: digital-forensics
   tags: x-ways, x-tension, dfir, windows, forensics
@@ -53,7 +53,7 @@ Scaffold from a starter template under [`templates/x-tensions/`](templates/x-ten
 
 ## Scripts (the deterministic core)
 
-In [`scripts/`](scripts/), runnable from any working directory. Output lands under the **current directory** by default, or a project passed via `-DestRoot` — never the skill install. Full parameters, deploy-target resolution, and the plugin-mode invocation: [scripts](references/scripts.md).
+In [`scripts/`](scripts/), runnable from any working directory. For the scaffold/build scripts, output lands under the **current directory** by default, or a project passed via `-DestRoot` — never the skill install. (`backfill-standards.ps1` is the exception: it operates on a repo working copy in place and has no `-DestRoot`.) Full parameters, deploy-target resolution, and the plugin-mode invocation: [scripts](references/scripts.md).
 
 | Script | Does |
 |---|---|

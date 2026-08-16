@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-08-09
+last_updated: 2026-08-12
 author: project
 ---
 
@@ -63,6 +63,13 @@ NULL ones. Otherwise open the file yourself with the same inheritable
 
 - **Do** redirect all three handles (`hStdInput`, `hStdOutput`, `hStdError`).
 - **Do** use a drain thread when you need the child's output, to avoid pipe-buffer deadlock.
+- **Do** think about how long the wait can be. The template's `RunCommand` uses
+  `WaitForSingleObject(pi.hProcess, INFINITE)`, which is fine for a fast helper
+  but unbounded by construction — and since v21.8 Preview 5 the host terminates
+  refinement threads it judges unresponsive after ~15 minutes (see
+  [threading-model](threading-model.md)). For a helper that can run long, wait
+  with a timeout in a loop, check `XWF_ShouldStop`, and kill the child on abort
+  rather than blocking forever.
 - **Don't** leave handles at NULL "because the tool seems fine in testing" — it crashes in the field.
 - **Don't** use `CREATE_NEW_CONSOLE` to dodge this for a tool meant to run headless during RVS.
 
