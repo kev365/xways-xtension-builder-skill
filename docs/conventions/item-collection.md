@@ -18,7 +18,7 @@ author: project
        will *create* items).
     2. **Per-item callbacks are multi-threaded under RVS.** `XT_ProcessItem(Ex)` runs on an RVS
        worker pool, so **any state shared across calls** (a collected-items vector, counters) is a
-       data race unless synchronised. (DBC / "Run X-Tension" is single-threaded — but don't rely on
+       data race unless synchronised. (DBC is single-threaded — but don't rely on
        the mode.) Self-calling `XWF_OpenItem`/`Read`/`Close` *on this pool* is fine — the trap is a
        thread **you** spawn (see [threading model](threading-model.md)).
     3. **RVS "apply to tagged files only" silently feeds zero items.** If `XT_Prepare` returns
@@ -29,6 +29,12 @@ author: project
        **"apply selected options to all files"** (or tag first). Verified on xwb 21.8
        (2026-06-27) — *not* a code/flag bug, *not* the already-processed-snapshot
        skip.
+    4. **`XT_ACTION_RUN` (op 0) delivers no per-item callbacks at all.** Tools → Run
+       X-Tension (and the command line's `XT:`) call only `XT_Prepare` + `XT_Finalize` —
+       returning `0x01` changes nothing (confirmed live, 21.8 SR-5 + 21.9 Beta 1). A
+       collect-in-`XT_ProcessItem` design silently processes zero items in that mode; do
+       snapshot-wide work in `XT_Prepare`, or run under RVS/DBC. See
+       [xtension-invocation.md](../xtension-invocation.md), "Invocation modes".
 
 **Return-flag reference:** [xtension-invocation.md](../xtension-invocation.md) — `XT_Prepare`
 return bitmask (`0x01` `CALLPI` = call per item, whichever callback(s) you export — both fire if both

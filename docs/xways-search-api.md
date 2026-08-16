@@ -276,17 +276,17 @@ the rest of the list.
     bit against the official page or empirically before shipping behaviour that
     depends on it.
 
-    `XWF_SEARCH_CALLPSH` (`0x01000000`) is the one to be most careful with,
-    because it appears to contradict the rule stated at the top of this page —
-    that `XT_ProcessSearchHit` is not called for a search you started yourself.
-    Either the flag is what lifts that restriction, or it is a leftover. **Test
-    it before designing around either reading.**
-
-    The 2026-08-14 SDK source review made this worse, not better: **no working
-    `XWF_Search` invocation exists anywhere in the SDK** — not in the C++
-    samples, not in the Python bridge (which doesn't expose it), and not in the
-    C# tree (the project literally named "C# Search Test" never calls it). The
-    flag has never been demonstrated by anyone, vendor included. Probe design in
+    `XWF_SEARCH_CALLPSH` (`0x01000000`) has since been **tested and does not
+    work as documented** (2026-08-15, live probes): it delivered zero
+    `XT_ProcessSearchHit` callbacks on both shipping 21.8 SR-5 and 21.9 Beta 1
+    for searches whose terms the GUI credited with real hits — see "On the hit
+    callback" above for the full result. Do not design around either reading:
+    as of 21.8/21.9 there is **no working way to receive per-hit callbacks from
+    a self-initiated `XWF_Search`**. Note also that no working `XWF_Search`
+    invocation exists anywhere in the SDK — not in the C++ samples, not in the
+    Python bridge (which doesn't expose it), and not in the C# tree (the
+    project literally named "C# Search Test" never calls it) — so the vendor
+    has never demonstrated the flag either. Status tracked in
     [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md).
 
 ## Search terms — read and create

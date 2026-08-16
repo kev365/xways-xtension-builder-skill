@@ -168,7 +168,7 @@ Negative `XT_Prepare` returns (distinct, not interchangeable):
 
 | Value | Symbol | Triggered by | What you typically get |
 | ---: | --- | --- | --- |
-| `0` | `XT_ACTION_RUN` | **Tools → Run X-Tension…** on a volume snapshot | One `XT_Prepare`. No per-item callbacks unless requested. |
+| `0` | `XT_ACTION_RUN` | **Tools → Run X-Tension…** on a volume snapshot | One `XT_Prepare`, then `XT_Finalize`. **No per-item callbacks — even when you return `0x01`** (confirmed live on 21.8 SR-5 + 21.9 Beta 1; see the note above). Do snapshot-wide work directly in `XT_Prepare`, or run under RVS/DBC instead. |
 | `1` | `XT_ACTION_RVS` | X-Tension included as a **Refine Volume Snapshot** step | `XT_Prepare`, then `XT_ProcessItem(Ex)` for every snapshot item (multi-threaded), then `XT_Finalize` |
 | `2` | `XT_ACTION_LSS` | A **logical simultaneous search** is starting | Search-hit callbacks, not item callbacks |
 | `3` | `XT_ACTION_PSS` | A **physical simultaneous search** is starting | Same as LSS, search-level |

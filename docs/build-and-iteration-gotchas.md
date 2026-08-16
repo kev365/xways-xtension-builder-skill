@@ -172,17 +172,22 @@ If your X-Tension doesn't iterate items, omit `XT_ProcessItem`. If it doesn't ne
   mis-packed unrelated struct is a miserable bug to find.
 - **Vendor-recorded hazards in the SDK's `QTest.cpp`** (see
   [xways-sdk-source-notes.md](xways-sdk-source-notes.md)) — three comments from
-  X-Ways' own sample author worth believing until re-tested:
+  X-Ways' own sample author, now re-tested (2026-08-15, 21.8 SR-5; see the
+  [test plan](xways-sdk-conflicts-test-plan.md), entries 3 and 8):
   - `// Leads to a crash in WinHex for filenames that exceed MAX_PATH` — on
-    `XWF_GetItemName` + string concatenation. Age unknown (SDK-era); whether
-    current builds still crash is in the
-    [test plan](xways-sdk-conflicts-test-plan.md).
+    `XWF_GetItemName` + string concatenation. **Does not reproduce on current
+    builds**: a 304-character name created and read back on 21.8 SR-5 with no
+    crash. Treat as fixed vendor history, not a live constraint.
   - `// This does not crash WinHex, but it slows down very much` — per-item
     `XWF_OutputMessage` under RVS. Vendor confirmation of the
-    [verbose-logging](conventions/verbose-logging.md) rationale.
+    [verbose-logging](conventions/verbose-logging.md) rationale (still good
+    advice — this one is about throughput, not a bug).
   - A disabled checker comparing `XWF_GetItemSize(nItemID)` against
-    `XWF_GetSize(hItem, NULL)` under the label `"Deviant sizes for ..."` — the
-    author had reason to compare the two. Unverified; also in the test plan.
+    `XWF_GetSize(hItem, NULL)` under the label `"Deviant sizes for ..."`.
+    **Resolved**: on a 310-item corpus, 309/310 items had all five size views
+    identical; the lone deviant is the virtual "Free space" item
+    (`GetItemSize = -1` vs `GetSize = 0` — two spellings of "no size").
+    Re-check on NTFS-resident/compressed corpora before calling it universal.
 - **The vendor's version-compat pattern is a NULL-probe, not a version check.**
   `QTest.cpp` NULL-checks 13 newer function pointers after resolution and
   counts misses; the SDK's shared loader (`X-Tension.cpp`) likewise returns the

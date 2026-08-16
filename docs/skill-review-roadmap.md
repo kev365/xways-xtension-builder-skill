@@ -34,20 +34,20 @@ Status vocabulary: `open` → `in-progress` → `done` (or `deferred` /
 - Phase 3 — CI gates
 - Phase 4 — de-duplication and structure
 - Phase 5 — cosmetics batch
-- Phase E — empirical test queue (not this run)
+- Phase E — empirical test queue (needs live X-Ways; NOT this run)
 
 ## Phase 1 — high-severity factual fixes
 
 | # | Item | Where | Status |
 | --- | --- | --- | --- |
-| H1 | `AddComment` mode table still says `2 = PREPEND` (disproved live 2026-08-15; mode 2 = append-with-line-break). Last surviving copy of the invented constant. | `xways-events-api.md:299` | open |
-| H2 | op=0 (XT_ACTION_RUN) delivers **no per-item callbacks** — three pages still assert the opposite, incl. one page contradicting its own admonition 14 lines up. Owner: `xtension-invocation.md`; others cite it. | `xtension-dialog-conventions.md:911-912,936`; `xtension-invocation.md:171`; `conventions/wrapper-anatomy.md:24,86`; add mention to `conventions/item-collection.md` | open |
+| H1 | `AddComment` mode table still says `2 = PREPEND` (disproved live 2026-08-15; mode 2 = append-with-line-break). Last surviving copy of the invented constant. | `xways-events-api.md:299` | done |
+| H2 | op=0 (XT_ACTION_RUN) delivers **no per-item callbacks** — three pages still assert the opposite, incl. one page contradicting its own admonition 14 lines up. Owner: `xtension-invocation.md`; others cite it. | `xtension-dialog-conventions.md:911-912,936`; `xtension-invocation.md:171`; `conventions/wrapper-anatomy.md:24,86`; add mention to `conventions/item-collection.md` | done |
 | H3 | `references/api-guardrail.md` refresh: stale 62/20/17 counts (real 73/26/0, no Absent list exists); routing table missing rows for search / Python bridge / snapshot mutation / evidence containers / command line; "register both callbacks" workaround lacks the 2N dedup caveat. | `references/api-guardrail.md:28-34,77-89,133-135` | open |
-| H4 | Search page self-contradiction: states CALLPSH-delivers-zero at :225, then :269-290 still says "never demonstrated — test before designing around either reading." Reconcile the warning block with the 2026-08-15 result. | `xways-search-api.md:269-290` | open |
-| H5 | Stale version-word section presents the superseded `/100.0` decode as unresolved; its own data (LOWORD 769=0x0301) proves the packed decode. Rewrite §11 to the confirmed decode + cross-ref. | `events-viewer-empirical-findings.md:433-443` | open |
+| H4 | Search page self-contradiction: states CALLPSH-delivers-zero at :225, then :269-290 still says "never demonstrated — test before designing around either reading." Reconcile the warning block with the 2026-08-15 result. | `xways-search-api.md:269-290` | done |
+| H5 | Stale version-word section presents the superseded `/100.0` decode as unresolved; its own data (LOWORD 769=0x0301) proves the packed decode. Rewrite §11 to the confirmed decode + cross-ref. | `events-viewer-empirical-findings.md:433-443` | done |
 | H6 | Python scaffold produces un-importable module: `xways-<name>.py` (hyphen = syntax error under the bridge's `import <stem>`); scaffold test asserts the broken name; python README still prescribes the subfolder layout proven not to load (2026-08-16) and targets "21.7". Fix: underscore stem `xways_<name>.py` (folder keeps `xways-<name>`), rewrite deploy story to main-folder model, fix test. | `scripts/new-xtension.ps1:242-267`; `tests/test-scaffold-rename.ps1:71`; `templates/x-tensions/python/README.md:3,7,21`; `references/decision-tables.md:29-30` | open |
 | H7 | Event-subcode tables duplicated (~200 lines) across two pages AND the copies disagree on the unlabelled-OS-range boundary (`14015+` vs `15000+`). Consolidate into `xways-events-api.md` (owner); empirical page keeps methodology + link. Resolve the boundary from the probe logs while merging; if the logs don't settle it → E2. | `xways-events-api.md:117-262` ⟷ `events-viewer-empirical-findings.md:43-201,131` | open |
-| H8 | Stale "unverified / in the test plan" markers pointing at **closed** register entries: GetItemName >MAX_PATH (resolved: does not reproduce, 21.8 SR-5) and "deviant sizes" (resolved: 309/310 identical). Update both pages to the results. | `build-and-iteration-gotchas.md:177-185`; `xways-sdk-source-notes.md:176-181` | open |
+| H8 | Stale "unverified / in the test plan" markers pointing at **closed** register entries: GetItemName >MAX_PATH (resolved: does not reproduce, 21.8 SR-5) and "deviant sizes" (resolved: 309/310 identical). Update both pages to the results. | `build-and-iteration-gotchas.md:177-185`; `xways-sdk-source-notes.md:176-181` | done |
 
 ## Phase 2 — templates, scripts, README/CHANGELOG
 
@@ -71,7 +71,7 @@ Status vocabulary: `open` → `in-progress` → `done` (or `deferred` /
 
 | # | Item | Where | Status |
 | --- | --- | --- | --- |
-| G1 | **Template-parity gate** — greps all three templates for the shared conventions (QUICKCHECK `0x20` guard, packed nVersion decode, op=0 warning, `COMMENT_APPEND_LINEBREAK = 2`, no-prepend comment). The last five template commits were all "fix in all three" — this gate catches the class. | new `tests/check-template-parity.ps1` + ci.yml | open |
+| G1 | **Template-parity gate** — greps all three templates for the shared conventions (QUICKCHECK `0x20` guard, packed nVersion decode, op=0 warning, `COMMENT_APPEND_LINEBREAK = 2`, no-prepend comment). The last five template commits were all "fix in all three" — this gate catches the class. | a new template-parity check script under `tests/` + ci.yml | open |
 | G2 | **Compile gate** — CI is windows-latest (VS 2022 present); scaffold + `build-xtension.ps1 -NoDeploy` both C++ templates. Compile-verification is currently manual. | ci.yml new job | open |
 | G3 | Scaffold tests can't see NO MATCH rules (both counters exclude them by construction). Assert zero `NO MATCH` in dry-run output. | `tests/test-scaffold-identity.ps1:160-163` | open |
 | G4 | `check-stale-guidance.ps1` regex misses the decimal "4 = call ProcessItemEx" form (only matches `0x01\s*\|\s*0x04`). Widen. | `tests/check-stale-guidance.ps1:71` | open |
@@ -86,7 +86,7 @@ Status vocabulary: `open` → `in-progress` → `done` (or `deferred` /
 | D3 | Output-dir cascade restated in dialog-conventions. Owner: `conventions/output-dir.md`. | `xtension-dialog-conventions.md:607-632` | open |
 | D4 | Coverage-map narrates 4 revisions of its own counts, out of order ("fourth move" before "third"). Trim to current counts + regen instructions; history lives in CHANGELOG. | `xways-api-coverage-map.md:126-159` | open |
 | D5 | **Register policy** (kev365 decision pending): the conflicts register's preamble says "nothing here is resolved — move findings to the owning page and strike the entry," but six of nine entries are now RESOLVED in place. Two options: (a) *resolve-in-place* — keep the write-ups in the register, fix the preamble + tallies; (b) *move-and-strike* — relocate each finding to its owning page, leave one-line tombstones. | `xways-sdk-conflicts-test-plan.md:13,236-250` | deferred |
-| D6 | QTest hazard list stated twice (gotchas + sdk-source-notes), both copies stale (H8 fixes staleness; this item removes the second copy). | `xways-sdk-source-notes.md:176-181` | open |
+| D6 | QTest hazard list stated twice (gotchas + sdk-source-notes), both copies stale (H8 fixes staleness; this item removes the second copy). | `xways-sdk-source-notes.md:176-181` | done |
 
 ## Phase 5 — cosmetics batch
 
@@ -108,7 +108,7 @@ Status vocabulary: `open` → `in-progress` → `done` (or `deferred` /
 | # | Question | Origin | Status |
 | --- | --- | --- | --- |
 | E1 | **Off-thread `XWF_*` semantics**: the wrapper calls `XWF_OpenItem/Read/Close/...` from a worker thread while X-Ways' thread is parked in the progress dialog's message pump — battle-tested in shipping X-Tensions, but the threading danger box forbids it unconditionally. Probe: does off-thread `XWF_*` misbehave when the host thread is (a) blocked in our dialog vs (b) returned to X-Ways? Until then the safe blanket rule stands. | threading contradiction | open |
-| E2 | Event-subcode unlabelled-range boundary: do labelled OS subcodes end at 14014 (⇒ unlabelled starts 14015) or do labels exist up to 14999? Only needed if the existing probe logs don't settle it during H7. | H7 | open (may resolve during H7 from probe logs) |
+| E2 | Event-subcode unlabelled-range boundary: do labelled OS subcodes end at 14014 (⇒ unlabelled starts 14015) or do labels exist up to 14999? Only needed if the existing probe logs don't settle it during H7. | H7 | resolved 2026-08-16 from existing sweep data — Event log starts at 15000, so unlabelled OS range = 14015-14999; `14015+` is the correct row (fix lands with H7) |
 | E3 | `XT_Init` return value `2` (thread-safe declaration): asserted in threading-model, absent from the invocation page's return table, flagged "unverified" in gotchas. Verify on a live host (does returning 2 change RVS callback concurrency?). | §1.4 | open |
 | E4 | `xwf.GetHashValue` >128-bit overflow runtime confirmation — needs a Python 3.12 environment the embedded bridge can actually use (per-user install failed 2026-08-16: bridge can't import any script). Source proof already airtight. | register 7 | open |
 | E5 | Search-hit flag `0x0040` double-listing (register 9 remainder): needs a slack hit and a report-flagged hit to disambiguate. | register 9 | open |

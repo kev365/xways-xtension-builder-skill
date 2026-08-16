@@ -432,14 +432,22 @@ Verified against **X-Ways Forensics 21.8 (BYOD `xwb64.exe`)** on a logs snapshot
 
 ### `nVersion` decoding
 
-The `XT_Init` `nVersion` argument is **`HIWORD = version × 100`, `LOWORD = service-release/build word`** — *not* a single number to divide by 100. Decoded correctly:
+The `XT_Init` `nVersion` argument is a **packed word**: `HIWORD = version × 10`
+(2170 → 21.7), **byte 1 = service release, byte 0 = GUI language** — *not* a
+single number to divide by 100. The LOWORD is *two* packed bytes, which
+resolves the "SR vs internal build" question this section originally left
+open. Decoded correctly, the two observations recorded here:
 
-| X-Ways | `nVersion` (dec) | `HIWORD` | `HIWORD/100` | `LOWORD` |
-| --- | ---: | ---: | ---: | ---: |
-| 21.7 | 142213889 | 2170 | **21.70** | 769 |
-| 21.8 | 142868737 | 2180 | **21.80** | 257 |
+| X-Ways | `nVersion` (dec) | `HIWORD` | version | `LOWORD` (hex) | SR (byte 1) | lang (byte 0) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 21.7 | 142213889 | 2170 | **21.7** | `0x0301` | **3** | 1 |
+| 21.8 | 142868737 | 2180 | **21.8** | `0x0101` | **1** | 1 |
 
-The `nVersion` DWORD decodes as `X-Ways v%.2f (…)` via `HIWORD(nVersion)/100.0`. (The `LOWORD` semantics — SR number vs. internal build — are not pinned down; both observed values are recorded above for future reference.)
+The packed decode was confirmed live on 21.9 Beta 1 and 21.8 SR-5
+(2026-08-15): raw `0x088E0001` → 21.9 SR-0 lang-1, raw `0x08840501` → 21.8
+SR-5 lang-1 — and the two rows above fit it exactly (the hosts were 21.7 SR-3
+and 21.8 SR-1). Canonical decode + code snippet:
+[xtension-invocation.md](xtension-invocation.md), "`XT_Init`".
 
 ### Event-Type taxonomy — unchanged from 21.7 (interim)
 

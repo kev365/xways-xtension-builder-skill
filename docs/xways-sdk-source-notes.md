@@ -173,12 +173,10 @@ copy-paste sources inherits these:
 | `XT_Timer.cpp` | Deciseconds computed as `delta % 10` (should be `(delta % 1000) / 100`); one raw `wcscat` into a fixed 100-wchar buffer that long locale date strings can overrun. |
 | `Sample.py` / `printHashInfo.py` | Each defines `XT_About` **twice** (last definition silently wins); `printHashInfo.py` calls a method that does not exist and has never run to completion ([xways-python-bridge.md](xways-python-bridge.md)). |
 
-QTest's comments also preserve three vendor-authored warnings worth keeping
-(recorded in [build-and-iteration-gotchas.md](build-and-iteration-gotchas.md)):
-a crash for `XWF_GetItemName` on names longer than `MAX_PATH`, severe slowdown
-from per-item `XWF_OutputMessage`, and a disabled checker comparing
-`XWF_GetItemSize` vs `XWF_GetSize` under a "Deviant sizes" label — the author
-evidently had reason to look.
+QTest's comments also preserve three vendor-authored warnings — see
+[build-and-iteration-gotchas.md](build-and-iteration-gotchas.md) for their
+current status (two of the three were re-tested 2026-08-15 and no longer
+reproduce as stated; the `XWF_OutputMessage` throughput warning stands).
 
 ## The C# bindings — facts mined, no authoring support here
 

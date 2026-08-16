@@ -296,7 +296,12 @@ When events are anchored to an item via `nItemID`, several other XWF_ APIs surfa
 | `XWF_AddSearchTerm(name, 0)` | **Search Terms** list (case-level, not per-item) | wide string | ✓ |
 | `XWF_SetItemType(item, label, status)` | **Type** column conditionally; **Type status** column always | wide string | renders with fallback glyph for SMP chars |
 
-`XWF_AddComment` and `XWF_AddExtractedMetadata` use a `nFlagsHowToAdd` parameter: `0 = REPLACE`, `1 = APPEND`, `2 = PREPEND`.
+`XWF_AddComment` and `XWF_AddExtractedMetadata` use a `nFlagsHowToAdd` parameter:
+`0 = REPLACE`, `1 = APPEND` (space delimiter), `2 = APPEND with a line-break
+delimiter`. There is **no prepend mode** — an earlier revision of this page
+called mode 2 "PREPEND", which was an invented reading; the append-with-line-break
+behaviour was verified live on 21.8 SR-5 (2026-08-15) by writing with each mode
+and reading the comment back via `XWF_GetComment`.
 
 ## `XWF_SetItemType` and `nTypeStatus`
 

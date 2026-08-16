@@ -909,8 +909,13 @@ Tooltip the Run button so analysts discover the modifier without reading the REA
 Don't drive enumeration yourself via `XWF_GetItemCount` + `XWF_OpenItem` —
 that ignores the X-Ways active filter and the right-click selection.
 Instead, return `0x01` from `XT_Prepare` to request `XT_ProcessItem`
-callbacks for BOTH `XT_ACTION_RUN` and `XT_ACTION_DBC`, collect IDs into
-a single struct, show the dialog from `XT_Finalize`:
+callbacks, collect IDs into a single struct, show the dialog from
+`XT_Finalize`. **Caveat (confirmed live, 21.8 SR-5 + 21.9 Beta 1):
+under `XT_ACTION_RUN` (op 0) X-Ways delivers no per-item callbacks at
+all, even with `0x01` returned** — this collector receives items only
+under `XT_ACTION_DBC` (the selection) and `XT_ACTION_RVS` (the whole
+snapshot). See [xtension-invocation.md](xtension-invocation.md),
+"Invocation modes".
 
 ```cpp
 LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void*) {
@@ -933,9 +938,12 @@ LONG __stdcall XT_Finalize(HANDLE, HANDLE, DWORD, void*) {
 }
 ```
 
-For `XT_ACTION_RUN` mode X-Ways calls `XT_ProcessItem` only for items
-visible under the active filter; for `XT_ACTION_DBC` only for the
-right-clicked selection. Same code path either way.
+For `XT_ACTION_DBC` X-Ways calls `XT_ProcessItem` only for the
+right-clicked selection; for `XT_ACTION_RVS`, for every snapshot item.
+`XT_ACTION_RUN` delivers none (see the caveat above) — if you need a
+"whole snapshot from the Tools menu" mode, enumerate explicitly in
+`XT_Prepare` via `XWF_GetItemCount` and accept that the active filter
+is bypassed.
 
 ## Template integration
 

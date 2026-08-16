@@ -21,7 +21,7 @@ anatomy. The canonical implementation is the `wrapper` template (`templates/x-te
 1. **`Settings` struct** — sidecar config payload (fields map 1:1 to `key = value` cfg lines).
 2. **`RunCtx` / `Collected`** — per-run transient state: volume/evidence handles, invocation mode, and the accumulated item list.
 3. **`LoadCfg` (+ `SaveSettingsToCfg`)** — tiny `key=value` parser/writer; reads the cfg file next to the DLL; initialises a `Settings` in-place.
-4. **`XT_Prepare`** — reset state, log, call `LoadCfg`, resolve the helper exe (`ResolveDefaultTool`, unless the cfg override is set), create temp/output dirs, return `0x01` to request per-item callbacks.
+4. **`XT_Prepare`** — reset state, log, call `LoadCfg`, resolve the helper exe (`ResolveDefaultTool`, unless the cfg override is set), create temp/output dirs, return `0x01` to request per-item callbacks. (Under `XT_ACTION_RUN` — op 0, Tools → Run X-Tension — X-Ways delivers **no** per-item callbacks despite the `0x01`; the collector fills only under RVS and DBC. Confirmed live 21.8 SR-5 + 21.9 Beta 1 — see [xtension-invocation.md](../xtension-invocation.md).)
 5. **`XT_ProcessItem`** — **collect only.** Push each `nItemID` onto the accumulator so the list honours the active filter and the right-click selection; poll `XWF_ShouldStop` every 1024 items. Export `XT_ProcessItemEx` as a **no-op stub** — see the note below.
 6. **`XT_Finalize`** — the actual run: MZ/size gate → extract item bytes to a temp file → spawn the subprocess → parse output → tag items via `XWF_Label` → log stats, clean up temp dirs, reset state.
 
