@@ -170,6 +170,19 @@ if (-not $clOnPath) {
 
     $vcvarsPath = $vcvarsSearchPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
 
+    # vswhere is the authoritative locator (ships with every VS/BuildTools
+    # install since 2017 and on GitHub runners) — newer images have moved VS
+    # off the static paths above, which is exactly what it exists to solve.
+    if (-not $vcvarsPath) {
+        $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+        if (Test-Path $vswhere) {
+            $found = & $vswhere -latest -products * `
+                -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+                -find 'VC\Auxiliary\Build\vcvars64.bat' 2>$null | Select-Object -First 1
+            if ($found -and (Test-Path $found)) { $vcvarsPath = $found }
+        }
+    }
+
     if (-not $vcvarsPath) {
         Fail @"
 Could not find vcvars64.bat in any standard VS 2019/2022 location.
