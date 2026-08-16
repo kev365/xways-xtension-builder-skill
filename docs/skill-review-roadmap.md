@@ -71,11 +71,11 @@ Status vocabulary: `open` → `in-progress` → `done` (or `deferred` /
 
 | # | Item | Where | Status |
 | --- | --- | --- | --- |
-| G1 | **Template-parity gate** — greps all three templates for the shared conventions (QUICKCHECK `0x20` guard, packed nVersion decode, op=0 warning, `COMMENT_APPEND_LINEBREAK = 2`, no-prepend comment). The last five template commits were all "fix in all three" — this gate catches the class. | a new template-parity check script under `tests/` + ci.yml | open |
-| G2 | **Compile gate** — CI is windows-latest (VS 2022 present); scaffold + `build-xtension.ps1 -NoDeploy` both C++ templates. Compile-verification is currently manual. | ci.yml new job | open |
-| G3 | Scaffold tests can't see NO MATCH rules (both counters exclude them by construction). Assert zero `NO MATCH` in dry-run output. | `tests/test-scaffold-identity.ps1:160-163` | open |
-| G4 | `check-stale-guidance.ps1` regex misses the decimal "4 = call ProcessItemEx" form (only matches `0x01\s*\|\s*0x04`). Widen. | `tests/check-stale-guidance.ps1:71` | open |
-| G5 | Redundant ci.yml JSON-parse step (subsumed by check-version-sync); pass-message understates scan scope in check-stale-guidance. Low value; batch with P5. | `ci.yml:21-26`; `check-stale-guidance.ps1:153` | open |
+| G1 | **Template-parity gate** — greps all three templates for the shared conventions (QUICKCHECK `0x20` guard, packed nVersion decode, op=0 warning, `COMMENT_APPEND_LINEBREAK = 2`, no-prepend comment). The last five template commits were all "fix in all three" — this gate catches the class. | a new template-parity check script under `tests/` + ci.yml | done |
+| G2 | **Compile gate** — CI is windows-latest (VS 2022 present); scaffold + `build-xtension.ps1 -NoDeploy` both C++ templates. Compile-verification is currently manual. | ci.yml new job | done |
+| G3 | Scaffold tests can't see NO MATCH rules (both counters exclude them by construction). Assert zero `NO MATCH` in dry-run output. | `tests/test-scaffold-identity.ps1:160-163` | done |
+| G4 | `check-stale-guidance.ps1` regex misses the decimal "4 = call ProcessItemEx" form (only matches `0x01\s*\|\s*0x04`). Widen. | `tests/check-stale-guidance.ps1:71` | done |
+| G5 | Redundant ci.yml JSON-parse step (subsumed by check-version-sync); pass-message understates scan scope in check-stale-guidance. Low value; batch with P5. | `ci.yml:21-26`; `check-stale-guidance.ps1:153` | done |
 
 ## Phase 4 — de-duplication and structure
 

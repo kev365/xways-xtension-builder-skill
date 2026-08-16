@@ -18,12 +18,9 @@ jobs:
       - name: Pre-publish hygiene scan (HIGH-severity gate)
         shell: pwsh
         run: .\scripts\prepublish-scan.ps1
-      - name: Validate plugin + marketplace JSON
-        shell: pwsh
-        run: |
-          Get-Content .claude-plugin/plugin.json -Raw | ConvertFrom-Json | Out-Null
-          Get-Content .claude-plugin/marketplace.json -Raw | ConvertFrom-Json | Out-Null
-          Write-Host "plugin.json + marketplace.json parse OK"
+      # (A standalone plugin/marketplace JSON parse step lived here; it was
+      # fully subsumed by check-version-sync.ps1, which parses both files
+      # under EAP=Stop and fails identically on malformed JSON.)
 
       - name: Scaffold rename regression test
         shell: pwsh
@@ -60,6 +57,33 @@ jobs:
       - name: Cited symbols exist in the file they are cited from
         shell: pwsh
         run: .\tests\check-cited-symbols.ps1
+
+      - name: Shared conventions present in all three templates
+        shell: pwsh
+        run: .\tests\check-template-parity.ps1
+
+  compile-templates:
+    name: C++ templates compile (scaffold + build)
+    runs-on: windows-latest
+    # windows-latest ships VS 2022 Build Tools; build-xtension.ps1 bootstraps
+    # vcvars itself. Compile verification of the templates was manual until
+    # 2026-08-16 — this is the gate the template-fix cycles lacked.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scaffold + compile both C++ templates
+        shell: pwsh
+        run: |
+          $proj = Join-Path $env:RUNNER_TEMP 'compile-gate'
+          New-Item -ItemType Directory -Force $proj | Out-Null
+          Push-Location $proj
+          & "$env:GITHUB_WORKSPACE\scripts\new-xtension.ps1" -Name cigatecpp  -Template cpp
+          & "$env:GITHUB_WORKSPACE\scripts\new-xtension.ps1" -Name cigatewrap -Template wrapper
+          & "$env:GITHUB_WORKSPACE\scripts\build-xtension.ps1" -Name xways-cigatecpp  -NoDeploy
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          & "$env:GITHUB_WORKSPACE\scripts\build-xtension.ps1" -Name xways-cigatewrap -NoDeploy
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Pop-Location
+          Write-Host "Both C++ templates scaffold and compile clean."
 
   markdownlint:
     name: Markdown lint

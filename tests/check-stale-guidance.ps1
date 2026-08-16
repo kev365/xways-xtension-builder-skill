@@ -74,6 +74,17 @@ $rules = @(
         AlsoAllowIf    = 'EXPECTMOREITEMS|creat'
     },
     @{
+        # The 2026-08-16 review found the same misconception in decimal prose
+        # ("4  = call XT_ProcessItemEx" in a docstring) that the hex rule above
+        # cannot see. Both spellings of the claim are wrong the same way.
+        Name    = 'return 4 taught as the Ex selector (decimal form)'
+        Pattern = '4\s*=\s*call XT_ProcessItemEx'
+        Canon   = 'docs/conventions/item-collection.md'
+        Why     = 'Returning 4 (EXPECTMOREITEMS) does not select XT_ProcessItemEx; X-Ways calls whichever per-item callback(s) you export.'
+        AllowIfNegated = $true
+        AlsoAllowIf    = 'EXPECTMOREITEMS|creat'
+    },
+    @{
         # Found by hand after the first three rules went in: a reference page
         # called XWF_Label "the 21.8+ name". Someone targeting 21.7 reads that
         # and correctly concludes they must use the old call -- so a wrong
@@ -150,7 +161,7 @@ foreach ($rel in $mdFiles) {
 }
 
 if ($findings.Count -eq 0) {
-    Write-Host "RESULT: PASS - no superseded guidance found in $($mdFiles.Count) markdown files" -ForegroundColor Green
+    Write-Host "RESULT: PASS - no superseded guidance found in $($mdFiles.Count) scanned files (md/cpp/h/py/rc/ps1)" -ForegroundColor Green
     exit 0
 }
 
