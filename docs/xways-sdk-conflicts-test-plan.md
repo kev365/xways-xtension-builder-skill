@@ -43,7 +43,7 @@ marked **mutating** or **crash-risk** must never run against a real case.
   `XWF_GetEvObjProp` property 16" (documented as size **in bytes**) — which
   argues the vendor label is just sloppy, but a *volume handle* vs *item
   handle* difference has not been excluded.
-- **RESOLVED 2026-08-15** (xways-sdk-probe on 21.9 Beta 1, 64 MiB E01):
+- **RESOLVED 2026-08-15** (throwaway probe X-Tension on 21.9 Beta 1, 64 MiB E01):
   `GetProp(hVol,0) = GetProp(hVol,1) = GetSize(hVol,NULL) =
   GetEvObjProp(hEv,16) = 67108864` — exactly the image size. **Bytes.**
   QTest's `" MB"` label is simply wrong. Also observed:
@@ -101,7 +101,7 @@ marked **mutating** or **crash-risk** must never run against a real case.
   physical-vs-item-size — deviance is *expected by design* for resident,
   compressed and slack-bearing files; the open question is only whether
   `GetItemSize == GetSize(1) == GetProp(1)` holds universally.
-- **RESOLVED for a first corpus, 2026-08-15** (xways-sdk-probe, 21.9 Beta 1,
+- **RESOLVED for a first corpus, 2026-08-15** (throwaway probe X-Tension, 21.9 Beta 1,
   310-item snapshot of a 64 MiB E01): **309/310 items had all five size views
   identical** (`GetItemSize` = `GetSize(NULL)` = `GetSize(1)` = `GetProp(0)` =
   `GetProp(1)`), and `GetProp(0/1)` matched `GetSize(NULL/1)` on every single
@@ -111,7 +111,7 @@ marked **mutating** or **crash-risk** must never run against a real case.
   "no size", which is likely all QTest's "deviant sizes" checker ever caught.
   **Residual caveat:** the corpus had no NTFS-resident, compressed or carved
   items; re-run the sweep on a richer image before calling the equality
-  universal. Sweep code lives in the probe's `CompareItemSizes`.
+  universal.
 
 ## 4. `XT_Init` version-word decode
 
@@ -119,7 +119,7 @@ marked **mutating** or **crash-risk** must never run against a real case.
   parameter packs `version(hi16) | SR(8) | language(8)` — but the current
   official header calls it a bare `nVersion` and no live host has confirmed the
   arithmetic ([xtension-invocation.md](xtension-invocation.md)).
-- **RESOLVED 2026-08-15** (xways-sdk-probe on a host banner-identified as
+- **RESOLVED 2026-08-15** (throwaway probe X-Tension on a host banner-identified as
   "X-Ways Forensics BYOD 21.9 Beta 1 x64"): raw `nVersion = 0x088E0001`
   decodes as hi16 `2190` → **v21.9**, byte1 `0` → **SR-0** (a Beta 1 has no
   SR), byte0 `1` → language 1. The packed-word decode is confirmed on a live
@@ -192,7 +192,7 @@ entry is kept for numbering stability.
 - **Runtime confirmation (optional) is gated on a Python 3.12 install.** The
   bundle's `python312.dll` needs a matching 3.12 environment for
   `Py_Initialize`; the test machine had only 3.13/3.14 (2026-08-16). A probe script
-  (`reg7_hashprobe.py`) and the setup are staged for whenever a 3.12 install
+  and setup notes are staged (outside this repo) for whenever a 3.12 install
   exists — but the source proof is the stronger artifact for the report.
 - **Risk:** the runtime path is **crash-by-design**; throwaway case only.
 

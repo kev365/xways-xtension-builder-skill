@@ -4,7 +4,7 @@ description: This skill should be used when the user asks to "create/scaffold a 
 license: MIT
 compatibility: Authoring flows need Claude Code on Windows (PowerShell scaffold/build scripts; MSVC x64 for C++ builds; X-Ways Forensics 21.x to run the result). Guidance/API-reference flows work anywhere.
 metadata:
-  version: 0.5.0
+  version: 0.6.0
   author: Kevin Stokes (kev365)
   category: digital-forensics
   tags: x-ways, x-tension, dfir, windows, forensics

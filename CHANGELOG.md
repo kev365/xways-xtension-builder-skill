@@ -5,6 +5,26 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Known issues / queued work
+
+- **Register policy decision pending** — the conflicts register
+  ([docs/xways-sdk-conflicts-test-plan.md](docs/xways-sdk-conflicts-test-plan.md))
+  resolves entries in place while its preamble prescribes move-and-strike;
+  reconcile one way or the other (tracked as D5 in
+  [docs/skill-review-roadmap.md](docs/skill-review-roadmap.md)).
+- **Empirical queue** (needs a live X-Ways host; roadmap Phase E): off-thread
+  `XWF_*` semantics while the host thread is parked in a dialog pump (until
+  then the threading danger box stays deliberately conservative — note the
+  wrapper template's worker thread relies on the parked-host pattern);
+  `XT_Init` return value `2` (thread-safe mode — nothing in the SDK ever
+  returns it); runtime corroboration of the Python bridge's wide-hash
+  overflow; the `0x0040` search-hit flag double-listing.
+- **`XWF_Search` remains hazardous on 21.8/21.9** (NULL-CodePages AV, zero
+  CALLPSH callbacks, post-run host crash) — the docs warn, but nothing can
+  gate at authoring time against a runtime host bug.
+
+## [0.6.0] — 2026-08-16
+
 ### Added
 
 - **Full skill review + repair sweep (2026-08-16)** — two parallel reviewers
@@ -244,9 +264,9 @@ All notable changes to this project are documented here. Versions follow
   sized as if bytes were chars. The loop writes 2 chars per hash byte, reaching
   index 63 for SHA-256 (a 62-byte overflow), and reads 64 wchars back at
   `:1165`. Any hash wider than 128 bits overflows (SHA-1 by 7 chars, SHA-256 by
-  31); MD5/MD4/RIPEMD-128 are exactly safe. Runtime corroboration is staged
-  (`x-tensions/xways-sdk-probe/python-reg7/`) but gated on a Python 3.12
-  install — the source proof is the stronger artefact regardless.
+  31); MD5/MD4/RIPEMD-128 are exactly safe. A runtime probe is staged
+  (outside this repo) but gated on a Python 3.12 environment the embedded
+  bridge accepts — the source proof is the stronger artefact regardless.
 
 - **The templates' `COMMENT_PREPEND = 2` was an invented constant — no such
   mode exists.** The mutating probe on 21.8 SR-5 (2026-08-15) read back live:
