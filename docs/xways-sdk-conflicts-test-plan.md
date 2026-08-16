@@ -2,7 +2,7 @@
 source: project register — conflicts surfaced by the 2026-08-14 SDK source review, plus carried-over ambiguities
 type: research-summary
 fetched: 2026-08-14
-last_updated: 2026-08-14
+last_updated: 2026-08-16
 author: project
 ---
 
@@ -191,7 +191,7 @@ entry is kept for numbering stability.
   the code cannot do otherwise.
 - **Runtime confirmation (optional) is gated on a Python 3.12 install.** The
   bundle's `python312.dll` needs a matching 3.12 environment for
-  `Py_Initialize`; this machine has 3.13/3.14 only. A probe script
+  `Py_Initialize`; the test machine had only 3.13/3.14 (2026-08-16). A probe script
   (`reg7_hashprobe.py`) and the setup are staged for whenever a 3.12 install
   exists — but the source proof is the stronger artifact for the report.
 - **Risk:** the runtime path is **crash-by-design**; throwaway case only.

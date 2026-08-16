@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-08-12
+last_updated: 2026-08-16
 author: project
 ---
 
@@ -15,7 +15,7 @@ author: project
     `XWF_AddEvent`'s thread-safety is undocumented; off-thread calls can corrupt the event store or
     crash the host. **Run synchronously.**
 
-**Background:** [xtension-invocation.md](../xtension-invocation.md) — "Threading & UI responsiveness":
+**Background:** [xtension-invocation.md](../xtension-invocation.md) — "Threading" and "Keeping X-Ways responsive during long synchronous work":
 *never call `XWF_AddEvent` from a multi-threaded context; do event emission in `XT_Prepare` or
 `XT_Finalize`.* Note the RVS worker pool is X-Ways' own threading — that's fine; the trap is a worker
 thread **you** create. (Empirically confirmed safe on xwb 21.8, 2026-06-27: self-calling

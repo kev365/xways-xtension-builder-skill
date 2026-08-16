@@ -81,10 +81,10 @@ Status vocabulary: `open` → `in-progress` → `done` (or `deferred` /
 
 | # | Item | Where | Status |
 | --- | --- | --- | --- |
-| D1 | Ctrl-to-save exists 4× — three code blocks inside dialog-conventions (the page it was "extracted" from) + the canonical `conventions/ctrl-to-save.md`. Remove the three, link the owner. | `xtension-dialog-conventions.md:641-899` | open |
-| D2 | Helper-binary resolution duplicated into the invocation reference (~55 lines). Owner: `conventions/tool-resolution.md`. | `xtension-invocation.md:481-535` | open |
-| D3 | Output-dir cascade restated in dialog-conventions. Owner: `conventions/output-dir.md`. | `xtension-dialog-conventions.md:607-632` | open |
-| D4 | Coverage-map narrates 4 revisions of its own counts, out of order ("fourth move" before "third"). Trim to current counts + regen instructions; history lives in CHANGELOG. | `xways-api-coverage-map.md:126-159` | open |
+| D1 | Ctrl-to-save exists 4× — three code blocks inside dialog-conventions (the page it was "extracted" from) + the canonical `conventions/ctrl-to-save.md`. Remove the three, link the owner. | `xtension-dialog-conventions.md:641-899` | done |
+| D2 | Helper-binary resolution duplicated into the invocation reference (~55 lines). Owner: `conventions/tool-resolution.md`. | `xtension-invocation.md:481-535` | done |
+| D3 | Output-dir cascade restated in dialog-conventions. Owner: `conventions/output-dir.md`. | `xtension-dialog-conventions.md:607-632` | done |
+| D4 | Coverage-map narrates 4 revisions of its own counts, out of order ("fourth move" before "third"). Trim to current counts + regen instructions; history lives in CHANGELOG. | `xways-api-coverage-map.md:126-159` | done |
 | D5 | **Register policy** (kev365 decision pending): the conflicts register's preamble says "nothing here is resolved — move findings to the owning page and strike the entry," but six of nine entries are now RESOLVED in place. Two options: (a) *resolve-in-place* — keep the write-ups in the register, fix the preamble + tallies; (b) *move-and-strike* — relocate each finding to its owning page, leave one-line tombstones. | `xways-sdk-conflicts-test-plan.md:13,236-250` | deferred |
 | D6 | QTest hazard list stated twice (gotchas + sdk-source-notes), both copies stale (H8 fixes staleness; this item removes the second copy). | `xways-sdk-source-notes.md:176-181` | done |
 
@@ -92,16 +92,16 @@ Status vocabulary: `open` → `in-progress` → `done` (or `deferred` /
 
 | # | Item | Where | Status |
 | --- | --- | --- | --- |
-| C1 | Frontmatter normalization: define a small `type` vocabulary (13 free-form values today), one `author` spelling, refresh `last_updated` where content moved (42/49 stale). | repo-wide | open |
-| C2 | Dead link `LICENSE` → `../../LICENSE`. | `conventions/readme-roadmap.md:28` | open |
-| C3 | "Seven not-implemented functions" lists eight; `XWF_GetDriveInfo` counted nowhere. | `xways-api-coverage-map.md:40-52,82-90` | open |
-| C4 | INDEX.md refresh: stale descriptions (search page w/o CALLPSH finding; register described as all-open), `last_updated` 2026-08-12. | `docs/INDEX.md` | open |
-| C5 | MkDocs-only admonition syntax (`!!! danger`, `=== "C++"` tabs) in a repo with no mkdocs.yml — renders literal on GitHub. Decide: add mkdocs config, or downgrade to blockquotes. | `conventions/threading-model.md:10`, `naming-deployment.md:15`, `verbose-logging.md:18` | open |
-| C6 | Stale section-title cross-ref ("Threading & UI responsiveness" heading no longer exists). | `conventions/threading-model.md:18` | open |
-| C7 | Tone/aging: "this machine has 3.13/3.14 only" and similar machine-specific / first-person phrasing in the register. | `xways-sdk-conflicts-test-plan.md` | open |
-| C8 | Struct field `nSize` vs `iSize` naming mismatch within the search page (declaration vs prose/code). Verify against the header, align. | `xways-search-api.md:88,116,213` | open |
-| C9 | cpp/build.bat lacks `cd /d "%~dp0"` (wrapper has it) — direct invocation from another cwd fails. | `templates/x-tensions/cpp/build.bat` | open |
-| C10 | LONG vs DWORD `nOpType` drift between the two C++ templates. Align with the canonical header. | `cpp/my_xtension.cpp:208`; `wrapper/my_xtension.cpp:2257` | open |
+| C1 | Frontmatter normalization: define a small `type` vocabulary (13 free-form values today), one `author` spelling, refresh `last_updated` where content moved (42/49 stale). | repo-wide | done (25 files; one-off type/author values folded; last_updated stamped on every page this sweep touched) |
+| C2 | Dead link `LICENSE` → `../../LICENSE`. | `conventions/readme-roadmap.md:28` | no-change-needed (false positive: the "link" is inline code inside a template snippet for generated READMEs, not a rendered link) |
+| C3 | "Seven not-implemented functions" lists eight; `XWF_GetDriveInfo` counted nowhere. | `xways-api-coverage-map.md:40-52,82-90` | done |
+| C4 | INDEX.md refresh: stale descriptions (search page w/o CALLPSH finding; register described as all-open), `last_updated` 2026-08-12. | `docs/INDEX.md` | done |
+| C5 | MkDocs-only admonition syntax (`!!! danger`, `=== "C++"` tabs) in a repo with no mkdocs.yml — renders literal on GitHub. Decide: add mkdocs config, or downgrade to blockquotes. | `conventions/threading-model.md:10`, `naming-deployment.md:15`, `verbose-logging.md:18` | decided-keep (the skill's primary consumer reads raw markdown, where `!!! danger` blocks read fine; converting ~19 files for GitHub cosmetics isn't worth the churn) |
+| C6 | Stale section-title cross-ref ("Threading & UI responsiveness" heading no longer exists). | `conventions/threading-model.md:18` | done |
+| C7 | Tone/aging: "this machine has 3.13/3.14 only" and similar machine-specific / first-person phrasing in the register. | `xways-sdk-conflicts-test-plan.md` | done |
+| C8 | Struct field `nSize` vs `iSize` naming mismatch within the search page (declaration vs prose/code). Verify against the header, align. | `xways-search-api.md:88,116,213` | done (header says LONG iSize in ALL these structs — the page's nSize spelling was drift everywhere; aligned) |
+| C9 | cpp/build.bat lacks `cd /d "%~dp0"` (wrapper has it) — direct invocation from another cwd fails. | `templates/x-tensions/cpp/build.bat` | done |
+| C10 | LONG vs DWORD `nOpType` drift between the two C++ templates. Align with the canonical header. | `cpp/my_xtension.cpp:208`; `wrapper/my_xtension.cpp:2257` | done (header: DWORD; cpp aligned, recompiled clean) |
 
 ## Phase E — empirical test queue (needs live X-Ways; NOT this run)
 

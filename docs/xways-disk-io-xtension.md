@@ -3,7 +3,7 @@ source: dw2102's X-Ways-DHFS4_1 X-Tension (community, MIT) — cross-referenced 
 type: empirical-finding + case-study
 fetched: 2026-05-17
 last_updated: 2026-05-17
-author: research synthesis (community source + SDK header)
+author: project
 ---
 
 # Disk I/O X-Tension class — exports, signatures, lifecycle

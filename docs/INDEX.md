@@ -1,6 +1,6 @@
 ---
 type: index
-last_updated: 2026-08-12
+last_updated: 2026-08-16
 author: project
 ---
 
@@ -74,11 +74,14 @@ to these pages so generated code never invents `XWF_*` calls.
 ## Empirical findings & API recency
 
 - [events-viewer-empirical-findings.md](events-viewer-empirical-findings.md) —
-  measured `nEvtType` → Type/Category lookup, `nFlags` semantics, `lpDescr`
-  capacity, and the X-Ways internal Type catalog.
+  the probe methodology + raw measurements (`lpDescr` capacity data,
+  `XWF_SetItemType` semantics, FILETIME round-trip drift, Int. ID correlation);
+  the result tables live in xways-events-api.md.
 - [xways-search-api.md](xways-search-api.md) — the simultaneous-search surface:
   `XT_PrepareSearch`, `XT_ProcessSearchHit` + `SearchHitInfo`, `XWF_Search`,
-  search-term management, and the three hit functions X-Ways never implemented.
+  search-term management. **Read its warnings first**: CodePages is mandatory
+  (NULL access-violates), `CALLPSH` delivers zero callbacks, and `XWF_Search`
+  runs end in a host crash on 21.8/21.9.
 - [xways-api-coverage-map.md](xways-api-coverage-map.md) — which of the 99
   officially documented functions these notes actually cover, name only, or miss
   entirely. Read before concluding a function does not exist.
@@ -88,8 +91,9 @@ to these pages so generated code never invents `XWF_*` calls.
 - [xways-sdk-source-notes.md](xways-sdk-source-notes.md) — the SDK drops
   themselves: vendor status spreadsheets (24 tested / 52 never exercised),
   sample bug catalog, drop divergence, and the C# binding facts.
-- [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md) — open
-  conflicts between trusted sources, each with a concrete probe design.
+- [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md) — the
+  conflicts register: claims where trusted sources disagreed, each with probe
+  design and outcome (all 9 entries resolved as of 2026-08-16).
 - [skill-review-roadmap.md](skill-review-roadmap.md) — the 2026-08-16 full-review
   findings register: phased repair roadmap + empirical test queue, with statuses.
 - [xways-api-history-19-to-21_4.md](xways-api-history-19-to-21_4.md) — dated,

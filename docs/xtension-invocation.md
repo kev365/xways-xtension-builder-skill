@@ -2,7 +2,7 @@
 source: X-Ways SDK header (see getting-the-sdk.md) + https://www.x-ways.net/forensics/x-tensions/api.html + empirical
 type: official-doc + empirical-finding
 fetched: 2026-04-19
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 author: X-Ways Software Technology AG; empirical research notes from testing + CLI-wrapper X-Tension runs
 ---
 
@@ -478,61 +478,16 @@ static std::wstring GetSelfDirectory() {
 
 `GetSelfDirectory() + L"\\<sidecar_name>"` gives the canonical path for cfg files, helper binaries, etc. — matches whatever folder the analyst actually deployed the DLL to.
 
-### Helper binary lookup
+### Helper binaries and Browse dialogs
 
-Bare filenames in cmdlines that get passed to `CreateProcessW` are resolved per Windows' standard search order, **starting with the directory of the application that loaded the helper** — meaning the X-Ways install dir, NOT the X-Tension DLL's directory. So if the X-Tension wants a helper binary deployed *next to itself* (in `xtensions\`), it needs to either:
-
-1. **Existence-check + rewrite.** If the helper's bare name exists at `<dll_dir>\<helper>`, rewrite the cmd to use the full path before calling `CreateProcessW`. Leave the original cmd alone if the file isn't there (so Windows' standard PATH search still fires for things like `python` from a global Python install). Quote the rewritten path in case the directory contains spaces.
-2. **Always full path.** Require absolute paths in the X-Tension's config. Simpler but less portable across analyst machines.
-3. **PATH-based.** Require the helper to be on the user's `PATH`. Simplest setup but requires extra configuration step on each analyst's machine.
-
-The `wrapper` template (`templates/x-tensions/wrapper/`) uses approach (1) — see `ResolveDefaultTool`, with the cfg override applied by the caller and Browse... offered in the dialog (it does not search PATH). A bare-filename helper resolves correctly wherever the analyst drops the per-tension subfolder, and if it doesn't, the X-Tension prompts once and remembers the choice in a sidecar cfg.
-
-### Recursive partner-binary lookup
-
-The fixed-path probes in `ResolveHelperPath` only catch the layouts the X-Tension author thought of (`<dll-dir>\<name>.exe`, `<dll-dir>\tools\<name>.exe`, `<dll-dir>\tools\<name>\<name>.exe`). Analysts often drop the partner binary somewhere reasonable that isn't on the list. A bounded recursive scan under the DLL's own folder is a cheap last resort:
-
-```cpp
-// Breadth-first scan under `root` for `targetName`. Returns the shallowest
-// match (a copy directly next to the DLL beats one nested under tools\). Caps
-// scan depth and total directories visited so an accidental scan over a huge
-// case-output subtree stays cheap. Skips well-known nuisance dirs (.git,
-// .vs, node_modules, __pycache__) and anything hidden / dotted.
-static std::wstring FindSiblingFile(const std::wstring& root,
-                                    const wchar_t* targetName,
-                                    int maxDepth = 4,
-                                    int maxDirsVisited = 256);
-```
-
-Use it AFTER the fixed-path probes so a deliberately-placed binary always wins over the scan. Reference implementation: the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) — `FindSiblingFile`, the bounded-BFS fallback used by `ResolveDefaultTool`.
-
-### Anchor `GetOpenFileNameW` to the X-Tension folder
-
-The `OPENFILENAMEW` common dialog is anchored, in order:
-
-1. The directory in `lpstrFile` (if it contains one).
-2. `lpstrInitialDir` (if set and the directory exists).
-3. The **process-wide most-recently-used common-dialog folder** — set as a side effect of the *previous* `GetOpenFileNameW` call in this process, no matter which DLL made it.
-
-Step 3 is the gotcha: if the analyst just used another X-Tension's Browse button (e.g. one pointed at `xtensions\xways-mytool\mytool.exe`), the next X-Tension's Browse dialog opens in *that* folder unless we override. Always set `lpstrInitialDir`:
-
-```cpp
-std::wstring initDir;
-if (!current.empty()) {
-    size_t slash = current.find_last_of(L"\\/");
-    if (slash != std::wstring::npos) initDir = current.substr(0, slash);
-}
-if (initDir.empty()) initDir = GetSelfDirectory();  // anchor on the DLL's own folder
-
-OPENFILENAMEW ofn = {};
-// ...
-ofn.lpstrInitialDir = initDir.empty() ? nullptr : initDir.c_str();
-ofn.Flags          |= OFN_NOCHANGEDIR;  // dialog mustn't mutate process CWD
-```
-
-Add `OFN_NOCHANGEDIR` on the same line of thinking — the dialog can change the process current directory as a side effect, which can break later relative-path lookups inside the host.
-
-Reference implementation: the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) — `BrowseForFile`. Apply the same `lpstrInitialDir` + `OFN_NOCHANGEDIR` pattern in any X-Tension that calls `GetOpenFileNameW`.
+Everything about resolving a helper exe deployed next to the DLL — the
+`CreateProcessW` search-order trap (bare names resolve against the X-Ways
+install dir, not the DLL's), the fixed-path probes + bounded-BFS
+`FindSiblingFile` fallback, and anchoring `GetOpenFileNameW` with
+`lpstrInitialDir` + `OFN_NOCHANGEDIR` — is owned by
+[tool-resolution.md](conventions/tool-resolution.md). Reference
+implementation: the `wrapper` template (`ResolveDefaultTool`,
+`FindSiblingFile`, `BrowseForFile`).
 
 ## See also
 

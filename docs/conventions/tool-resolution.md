@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-08-09
+last_updated: 2026-08-16
 author: project
 ---
 
@@ -17,6 +17,8 @@ function — check which one you have before citing it.
 - What the `wrapper` template ships
 - The richer form — a shared `tools\` tree
 - Resolution order summary (richer form)
+- Why resolution is needed — `CreateProcessW` search order
+- Browse-dialog anchoring (`GetOpenFileNameW`)
 - Do / Don't
 
 ## What the `wrapper` template ships
@@ -116,6 +118,53 @@ std::wstring ResolveToolPath(const std::wstring& subdir, const std::wstring& exe
 
 As with the template's simpler form, the cfg override is resolved by the
 **caller** before the search runs.
+
+## Why resolution is needed — `CreateProcessW` search order
+
+Bare filenames in cmdlines passed to `CreateProcessW` resolve per Windows'
+standard search order, **starting with the directory of the application that
+loaded the helper** — the X-Ways install dir, NOT the X-Tension DLL's
+directory. For a helper deployed next to the DLL (in `xtensions\<name>\`),
+three approaches:
+
+1. **Existence-check + rewrite** (what the wrapper ships): if the helper's
+   bare name exists at `<dll_dir>\<helper>`, rewrite the cmd to the full path
+   before `CreateProcessW`; otherwise leave the cmd alone so Windows' PATH
+   search still fires (e.g. `python` from a global install). Quote the
+   rewritten path.
+2. **Always full path** — require absolute paths in cfg. Simpler, less
+   portable across analyst machines.
+3. **PATH-based** — require the helper on `PATH`. Simplest code, extra setup
+   on every analyst machine.
+
+## Browse-dialog anchoring (`GetOpenFileNameW`)
+
+The `OPENFILENAMEW` dialog is anchored, in order: (1) the directory in
+`lpstrFile`, (2) `lpstrInitialDir`, (3) the **process-wide most-recently-used
+common-dialog folder** — set as a side effect of the *previous*
+`GetOpenFileNameW` call in this process, no matter which DLL made it. Step 3
+is the gotcha: if the analyst just used another X-Tension's Browse button, the
+next Browse dialog opens in *that* folder unless you override. Always set
+`lpstrInitialDir`:
+
+```cpp
+std::wstring initDir;
+if (!current.empty()) {
+    size_t slash = current.find_last_of(L"\/");
+    if (slash != std::wstring::npos) initDir = current.substr(0, slash);
+}
+if (initDir.empty()) initDir = GetSelfDirectory();  // anchor on the DLL's own folder
+
+OPENFILENAMEW ofn = {};
+// ...
+ofn.lpstrInitialDir = initDir.empty() ? nullptr : initDir.c_str();
+ofn.Flags          |= OFN_NOCHANGEDIR;  // dialog mustn't mutate process CWD
+```
+
+`OFN_NOCHANGEDIR` is on the same line of thinking — without it the dialog can
+change the host's current directory as a side effect, breaking later
+relative-path lookups inside X-Ways. Reference: the wrapper template's
+`BrowseForFile`.
 
 ## Do / Don't
 

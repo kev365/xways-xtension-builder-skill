@@ -2,8 +2,8 @@
 source: X-Ways Events Viewer — Empirical Findings
 type: empirical-finding
 fetched: 2026-04-26
-last_updated: 2026-04-26
-author: empirical testing + analyst inspection of UI
+last_updated: 2026-08-16
+author: project
 ---
 
 # X-Ways Events Viewer — Empirical Findings (21.7)

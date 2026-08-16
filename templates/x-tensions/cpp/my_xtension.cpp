@@ -210,7 +210,7 @@ LONG __stdcall XT_About(HWND hParentWnd, void* lpReserved) {
     return 0;
 }
 
-LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, LONG nOpType, void* lpReserved) {
+LONG __stdcall XT_Prepare(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void* lpReserved) {
     g.hVolume = hVolume;
     g.opType  = nOpType;
     g.processed = g.flagged = 0;
@@ -287,7 +287,7 @@ LONG __stdcall XT_ProcessSearchHit(void* info) {
     return 0;
 }
 
-LONG __stdcall XT_Finalize(HANDLE hVolume, HANDLE hEvidence, LONG nOpType, void* lpReserved) {
+LONG __stdcall XT_Finalize(HANDLE hVolume, HANDLE hEvidence, DWORD nOpType, void* lpReserved) {
     wchar_t buf[128];
     swprintf_s(buf, L"done — processed %llu, flagged %llu",
                (unsigned long long)g.processed, (unsigned long long)g.flagged);

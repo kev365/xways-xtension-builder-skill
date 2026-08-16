@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XT_functions.html + XWF_functions.html (official), distilled 2026-08-12; XWF_SEARCH_* family from XT_API.pas (hmrc/XT_XWF-AutoCTR, Apache-2.0), 2026-08-13
 type: official-doc
 fetched: 2026-08-12
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 author: X-Ways Software Technology AG (distilled); project notes
 ---
 
@@ -47,9 +47,9 @@ pre-fill the search-term box and inspect the settings the analyst chose.
 LONG XT_PrepareSearch(struct PrepareSearchInfo* pPSInfo, struct CodePages* pCPages);
 
 #pragma pack(2)
-struct PrepareSearchInfo { DWORD nSize; LPWSTR lpSearchTerms; DWORD nBufLen; DWORD nFlags; };
+struct PrepareSearchInfo { LONG iSize; LPWSTR lpSearchTerms; DWORD nBufLen; DWORD nFlags; };
 #pragma pack(2)
-struct CodePages { DWORD nSize; WORD nCodePage1..nCodePage5; };   // 0 = unused slot
+struct CodePages { LONG iSize; WORD nCodePage1..nCodePage5; };   // 0 = unused slot
 ```
 
 - `lpSearchTerms` is a null-terminated, **line-break-delimited** list you may
@@ -85,7 +85,7 @@ called while the search continues.
 ```c
 #pragma pack(2)
 struct SearchHitInfo {
-    DWORD  nSize;          // record size; may grow in future versions
+    LONG   iSize;          // record size; may grow in future versions
     LONG   nItemID;
     INT64  nRelOfs;        // offset within the file, or -1
     INT64  nAbsOfs;        // offset from the volume start, or negative
@@ -173,7 +173,7 @@ LONG XWF_Search(struct SearchInfo* pSInfo, struct CodePages* pCPages);
 
 #pragma pack(2)
 struct SearchInfo {
-    DWORD  nSize;  HANDLE hVolume;  LPWSTR lpSearchTerms;  DWORD nFlags;
+    LONG   iSize;  HANDLE hVolume;  LPWSTR lpSearchTerms;  DWORD nFlags;
     DWORD  nSearchWindow;  LPSTR lpLatin1Alphabet;  LPWSTR lpNonLatin1Alphabet;
 };
 ```
@@ -190,8 +190,8 @@ think you are running once may run once per evidence object.
 - **`pCPages` is mandatory in practice.** Passing `NULL` — which the signature
   invites — **access-violates inside X-Ways** (0xC0000005; surfaces as Delphi
   runtime error 217 and kills the host if unhandled). Pass a `CodePages`
-  struct with `nSize` set and at least one code page (e.g. 1252).
-- **`nSize` may be 28** (packed, through `nSearchWindow`) — official: "should
+  struct with `iSize` set and at least one code page (e.g. 1252).
+- **`iSize` may be 28** (packed, through `nSearchWindow`) — official: "should
   cover at least all member variables up to nSearchWindow". The two alphabet
   pointers are v20.0+ extensions, and **both overwrite the analyst's alphabet
   settings permanently when non-NULL** ("The previously used alphabet will be

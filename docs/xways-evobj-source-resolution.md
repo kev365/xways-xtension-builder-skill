@@ -3,7 +3,7 @@ source: empirical sweeps (2026-05-06)
 type: empirical-finding
 fetched: 2026-05-06
 last_updated: 2026-05-06
-author: empirical research notes
+author: project
 ---
 
 # Resolving an evidence object's source path

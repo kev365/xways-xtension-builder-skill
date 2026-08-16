@@ -3,7 +3,7 @@ source: the community xwf-api-rs binding (ThomasVogl, LGPL-3.0) + the X-Ways SDK
 type: empirical-finding + community-RE + official
 fetched: 2026-05-17
 last_updated: 2026-08-12
-author: project synthesis
+author: project
 ---
 
 # `XWF_OpenItem` flag bits

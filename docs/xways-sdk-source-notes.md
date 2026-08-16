@@ -2,8 +2,8 @@
 source: the X-Ways SDK source drops (2024-05-31 zip + git HEAD c46a1bd2) and the XT_Python 3.12 binary bundle — see getting-the-sdk.md; reviewed in full 2026-08-14
 type: research-summary
 fetched: 2026-08-14
-last_updated: 2026-08-15
-author: project review of X-Ways Software Technology AG source
+last_updated: 2026-08-16
+author: project
 ---
 
 # What the SDK source drops themselves reveal

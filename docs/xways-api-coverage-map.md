@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XT_functions.html + XWF_functions.html (official), enumerated 2026-08-12
 type: coverage-map
 fetched: 2026-08-12
-last_updated: 2026-08-14
+last_updated: 2026-08-16
 author: project
 ---
 
@@ -37,7 +37,7 @@ the API".
 
 ## Documented but not implemented
 
-Seven entries exist on the official page yet do nothing. X-Ways greys out
+Eight entries exist on the official page yet do nothing. X-Ways greys out
 **ideas for potential future additions** and says so on the page, so a symbol
 appearing in the reference is *not* evidence that it works:
 
@@ -48,10 +48,11 @@ appearing in the reference is *not* evidence that it works:
 | `XWF_SetItemDataRuns` | supplying extents for an item |
 | `XWF_DeleteEvObj` | removing an evidence object from the case |
 | `XWF_Write` | and WinHex-only in any case, never X-Ways Forensics |
+| `XWF_GetDriveInfo` | same greyed-out wording as the rest |
 
-`XWF_GetDriveInfo` carries the same wording. **Check for that sentence before
-designing around any symbol you have not used before** — verifying a function
-"exists on the official page" is not sufficient.
+**Check for that sentence before designing around any symbol you have not used
+before** — verifying a function "exists on the official page" is not
+sufficient.
 
 ## Contents
 
@@ -134,26 +135,17 @@ A second bug in the same script: it listed only **tracked** files, so a doc
 written minutes earlier was invisible and the map under-reported — exactly when
 someone would run it. It now includes new, uncommitted files.
 
-The counts moved twice *legitimately* on the day of writing —
-**59/20/20 → 62/20/17 → 67/32/0** — as the same work that created this page went
-on to document the viewer entry points, then the search, progress, block,
-sector-attribution and raster-image surfaces. That is the map doing its job. It
-is also why the numbers are only trustworthy as of the frontmatter date.
+The counts have been revised four times as pages were added
+(**59/20/20 → 62/20/17 → 67/32/0 → 72/27/0 → 73/26/0**, 2026-08-12 → 14; the
+move-by-move history lives in [CHANGELOG.md](../CHANGELOG.md)) — which is the
+map doing its job, and why the numbers are only trustworthy as of the
+frontmatter date. Regenerate rather than trusting any copy quoted elsewhere;
+the always-on guardrail once quoted a two-revisions-stale triple for months.
 
-A fourth move, **72/27/0 → 73/26/0** on 2026-08-14, came from the SDK source
-review ([xways-sdk-source-notes.md](xways-sdk-source-notes.md)) — which also
-added a dimension this map deliberately does not carry: **per-language
-exposure**. The map counts a function as covered if any `docs/` page explains
-it, but whether a Python X-Tension can *call* it is a separate question —
-answered per-method by [xways-python-bridge.md](xways-python-bridge.md)
-(46 exposed of the C surface). Note also the SDK's own status spreadsheet says
-the vendor's samples exercise only 24 of these functions; most of the API has
-no vendor-demonstrated call anywhere.
-
-A third move, **67/32/0 → 72/27/0** on 2026-08-13, came from reviewing two
-community bindings rather than the official pages: the `v2-develop` branch of
-`xwf-api-rs` and the Pascal `XT_API.pas`. Five functions crossed into *covered*
-— the container trio, `XWF_GetHashValue` and `XWF_SelectVolumeSnapshot`. Worth
-noting **what moved them**: not new official documentation, but working code
-that showed how the calls are actually made. Community bindings are a different
-kind of source from the reference page, and they close different gaps.
+Two dimensions this map deliberately does not carry: **per-language exposure**
+(whether a Python X-Tension can *call* a covered function is answered
+per-method by [xways-python-bridge.md](xways-python-bridge.md) — 46 exposed of
+the C surface), and **vendor demonstration** (the SDK's own status spreadsheet
+says the vendor's samples exercise only 24 functions; most of the API has no
+vendor-demonstrated call anywhere — see
+[xways-sdk-source-notes.md](xways-sdk-source-notes.md)).

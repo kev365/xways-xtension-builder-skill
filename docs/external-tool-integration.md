@@ -3,7 +3,7 @@ source: synthesized from working CLI-wrapper X-Tension implementations (see exem
 type: project-pattern
 fetched: 2026-05-02
 last_updated: 2026-05-02
-author: project notes
+author: project
 ---
 
 # Wrapping External CLI Tools as X-Tensions

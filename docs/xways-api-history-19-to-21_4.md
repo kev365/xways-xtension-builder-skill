@@ -3,7 +3,7 @@ source: x-ways.net forum announcement threads (per-version) — see Source URL c
 type: research-summary
 fetched: 2026-05-03
 last_updated: 2026-05-03
-author: empirical research notes
+author: project
 ---
 
 # X-Tension API history — X-Ways Forensics 19.0 through 21.4

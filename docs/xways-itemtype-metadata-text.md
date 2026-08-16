@@ -1,9 +1,9 @@
 ---
 source: empirical testing (2026-05-03 against build 1422138.89) + the X-Ways SDK header (see getting-the-sdk.md) + the official XWF_functions.html (verified 2026-08-13)
-type: empirical-finding + official-doc
+type: official-doc + empirical-finding
 fetched: 2026-05-03
 last_updated: 2026-08-13
-author: project empirical sweep
+author: project
 ---
 
 # `XWF_GetItemType` flag bits, `XWF_GetMetadataEx`, `XWF_GetText` — empirical decoding

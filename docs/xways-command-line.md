@@ -2,7 +2,7 @@
 source: X-Ways 21.6 manual §3.10 + https://www.x-ways.net/forensics/x-tensions/api.html + empirical
 type: official-doc + empirical-finding
 last_updated: 2026-08-12
-author: project notes
+author: project
 ---
 
 # X-Ways Forensics — Command-Line Parameters

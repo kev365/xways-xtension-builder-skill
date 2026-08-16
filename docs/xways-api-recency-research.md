@@ -3,7 +3,7 @@ source: SourceForge SDK page (xwf-api-rs v2-develop reviewed 2026-08-13), X-Ways
 type: research-summary
 fetched: 2026-05-03
 last_updated: 2026-08-15
-author: empirical research notes
+author: project
 ---
 
 # X-Tension API recency research (21.5 – 21.9)

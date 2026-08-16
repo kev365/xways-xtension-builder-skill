@@ -2,7 +2,7 @@
 source: the SDK's Python bridge source (`Python.cpp`, git HEAD c46a1bd2, byte-identical in the 2024-05-31 zip) + the shipped XT_Python bundle readme + sample scripts — see getting-the-sdk.md; read in full 2026-08-14
 type: official-doc
 fetched: 2026-08-14
-last_updated: 2026-08-14
+last_updated: 2026-08-16
 author: X-Ways Software Technology AG (source); project distillation
 ---
 

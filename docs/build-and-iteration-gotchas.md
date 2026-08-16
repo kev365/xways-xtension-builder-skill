@@ -2,8 +2,8 @@
 source: empirical notes from building X-Tensions with cl/link/rc on Windows and iterating against a live X-Ways install
 type: project-pattern
 fetched: 2026-05-02
-last_updated: 2026-08-12
-author: project notes
+last_updated: 2026-08-16
+author: project
 ---
 
 # Build & Iteration Gotchas

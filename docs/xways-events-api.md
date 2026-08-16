@@ -2,7 +2,7 @@
 source: https://www.x-ways.net/forensics/x-tensions/XWF_functions.html (official) + empirical testing against X-Ways 21.7–21.8
 type: official-doc + empirical-finding
 fetched: 2026-04-19
-last_updated: 2026-06-05
+last_updated: 2026-08-16
 author: X-Ways Software Technology AG; empirical updates from testing against X-Ways 21.7 and 21.8
 ---
 

@@ -1,7 +1,7 @@
 ---
 source: extracted from the wrapper template (templates/x-tensions/wrapper/) and working X-Tensions
 type: convention
-last_updated: 2026-08-09
+last_updated: 2026-08-16
 author: project
 ---
 
@@ -21,6 +21,13 @@ it swaps two button labels and repaints.
   Run button. In the template that button is `IDC_BTN_RUN`, not `IDOK` — the
   settings dialog has no `IDOK` control.
 - Both gestures are **inert while a worker is active** — Close stays "Cancel".
+
+## Contents
+
+- Pattern
+- Run-click handling — Ctrl at click time, not the cached flag
+- Ctrl+Close save-as implementation
+- Do / Don't
 
 ## Pattern
 
@@ -86,6 +93,68 @@ DeleteObject(hbr);
 
 **Source of truth:** the `wrapper` template (`templates/x-tensions/wrapper/my_xtension.cpp`) → `kCtrlPollTimerId`, `g_runCtrlDown`, `g_closeCtrlDown`, `g_runRestLabel`, `g_closeRestLabel`, `WM_TIMER` handler, `WM_DRAWITEM` handler
 
+## Run-click handling — Ctrl at click time, not the cached flag
+
+The timer state is only a UI hint. The Run handler re-reads the key at click
+time:
+
+```cpp
+// WM_COMMAND, IDC_BTN_RUN:
+if (!ReadDialogToSettings(hDlg, *s)) return TRUE;
+SaveSettingsToCfg(cfgPath, *s);
+// GetKeyState at click time -- not the cached g_runCtrlDown -- is the
+// source of truth (the timer state is just a UI hint).
+if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
+    SetDlgItemTextW(hDlg, IDC_LABEL_PROGRESS_STATUS,
+                    L"Settings saved to cfg. (Ctrl+Run: scan NOT started.)");
+    return TRUE;   // Ctrl+Run: saved, skip the worker
+}
+// ... spawn worker ...
+```
+
+`GetKeyState` (not `GetAsyncKeyState`) reports the key state as of the message
+this thread is processing, so it is already scoped to our own message pump —
+no `GetFocus()`/`GA_ROOT` gate is needed to stop the label flickering while
+the analyst types Ctrl+key in another window.
+
+## Ctrl+Close save-as implementation
+
+The exported file is a snapshot — on next launch the X-Tension still
+auto-loads only the standard sidecar next to its DLL:
+
+```cpp
+if (id == IDCANCEL) {
+    bool ctrlHeld = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+    if (ctrlHeld && !g_workerThread && s && ctx) {
+        if (!ReadDialogToSettings(hDlg, *s)) return TRUE;
+        wchar_t fileBuf[MAX_PATH];
+        swprintf_s(fileBuf, L"%s.cfg", NAME);
+        OPENFILENAMEW ofn = {};
+        ofn.lStructSize  = sizeof(ofn);
+        ofn.hwndOwner    = hDlg;
+        ofn.lpstrFilter  = L"Config Files (*.cfg)\0*.cfg\0All files (*.*)\0*.*\0";
+        ofn.nFilterIndex = 1;
+        ofn.lpstrFile    = fileBuf;      // doubles as the default filename
+        ofn.nMaxFile     = MAX_PATH;
+        ofn.lpstrTitle   = L"Save settings to...";
+        ofn.Flags        = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+        ofn.lpstrDefExt  = L"cfg";
+        if (!GetSaveFileNameW(&ofn)) return TRUE;   // user cancelled
+        if (SaveSettingsToCfg(fileBuf, *s)) EndDialog(hDlg, IDCANCEL);
+        return TRUE;
+    }
+    // ... existing cancel-worker-or-close logic
+}
+```
+
+`OFN_OVERWRITEPROMPT` makes an auto-numbered filename unnecessary — the common
+dialog asks before clobbering. `OFN_NOCHANGEDIR` matters more than it looks:
+without it the picker mutates the host process's current directory, and X-Ways
+keeps running long after your dialog closes. Gate on
+`g_workerThread == nullptr`; if the X-Tension wraps a helper exe, also refuse
+while a helper-identity rejection is outstanding, so a rejected path can't be
+persisted into an exported cfg.
+
 ## Do / Don't
 
 - **Do** use `BS_OWNERDRAW` on the Run button and pair it with `DM_SETDEFID` so Enter still triggers Run.
@@ -94,4 +163,5 @@ DeleteObject(hbr);
 - **Do** kill the timer in `WM_DESTROY` (`KillTimer(hDlg, kCtrlPollTimerId)`) and reset `g_runCtrlDown = false`.
 - **Do** skip both Ctrl branches while a worker is active — the Close button must remain a cancel during a run.
 - **Don't** use `MessageBox` for the "Save" confirmation — the silent write is the convention.
+- **Do** tooltip the Run button so analysts discover the modifier without reading the README (see `IDC_BTN_RUN`'s tooltip in the wrapper template).
 - **Don't** mix the Ctrl-to-save sidecar path with the "Save as..." export path — only the sidecar next to the DLL is auto-loaded on the next launch.
