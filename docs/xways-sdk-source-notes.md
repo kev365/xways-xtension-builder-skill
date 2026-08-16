@@ -12,8 +12,8 @@ The SDK is more than `X-Tension.h`. The drops ship the vendor's own per-function
 status spreadsheets, five C++ sample X-Tensions, the Python bridge source, and
 two generations of C# binding — none of which had been reviewed before
 2026-08-14. This page records what they say, where they are stale, and which of
-their claims conflict with other sources (conflicts →
-[xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md)).
+their claims conflict with other sources — every
+conflict it surfaced has since been resolved against a live host.
 
 Three artifacts are involved (see [getting-the-sdk.md](getting-the-sdk.md)):
 the **2024-05-31 zip**, the newer **git HEAD (c46a1bd2, 2024-07-26)**, and the
@@ -259,8 +259,6 @@ of them.
 
 - [xways-python-bridge.md](xways-python-bridge.md) — the bridge's method table,
   entry points, bugs.
-- [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md) — every
-  conflict this review surfaced, with probe designs.
 - [xways-api-recency-research.md](xways-api-recency-research.md) — SDK vs live
   page recency; the `LicenseInfo` change.
 - [getting-the-sdk.md](getting-the-sdk.md) — how to obtain these drops.

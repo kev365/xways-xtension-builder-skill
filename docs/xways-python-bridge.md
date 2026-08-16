@@ -211,7 +211,7 @@ the SDK's `Python.cpp` at git HEAD c46a1bd2.
 
 None of these are fixable from script code — they are properties of the shipped
 DLL. Empirical confirmation items for the overflow and the version floor are
-tracked in [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md).
+tracked in the maintainers' test registers.
 
 ## Readme errata
 
@@ -243,7 +243,7 @@ wrong in several places. Corrections, verified against the source and samples:
 
 - [xways-sdk-source-notes.md](xways-sdk-source-notes.md) — the SDK drops
   themselves: vendor status spreadsheets, sample bug catalog, drop divergence.
-- [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md) — open
+- the maintainers' test registers — open
   conflicts needing empirical resolution.
 - [xways-events-api.md](xways-events-api.md) — why Events API X-Tensions are
   C++ (`AddEvent`/`GetEvent` absent from the table above).

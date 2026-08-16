@@ -91,11 +91,6 @@ to these pages so generated code never invents `XWF_*` calls.
 - [xways-sdk-source-notes.md](xways-sdk-source-notes.md) — the SDK drops
   themselves: vendor status spreadsheets (24 tested / 52 never exercised),
   sample bug catalog, drop divergence, and the C# binding facts.
-- [xways-sdk-conflicts-test-plan.md](xways-sdk-conflicts-test-plan.md) — the
-  conflicts register: claims where trusted sources disagreed, each with probe
-  design and outcome (all 9 entries resolved as of 2026-08-16).
-- [skill-review-roadmap.md](skill-review-roadmap.md) — the 2026-08-16 full-review
-  findings register: phased repair roadmap + empirical test queue, with statuses.
 - [xways-api-history-19-to-21_4.md](xways-api-history-19-to-21_4.md) — dated,
   sourced table of API additions / flags / behavior changes from v19.0–v21.4.
 - [forum-xtensions-distilled.md](forum-xtensions-distilled.md) — X-Tension
