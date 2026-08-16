@@ -57,36 +57,9 @@ drift out of sync:
   `~/.claude/plugins/cache`, so this is a snapshot: run `/plugin update` to pick
   up new releases. **This is the path for using the skill.**
 - **Junctioned into your personal skills directory** — the skill is live in
-  *every* project, and because the junction points at your clone, any edit you
-  make while authoring an X-Tension is an edit to the repo working tree that you
-  then commit. **This is the path for improving the skill as you go.** From an
-  ordinary (non-elevated) Command Prompt:
-
-  ```bat
-  mklink /J "%USERPROFILE%\.claude\skills\xways-xtension-authoring" "C:\path\to\xways-xtension-builder-skill"
-  ```
-
-  A directory junction needs no special privileges. To also get the `/xtension`
-  slash command, link the one command file — this needs Windows Developer Mode
-  (Settings → System → For developers) or an elevated prompt, because *file*
-  symlinks are privileged where junctions are not:
-
-  ```powershell
-  New-Item -ItemType SymbolicLink `
-    -Path   "$env:USERPROFILE\.claude\commands\xtension.md" `
-    -Target "C:\path\to\xways-xtension-builder-skill\commands\xtension.md"
-  ```
-
-  If that is refused, skip it — the skill still auto-triggers, and you can invoke
-  it directly as `/xways-xtension-authoring`. Prefer that over copying the file:
-  a copy is the drift this layout exists to prevent.
-
-  To undo either link, remove the link itself — never the target:
-
-  ```bat
-  rmdir "%USERPROFILE%\.claude\skills\xways-xtension-authoring"
-  del   "%USERPROFILE%\.claude\commands\xtension.md"
-  ```
+  *every* project and any edit you make is an edit to your clone's working
+  tree. **This is the path for improving the skill as you go** — setup in
+  [CONTRIBUTING.md](CONTRIBUTING.md).
 
 - **Cloned and opened in Claude Code** — the skill auto-loads from the repo root,
   and the scaffold/build scripts run against the clone (they create
